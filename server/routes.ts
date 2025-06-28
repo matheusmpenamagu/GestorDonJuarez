@@ -139,7 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const events = await storage.getRecentPourEvents(limit);
       
       // Convert dates to São Paulo timezone for display
-      const formattedEvents = events.map(event => ({
+      const formattedEvents = events.map((event: any) => ({
         ...event,
         datetime: toSaoPauloTime(event.datetime),
       }));
@@ -192,7 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.send(csv);
       } else {
         // Return JSON with formatted dates
-        const formattedEvents = events.map(event => ({
+        const formattedEvents = events.map((event: any) => ({
           ...event,
           datetime: toSaoPauloTime(event.datetime),
         }));
@@ -227,7 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const events = await storage.getKegChangeEvents(startDate, endDate, tapId);
       
       // Convert dates to São Paulo timezone for display
-      const formattedEvents = events.map(event => ({
+      const formattedEvents = events.map((event: any) => ({
         ...event,
         datetime: toSaoPauloTime(event.datetime),
       }));

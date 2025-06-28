@@ -13,6 +13,7 @@ import {
   type InsertBeerStyle,
   type Tap,
   type InsertTap,
+  type InsertTapWithoutId,
   type PourEvent,
   type InsertPourEvent,
   type KegChangeEvent,
@@ -231,7 +232,7 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async updateTap(id: string, tap: Partial<InsertTap>): Promise<Tap> {
+  async updateTap(id: string, tap: Partial<InsertTapWithoutId>): Promise<Tap> {
     const [updated] = await db
       .update(taps)
       .set({ ...tap, updatedAt: new Date() })
