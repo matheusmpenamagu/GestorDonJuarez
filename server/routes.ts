@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupWebSocket } from "./websocket";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+// Removed Replit Auth for demo purposes
 import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, insertPointOfSaleSchema, insertBeerStyleSchema } from "@shared/schema";
 import { z } from "zod";
 import { format } from "date-fns";
@@ -22,20 +22,20 @@ function fromSaoPauloTime(dateString: string): Date {
   return new Date(dateString);
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
+// Simple demo auth middleware - allows all requests for demonstration
+const demoAuth = (req: any, res: any, next: any) => {
+  next();
+};
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Demo auth route for localStorage-based authentication
+  app.get('/api/auth/user', (req, res) => {
+    // Return a demo user for frontend compatibility
+    res.json({
+      id: 'demo-user',
+      email: 'demo@donjuarez.com.br',
+      name: 'Demo User'
+    });
   });
 
   // Webhook endpoints for ESP32 hardware
@@ -111,7 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard API endpoints (protected)
   
   // Get dashboard statistics
-  app.get('/api/dashboard/stats', isAuthenticated, async (req, res) => {
+  app.get('/api/dashboard/stats', demoAuth, async (req, res) => {
     try {
       const stats = await storage.getDashboardStats();
       res.json(stats);
@@ -122,7 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all taps with current status
-  app.get('/api/taps', isAuthenticated, async (req, res) => {
+  app.get('/api/taps', demoAuth, async (req, res) => {
     try {
       const taps = await storage.getTaps();
       res.json(taps);
@@ -133,7 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get recent pour events for real-time display
-  app.get('/api/recent-pours', isAuthenticated, async (req, res) => {
+  app.get('/api/recent-pours', demoAuth, async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
       const events = await storage.getRecentPourEvents(limit);
@@ -152,7 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get pour history with filtering and CSV export
-  app.get('/api/history/pours', isAuthenticated, async (req, res) => {
+  app.get('/api/history/pours', demoAuth, async (req, res) => {
     try {
       const { start_date, end_date, tap_id, format: responseFormat } = req.query;
       
@@ -206,7 +206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get keg change history
-  app.get('/api/history/keg-changes', isAuthenticated, async (req, res) => {
+  app.get('/api/history/keg-changes', demoAuth, async (req, res) => {
     try {
       const { start_date, end_date, tap_id } = req.query;
       
@@ -242,7 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Management API endpoints (protected)
   
   // Taps management
-  app.post('/api/taps', isAuthenticated, async (req, res) => {
+  app.post('/api/taps', demoAuth, async (req, res) => {
     try {
       const tapData = insertTapSchema.parse(req.body);
       const tap = await storage.createTap(tapData);
@@ -253,7 +253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/taps/:id', isAuthenticated, async (req, res) => {
+  app.put('/api/taps/:id', demoAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const tapData = insertTapSchema.partial().parse(req.body);
@@ -265,7 +265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/taps/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/taps/:id', demoAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteTap(id);
@@ -277,7 +277,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Points of Sale management
-  app.get('/api/points-of-sale', isAuthenticated, async (req, res) => {
+  app.get('/api/points-of-sale', demoAuth, async (req, res) => {
     try {
       const pointsOfSale = await storage.getPointsOfSale();
       res.json(pointsOfSale);
@@ -287,7 +287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/points-of-sale', isAuthenticated, async (req, res) => {
+  app.post('/api/points-of-sale', demoAuth, async (req, res) => {
     try {
       const posData = insertPointOfSaleSchema.parse(req.body);
       const pos = await storage.createPointOfSale(posData);
@@ -298,7 +298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/points-of-sale/:id', isAuthenticated, async (req, res) => {
+  app.put('/api/points-of-sale/:id', demoAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const posData = insertPointOfSaleSchema.partial().parse(req.body);
@@ -310,7 +310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/points-of-sale/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/points-of-sale/:id', demoAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deletePointOfSale(id);
@@ -322,7 +322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Beer Styles management
-  app.get('/api/beer-styles', isAuthenticated, async (req, res) => {
+  app.get('/api/beer-styles', demoAuth, async (req, res) => {
     try {
       const beerStyles = await storage.getBeerStyles();
       res.json(beerStyles);
@@ -332,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/beer-styles', isAuthenticated, async (req, res) => {
+  app.post('/api/beer-styles', demoAuth, async (req, res) => {
     try {
       const styleData = insertBeerStyleSchema.parse(req.body);
       const style = await storage.createBeerStyle(styleData);
@@ -343,7 +343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/beer-styles/:id', isAuthenticated, async (req, res) => {
+  app.put('/api/beer-styles/:id', demoAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const styleData = insertBeerStyleSchema.partial().parse(req.body);
@@ -355,7 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/beer-styles/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/beer-styles/:id', demoAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteBeerStyle(id);
