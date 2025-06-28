@@ -45,19 +45,19 @@ export interface IStorage {
   
   // Taps operations
   getTaps(): Promise<TapWithRelations[]>;
-  getTap(id: number): Promise<TapWithRelations | undefined>;
+  getTap(id: string): Promise<TapWithRelations | undefined>;
   createTap(tap: InsertTap): Promise<Tap>;
-  updateTap(id: number, tap: Partial<InsertTap>): Promise<Tap>;
-  deleteTap(id: number): Promise<void>;
+  updateTap(id: string, tap: Partial<InsertTap>): Promise<Tap>;
+  deleteTap(id: string): Promise<void>;
   
   // Pour Events operations
   createPourEvent(event: InsertPourEvent): Promise<PourEvent>;
-  getPourEvents(startDate?: Date, endDate?: Date, tapId?: number): Promise<PourEventWithRelations[]>;
+  getPourEvents(startDate?: Date, endDate?: Date, tapId?: string): Promise<PourEventWithRelations[]>;
   getRecentPourEvents(limit?: number): Promise<PourEventWithRelations[]>;
   
   // Keg Change Events operations
   createKegChangeEvent(event: InsertKegChangeEvent): Promise<KegChangeEvent>;
-  getKegChangeEvents(startDate?: Date, endDate?: Date, tapId?: number): Promise<(KegChangeEvent & { tap: Tap & { pointOfSale?: PointOfSale } })[]>;
+  getKegChangeEvents(startDate?: Date, endDate?: Date, tapId?: string): Promise<(KegChangeEvent & { tap: Tap & { pointOfSale?: PointOfSale } })[]>;
   
   // Analytics
   getDashboardStats(): Promise<{
@@ -191,7 +191,7 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async getTap(id: number): Promise<TapWithRelations | undefined> {
+  async getTap(id: string): Promise<TapWithRelations | undefined> {
     const [result] = await db
       .select({
         tap: taps,
@@ -231,7 +231,7 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async updateTap(id: number, tap: Partial<InsertTap>): Promise<Tap> {
+  async updateTap(id: string, tap: Partial<InsertTap>): Promise<Tap> {
     const [updated] = await db
       .update(taps)
       .set({ ...tap, updatedAt: new Date() })
@@ -240,7 +240,7 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async deleteTap(id: number): Promise<void> {
+  async deleteTap(id: string): Promise<void> {
     await db.update(taps).set({ isActive: false }).where(eq(taps.id, id));
   }
   
@@ -278,7 +278,7 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async getPourEvents(startDate?: Date, endDate?: Date, tapId?: number): Promise<PourEventWithRelations[]> {
+  async getPourEvents(startDate?: Date, endDate?: Date, tapId?: string): Promise<PourEventWithRelations[]> {
     let query = db
       .select({
         pourEvent: pourEvents,
@@ -353,7 +353,7 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async getKegChangeEvents(startDate?: Date, endDate?: Date, tapId?: number) {
+  async getKegChangeEvents(startDate?: Date, endDate?: Date, tapId?: string) {
     const conditions = [];
     if (startDate) conditions.push(gte(kegChangeEvents.datetime, startDate));
     if (endDate) conditions.push(lte(kegChangeEvents.datetime, endDate));
