@@ -279,7 +279,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPourEvents(startDate?: Date, endDate?: Date, tapId?: string): Promise<PourEventWithRelations[]> {
-    let query = db
+    const conditions = [];
+    if (startDate) conditions.push(gte(pourEvents.datetime, startDate));
+    if (endDate) conditions.push(lte(pourEvents.datetime, endDate));
+    if (tapId) conditions.push(eq(pourEvents.tapId, tapId));
+
+    const baseQuery = db
       .select({
         pourEvent: pourEvents,
         tap: taps,
@@ -291,16 +296,9 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(pointsOfSale, eq(taps.posId, pointsOfSale.id))
       .leftJoin(beerStyles, eq(taps.currentBeerStyleId, beerStyles.id));
 
-    const conditions = [];
-    if (startDate) conditions.push(gte(pourEvents.datetime, startDate));
-    if (endDate) conditions.push(lte(pourEvents.datetime, endDate));
-    if (tapId) conditions.push(eq(pourEvents.tapId, tapId));
-
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-
-    const results = await query.orderBy(desc(pourEvents.datetime));
+    const results = conditions.length > 0
+      ? await baseQuery.where(and(...conditions)).orderBy(desc(pourEvents.datetime))
+      : await baseQuery.orderBy(desc(pourEvents.datetime));
 
     return results.map(({ pourEvent, tap, pointOfSale, currentBeerStyle }) => ({
       ...pourEvent,
@@ -359,7 +357,7 @@ export class DatabaseStorage implements IStorage {
     if (endDate) conditions.push(lte(kegChangeEvents.datetime, endDate));
     if (tapId) conditions.push(eq(kegChangeEvents.tapId, tapId));
 
-    let query = db
+    const baseQuery = db
       .select({
         kegChangeEvent: kegChangeEvents,
         tap: taps,
@@ -369,11 +367,9 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(taps, eq(kegChangeEvents.tapId, taps.id))
       .leftJoin(pointsOfSale, eq(taps.posId, pointsOfSale.id));
 
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-
-    const results = await query.orderBy(desc(kegChangeEvents.datetime));
+    const results = conditions.length > 0
+      ? await baseQuery.where(and(...conditions)).orderBy(desc(kegChangeEvents.datetime))
+      : await baseQuery.orderBy(desc(kegChangeEvents.datetime));
 
     return results.map(({ kegChangeEvent, tap, pointOfSale }) => ({
       ...kegChangeEvent,

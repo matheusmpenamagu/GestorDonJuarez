@@ -150,6 +150,11 @@ export const insertBeerStyleSchema = createInsertSchema(beerStyles).omit({
 });
 
 export const insertTapSchema = createInsertSchema(taps).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTapWithoutIdSchema = createInsertSchema(taps).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -174,6 +179,7 @@ export type BeerStyle = typeof beerStyles.$inferSelect;
 export type InsertBeerStyle = z.infer<typeof insertBeerStyleSchema>;
 export type Tap = typeof taps.$inferSelect;
 export type InsertTap = z.infer<typeof insertTapSchema>;
+export type InsertTapWithoutId = z.infer<typeof insertTapWithoutIdSchema>;
 export type PourEvent = typeof pourEvents.$inferSelect;
 export type InsertPourEvent = z.infer<typeof insertPourEventSchema>;
 export type KegChangeEvent = typeof kegChangeEvents.$inferSelect;
