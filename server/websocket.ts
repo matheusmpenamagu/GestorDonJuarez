@@ -5,7 +5,10 @@ import { storage } from './storage';
 let wss: WebSocketServer;
 
 export function setupWebSocket(server: Server) {
-  wss = new WebSocketServer({ server });
+  wss = new WebSocketServer({ 
+    server,
+    path: '/api/ws'
+  });
 
   wss.on('connection', (ws) => {
     console.log('WebSocket client connected');
@@ -22,7 +25,7 @@ export function setupWebSocket(server: Server) {
     });
   });
 
-  console.log('WebSocket server initialized');
+  console.log('WebSocket server initialized on /api/ws');
 }
 
 async function sendInitialData(ws: any) {

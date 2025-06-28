@@ -186,7 +186,7 @@ export class DatabaseStorage implements IStorage {
         lastPourEvent: lastPour ? {
           ...lastPour,
           datetime: lastPour.datetime.toISOString(),
-        } : undefined,
+        } as any : undefined,
       };
     });
   }
@@ -222,7 +222,7 @@ export class DatabaseStorage implements IStorage {
       lastPourEvent: lastEvent ? {
         ...lastEvent,
         datetime: lastEvent.datetime.toISOString(),
-      } : undefined,
+      } as any : undefined,
     };
   }
 
