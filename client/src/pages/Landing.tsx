@@ -1,31 +1,123 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Beer } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Beer, Eye, EyeOff } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Landing() {
-  const handleLogin = () => {
-    window.location.href = "/api/login";
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        title: "Erro de validação",
+        description: "Por favor, preencha todos os campos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      // Simulate login attempt
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // For demo purposes, accept any email/password combination
+      // In production, this would authenticate against a real backend
+      if (email && password) {
+        toast({
+          title: "Login realizado com sucesso!",
+          description: "Redirecionando para o dashboard...",
+        });
+        
+        // Redirect to dashboard after successful login
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 1500);
+      } else {
+        throw new Error("Credenciais inválidas");
+      }
+    } catch (error) {
+      toast({
+        title: "Erro no login",
+        description: "Usuário ou senha incorretos",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary to-blue-700">
-      <Card className="w-full max-w-md mx-4">
-        <CardContent className="pt-6">
-          <div className="text-center mb-8">
-            <div className="mx-auto w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4">
-              <Beer className="h-8 w-8 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">Controle de Chopes</h1>
-            <p className="text-muted-foreground mt-2">Sistema de Monitoramento de Torneiras</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary to-blue-700 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="mx-auto w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4">
+            <Beer className="h-8 w-8 text-white" />
           </div>
-          
-          <Button 
-            onClick={handleLogin}
-            className="w-full"
-            size="lg"
-          >
-            Entrar no Sistema
-          </Button>
+          <CardTitle className="text-2xl">Controle de Chopes</CardTitle>
+          <p className="text-muted-foreground">Sistema de Monitoramento de Torneiras</p>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Digite sua senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            
+            <Button 
+              type="submit"
+              className="w-full"
+              size="lg"
+              disabled={isLoading}
+            >
+              {isLoading ? "Entrando..." : "Entrar no Sistema"}
+            </Button>
+          </form>
           
           <p className="text-center text-sm text-muted-foreground mt-4">
             Entre com suas credenciais para acessar o dashboard
