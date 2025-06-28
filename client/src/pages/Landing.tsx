@@ -34,6 +34,15 @@ export default function Landing() {
       // For demo purposes, accept any email/password combination
       // In production, this would authenticate against a real backend
       if (email && password) {
+        // Store auth data in localStorage
+        const userData = {
+          email: email,
+          name: email.split('@')[0],
+          id: Date.now().toString(),
+          loginTime: new Date().toISOString()
+        };
+        localStorage.setItem('beerAuth', JSON.stringify(userData));
+        
         toast({
           title: "Login realizado com sucesso!",
           description: "Redirecionando para o dashboard...",
@@ -41,7 +50,7 @@ export default function Landing() {
         
         // Redirect to dashboard after successful login
         setTimeout(() => {
-          window.location.href = "/dashboard";
+          window.location.href = "/";
         }, 1500);
       } else {
         throw new Error("Credenciais inválidas");

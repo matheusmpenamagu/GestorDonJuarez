@@ -10,7 +10,8 @@ export function Header() {
   const { isConnected } = useWebSocket('/');
 
   const handleLogout = () => {
-    window.location.href = "/api/logout";
+    localStorage.removeItem('beerAuth');
+    window.location.href = "/";
   };
 
   return (
@@ -36,12 +37,12 @@ export function Header() {
             {/* User menu */}
             <div className="flex items-center space-x-2">
               <span className="text-sm text-foreground">
-                {user?.firstName || user?.email || 'Operador'}
+                {user?.name || user?.email || 'Operador'}
               </span>
               <Avatar className="h-8 w-8">
                 <AvatarImage src={user?.profileImageUrl || undefined} />
                 <AvatarFallback>
-                  {user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                  {user?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
               <Button 
