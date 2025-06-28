@@ -47,7 +47,7 @@ export interface IStorage {
   getTaps(): Promise<TapWithRelations[]>;
   getTap(id: string): Promise<TapWithRelations | undefined>;
   createTap(tap: InsertTap): Promise<Tap>;
-  updateTap(id: string, tap: Partial<InsertTap>): Promise<Tap>;
+  updateTap(id: string, tap: Partial<InsertTapWithoutId>): Promise<Tap>;
   deleteTap(id: string): Promise<void>;
   
   // Pour Events operations
@@ -297,10 +297,10 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(beerStyles, eq(taps.currentBeerStyleId, beerStyles.id));
 
     const results = conditions.length > 0
-      ? await baseQuery.where(and(...conditions)).orderBy(desc(pourEvents.datetime))
+      ? await (baseQuery as any).where(and(...conditions)).orderBy(desc(pourEvents.datetime))
       : await baseQuery.orderBy(desc(pourEvents.datetime));
 
-    return results.map(({ pourEvent, tap, pointOfSale, currentBeerStyle }) => ({
+    return results.map(({ pourEvent, tap, pointOfSale, currentBeerStyle }: any) => ({
       ...pourEvent,
       tap: {
         ...tap!,
@@ -325,7 +325,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(pourEvents.datetime))
       .limit(limit);
 
-    return results.map(({ pourEvent, tap, pointOfSale, currentBeerStyle }) => ({
+    return results.map(({ pourEvent, tap, pointOfSale, currentBeerStyle }: any) => ({
       ...pourEvent,
       tap: {
         ...tap!,
@@ -368,10 +368,10 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(pointsOfSale, eq(taps.posId, pointsOfSale.id));
 
     const results = conditions.length > 0
-      ? await baseQuery.where(and(...conditions)).orderBy(desc(kegChangeEvents.datetime))
+      ? await (baseQuery as any).where(and(...conditions)).orderBy(desc(kegChangeEvents.datetime))
       : await baseQuery.orderBy(desc(kegChangeEvents.datetime));
 
-    return results.map(({ kegChangeEvent, tap, pointOfSale }) => ({
+    return results.map(({ kegChangeEvent, tap, pointOfSale }: any) => ({
       ...kegChangeEvent,
       tap: {
         ...tap!,

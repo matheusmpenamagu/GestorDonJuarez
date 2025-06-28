@@ -175,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (responseFormat === 'csv') {
         // Generate CSV
         const csvHeader = 'Data/Hora,Torneira,Volume (ml),Ponto de Venda,Estilo da Cerveja\n';
-        const csvRows = events.map(event => {
+        const csvRows = events.map((event: any) => {
           const datetime = toSaoPauloTime(event.datetime);
           const tapName = event.tap.name || `Torneira ${event.tap.id}`;
           const volume = event.pourVolumeMl;
