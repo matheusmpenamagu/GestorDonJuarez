@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta name="description" content="Sistema de monitoramento em tempo real para controle de chopes e barris de cervejaria artesanal brasileira" />
+    <meta name="keywords" content="cervejaria, chope, barril, monitoramento, tempo real, ESP32, flow meter" />
+    <meta name="author" content="Sistema de Controle de Chopes" />
+    
+    <!-- Open Graph tags for social media -->
+    <meta property="og:title" content="Controle de Chopes - Sistema de Monitoramento" />
+    <meta property="og:description" content="Dashboard em tempo real para monitoramento de torneiras e consumo de chope em cervejarias artesanais" />
+    <meta property="og:type" content="website" />
+    
+    <!-- Favicon and app icons -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231976D2'><path d='M5 6h14v2H5V6zm0 4h14v8c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2v-8zm2 2v6h10v-6H7z'/></svg>" />
+    
+    <!-- Preload key fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    
+    <title>Controle de Chopes - Dashboard de Monitoramento</title>
+    
+    <!-- Timezone configuration -->
+    <script>
+      // Set application timezone to São Paulo
+      window.APP_TIMEZONE = 'America/Sao_Paulo';
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Development banner script -->
+    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+    
+    <!-- Service worker for offline capability (future enhancement) -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          // Service worker registration would go here
+          console.log('Application loaded successfully');
+        });
+      }
+    </script>
+  </body>
+</html>
