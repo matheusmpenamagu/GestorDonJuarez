@@ -56,7 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate the pour event data
       const pourEventData = insertPourEventSchema.parse({
-        tapId: parseInt(tap_id),
+        tapId: tap_id, // Now a 5-digit alphanumeric code
         totalVolumeMl: parseInt(total_volume_ml),
         datetime: pourDate,
       });
@@ -84,7 +84,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get current tap info to record previous volume
-      const tap = await storage.getTap(parseInt(tap_id));
+      const tap = await storage.getTap(tap_id); // Use alphanumeric code directly
       const previousVolumeMl = tap ? tap.kegCapacityMl! - tap.currentVolumeUsedMl! : null;
 
       // Convert datetime to proper Date object
@@ -92,7 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate the keg change event data
       const kegChangeData = insertKegChangeEventSchema.parse({
-        tapId: parseInt(tap_id),
+        tapId: tap_id, // Now a 5-digit alphanumeric code
         previousVolumeMl,
         datetime: changeDate,
       });
@@ -158,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let startDate: Date | undefined;
       let endDate: Date | undefined;
-      let tapId: number | undefined;
+      let tapId: string | undefined;
 
       if (start_date) {
         startDate = fromSaoPauloTime(start_date as string);
@@ -167,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endDate = fromSaoPauloTime(end_date as string);
       }
       if (tap_id) {
-        tapId = parseInt(tap_id as string);
+        tapId = tap_id as string; // Use alphanumeric code directly
       }
 
       const events = await storage.getPourEvents(startDate, endDate, tapId);
@@ -212,7 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let startDate: Date | undefined;
       let endDate: Date | undefined;
-      let tapId: number | undefined;
+      let tapId: string | undefined;
 
       if (start_date) {
         startDate = fromSaoPauloTime(start_date as string);
@@ -221,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endDate = fromSaoPauloTime(end_date as string);
       }
       if (tap_id) {
-        tapId = parseInt(tap_id as string);
+        tapId = tap_id as string; // Use alphanumeric code directly
       }
 
       const events = await storage.getKegChangeEvents(startDate, endDate, tapId);
@@ -255,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/taps/:id', demoAuth, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id; // 5-digit alphanumeric code
       const tapData = insertTapSchema.partial().parse(req.body);
       const tap = await storage.updateTap(id, tapData);
       res.json(tap);
@@ -267,7 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/taps/:id', demoAuth, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id; // 5-digit alphanumeric code
       await storage.deleteTap(id);
       res.json({ success: true });
     } catch (error) {
