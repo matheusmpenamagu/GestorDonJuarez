@@ -354,6 +354,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getKegChangeEvents(startDate?: Date, endDate?: Date, tapId?: number) {
+    const conditions = [];
+    if (startDate) conditions.push(gte(kegChangeEvents.datetime, startDate));
+    if (endDate) conditions.push(lte(kegChangeEvents.datetime, endDate));
+    if (tapId) conditions.push(eq(kegChangeEvents.tapId, tapId));
+
     let query = db
       .select({
         kegChangeEvent: kegChangeEvents,
@@ -363,11 +368,6 @@ export class DatabaseStorage implements IStorage {
       .from(kegChangeEvents)
       .leftJoin(taps, eq(kegChangeEvents.tapId, taps.id))
       .leftJoin(pointsOfSale, eq(taps.posId, pointsOfSale.id));
-
-    const conditions = [];
-    if (startDate) conditions.push(gte(kegChangeEvents.datetime, startDate));
-    if (endDate) conditions.push(lte(kegChangeEvents.datetime, endDate));
-    if (tapId) conditions.push(eq(kegChangeEvents.tapId, tapId));
 
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
