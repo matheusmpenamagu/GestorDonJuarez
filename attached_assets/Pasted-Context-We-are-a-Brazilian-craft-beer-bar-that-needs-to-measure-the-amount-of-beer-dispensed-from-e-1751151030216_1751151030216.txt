@@ -1,0 +1,42 @@
+Context:
+We are a Brazilian craft beer bar that needs to measure the amount of beer dispensed from each tap.
+Objective:
+Build a real-time dashboard (web application) accessible by email and password (no self-register, only admin can create users). The dashboard should:
+Show the current volume available in each keg (per tap) in real time.
+Show in real time a list of beers being dispensed for each tap.
+Allow exporting the dispense history (beers poured per tap) for a specific period as a CSV.
+Store and display the history of keg changes: Whenever an operator replaces a keg, a webhook is sent specifying the tap ID and timestamp. The system must keep the whole history of keg changes.
+All datetime information should use the São Paulo timezone (America/Sao_Paulo).
+Hardware Integration:
+We use ESP32 + YF-S401 flow meter at each tap, which sends webhooks to our URL in this format: {datetime, tap_id, total_volume_ml} every time beer is poured.
+Another webhook (from another hardware) will inform a barrel (keg) change: {datetime, tap_id}.
+Functional requirements:
+User authentication via email and password (no sign-up page; only login, handled by Replit's built-in auth or a secure alternative; only admin can add/manage users).
+Pages/forms to register:
+Taps (ID, point of sale [POS])
+Points of sale (ID, Name, Address)
+Beer styles (ID, Name)
+Admin management page for those entities.
+Both receive and store flow webhooks and keg swap webhooks in the database.
+All lists and data must use the São Paulo timezone.
+Tech stack suggestions:
+Prefer Python (Flask or FastAPI) or JavaScript (Node.js/Express) as backend, SQLite or PostgreSQL (supabase plugin if possible) as DB.
+Frontend: React or whatever Replit recommends for dashboard apps.
+Features for the dashboard:
+Each tap: show the realtime volume available (subtracting from the keg's nominal capacity at last change).
+List in real time of all pours with: tap, datetime, volume, point of sale, and beer style.
+CSV export for a selectable period.
+Keg change history per tap with datetime (timezone São Paulo).
+Important:
+No user registration page!
+All time data must be stored and shown using São Paulo timezone.
+Interfaces must be in Brazilian Portuguese.
+Extra:
+Please include code comments for future maintenance.
+Output a clear README explaining how to run, configure email/password authentication, setup webhooks endpoints, and test the dashboard.
+Deliverables:
+All backend and frontend source code (in one replit project if possible)
+README in Portuguese with setup instructions
+Database models/schema
+Clearly separated endpoints for each webhook type
+Example .env file for secrets and settings
