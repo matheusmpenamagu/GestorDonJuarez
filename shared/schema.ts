@@ -58,7 +58,7 @@ export const beerStyles = pgTable("beer_styles", {
 
 // Taps table
 export const taps = pgTable("taps", {
-  id: serial("id").primaryKey(),
+  id: varchar("id", { length: 5 }).primaryKey(), // 5-digit alphanumeric code
   name: varchar("name", { length: 255 }).notNull(),
   posId: integer("pos_id").references(() => pointsOfSale.id),
   currentBeerStyleId: integer("current_beer_style_id").references(() => beerStyles.id),
@@ -72,7 +72,7 @@ export const taps = pgTable("taps", {
 // Pour Events table (webhook data from ESP32)
 export const pourEvents = pgTable("pour_events", {
   id: serial("id").primaryKey(),
-  tapId: integer("tap_id").references(() => taps.id).notNull(),
+  tapId: varchar("tap_id", { length: 5 }).references(() => taps.id).notNull(),
   totalVolumeMl: integer("total_volume_ml").notNull(),
   pourVolumeMl: integer("pour_volume_ml").notNull(), // Calculated difference
   datetime: timestamp("datetime").notNull(),
@@ -82,7 +82,7 @@ export const pourEvents = pgTable("pour_events", {
 // Keg Change Events table (webhook data for barrel changes)
 export const kegChangeEvents = pgTable("keg_change_events", {
   id: serial("id").primaryKey(),
-  tapId: integer("tap_id").references(() => taps.id).notNull(),
+  tapId: varchar("tap_id", { length: 5 }).references(() => taps.id).notNull(),
   previousVolumeMl: integer("previous_volume_ml"), // Volume remaining before change
   datetime: timestamp("datetime").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
