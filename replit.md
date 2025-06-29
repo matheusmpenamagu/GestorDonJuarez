@@ -153,6 +153,9 @@ This is a Brazilian craft beer monitoring system designed for real-time tracking
 - ✓ Available devices API endpoint for improved UX
 - ✓ Select dropdown disables devices already assigned to other taps
 - ✓ Complete device management system with proper constraints
+- → Implementing webhook storage system for ESP32 beer consumption data
+- → Creating endpoints that accept device_id, datetime, and total_volume_ml
+- → Automatic volume calculation and real-time dashboard updates
 
 ## User Preferences
 

@@ -49,6 +49,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Flow meter webhook - receives pour data from ESP32
   app.post('/api/webhooks/pour', async (req, res) => {
     try {
+      console.log('Pour webhook received:', JSON.stringify(req.body, null, 2));
+      
       // Support both device_id (ESP32) and tap_id (direct) formats
       const { device_id, tap_id, datetime, total_volume_ml } = req.body;
       
