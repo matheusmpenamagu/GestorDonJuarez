@@ -228,14 +228,14 @@ export default function TapsManagement() {
               <div>
                 <Label htmlFor="device">Dispositivo ESP32</Label>
                 <Select 
-                  value={formData.deviceId?.toString() || ""} 
-                  onValueChange={(value) => setFormData({ ...formData, deviceId: value ? parseInt(value) : null })}
+                  value={formData.deviceId?.toString() || "0"} 
+                  onValueChange={(value) => setFormData({ ...formData, deviceId: value === "0" ? null : parseInt(value) })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um dispositivo (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum dispositivo</SelectItem>
+                    <SelectItem value="0">Nenhum dispositivo</SelectItem>
                     {devices?.filter((device: any) => device.isActive).map((device: any) => (
                       <SelectItem key={device.id} value={device.id.toString()}>
                         {device.code} - {device.name}
