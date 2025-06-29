@@ -13,17 +13,20 @@ export function RealtimePours() {
     queryKey: ["/api/recent-pours"],
   });
 
+  // Ensure recentPours is always an array
+  const safePours = Array.isArray(recentPours) ? recentPours : [];
+
   // Update recent pours when WebSocket data arrives
   useEffect(() => {
     if (lastMessage) {
       switch (lastMessage.type) {
         case 'initial_data':
-          if (lastMessage.data.recentPours) {
+          if (lastMessage.data.recentPours && Array.isArray(lastMessage.data.recentPours)) {
             setRecentPours(lastMessage.data.recentPours);
           }
           break;
         case 'pour_event':
-          if (lastMessage.data) {
+          if (lastMessage.data && Array.isArray(lastMessage.data)) {
             setRecentPours(lastMessage.data);
           }
           break;
@@ -33,7 +36,7 @@ export function RealtimePours() {
 
   // Set initial data from React Query
   useEffect(() => {
-    if (initialPours && !lastMessage) {
+    if (initialPours && Array.isArray(initialPours) && !lastMessage) {
       setRecentPours(initialPours);
     }
   }, [initialPours, lastMessage]);
@@ -84,7 +87,7 @@ export function RealtimePours() {
       </CardHeader>
       
       <CardContent>
-        {recentPours.length === 0 ? (
+        {!Array.isArray(recentPours) || recentPours.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
             Nenhuma atividade recente
           </div>
@@ -101,7 +104,7 @@ export function RealtimePours() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {recentPours.map((pour) => (
+                {Array.isArray(recentPours) && recentPours.map((pour) => (
                   <tr key={pour.id} className="hover:bg-muted/50">
                     <td className="py-3 text-sm text-foreground">
                       {formatDateTime(pour.datetime)}
