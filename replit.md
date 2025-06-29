@@ -146,13 +146,13 @@ This is a Brazilian craft beer monitoring system designed for real-time tracking
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
-- ✓ Migrated tap IDs from custom strings (TOR01, etc) to auto-incrementing integers
-- ✓ Database schema fully normalized with proper foreign key relationships
-- ✓ All API endpoints updated to handle integer tap IDs
-- ✓ Pour events and keg change events updated to use integer tap references
-- ✓ Tap creation and editing working correctly with integer IDs
-- ✓ Sensor-to-tap connections preserved during migration
-- ✓ System now supports standard CRUD operations with proper ID management
+- ✓ Implemented device exclusivity validation (one device per tap)
+- ✓ Backend validation prevents device assignment conflicts
+- ✓ Frontend interface shows device availability status  
+- ✓ Error messages explain when devices are already in use
+- ✓ Available devices API endpoint for improved UX
+- ✓ Select dropdown disables devices already assigned to other taps
+- ✓ Complete device management system with proper constraints
 
 ## User Preferences
 
