@@ -63,7 +63,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.header('Access-Control-Allow-Headers', 'Content-Type');
     
     // Set response timeout to prevent ESP32 timeouts
-    res.setTimeout(10000); // 10 seconds
+    res.setTimeout(5000); // 5 seconds - quicker response for ESP32
+    
+    // Send immediate acknowledgment to prevent timeout
+    const startTime = Date.now();
     
     try {
       console.log('=== WEBHOOK START ===');
