@@ -57,16 +57,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Flow meter webhook - receives pour data from ESP32
   app.post('/api/webhooks/pour', async (req, res) => {
+    // Set CORS headers for ESP32 compatibility
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'POST');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    
     // Set response timeout to prevent ESP32 timeouts
     res.setTimeout(10000); // 10 seconds
     
     try {
+      console.log('=== WEBHOOK START ===');
       console.log('Pour webhook received:', JSON.stringify(req.body, null, 2));
+      console.log('Request headers:', req.headers);
+      
+      // Validate request body exists
+      if (!req.body) {
+        console.error('Empty request body');
+        return res.status(400).json({ message: "Empty request body" });
+      }
       
       // Support both device_id (ESP32) and tap_id (direct) formats
       const { device_id, tap_id, datetime, total_volume_ml } = req.body;
       
+      console.log('Extracted fields:', { device_id, tap_id, datetime, total_volume_ml });
+      
       if (!datetime || total_volume_ml === undefined) {
+        console.error('Missing required fields:', { datetime, total_volume_ml });
         return res.status(400).json({ 
           message: "Missing required fields: datetime, total_volume_ml" 
         });
@@ -76,16 +92,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // If device_id is provided, find the associated tap
       if (device_id && !tap_id) {
+        console.log('Looking up device:', device_id, typeof device_id);
         let device;
         
         // Try to find device by code (string) or by ID (numeric)
         if (typeof device_id === 'string' && isNaN(Number(device_id))) {
           // Look for device by code first
+          console.log('Searching by device code:', device_id);
           device = await storage.getDeviceByCode(device_id);
         } else {
           // Look for device by ID
+          console.log('Searching by device ID:', Number(device_id));
           device = await storage.getDevice(Number(device_id));
         }
+        
+        console.log('Device found:', device ? device.code : 'NOT FOUND');
         
         if (!device) {
           return res.status(404).json({ 
@@ -152,8 +173,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
     } catch (error) {
+      console.error("=== WEBHOOK ERROR ===");
       console.error("Error processing pour webhook:", error);
-      res.status(500).json({ message: "Error processing pour event" });
+      console.error("Stack trace:", error instanceof Error ? error.stack : 'No stack trace');
+      console.error("Request body:", req.body);
+      console.error("=== END ERROR ===");
+      
+      // Send a quick response to ESP32
+      res.status(500).json({ 
+        message: "Error processing pour event",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
