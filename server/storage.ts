@@ -223,7 +223,7 @@ export class DatabaseStorage implements IStorage {
       })
     );
 
-    return results.map(({ tap, pointOfSale, currentBeerStyle }) => {
+    return results.map(({ tap, pointOfSale, currentBeerStyle, device }) => {
       const lastPour = lastPourEvents.find(p => p.tapId === tap.id)?.lastEvent;
       const currentVolumeAvailableMl = tap.kegCapacityMl! - tap.currentVolumeUsedMl!;
       
@@ -231,6 +231,7 @@ export class DatabaseStorage implements IStorage {
         ...tap,
         pointOfSale: pointOfSale || undefined,
         currentBeerStyle: currentBeerStyle || undefined,
+        device: device || undefined,
         currentVolumeAvailableMl,
         lastPourEvent: lastPour ? {
           ...lastPour,
@@ -246,10 +247,12 @@ export class DatabaseStorage implements IStorage {
         tap: taps,
         pointOfSale: pointsOfSale,
         currentBeerStyle: beerStyles,
+        device: devices,
       })
       .from(taps)
       .leftJoin(pointsOfSale, eq(taps.posId, pointsOfSale.id))
       .leftJoin(beerStyles, eq(taps.currentBeerStyleId, beerStyles.id))
+      .leftJoin(devices, eq(taps.deviceId, devices.id))
       .where(eq(taps.id, id));
 
     if (!result) return undefined;
@@ -267,6 +270,7 @@ export class DatabaseStorage implements IStorage {
       ...result.tap,
       pointOfSale: result.pointOfSale || undefined,
       currentBeerStyle: result.currentBeerStyle || undefined,
+      device: result.device || undefined,
       currentVolumeAvailableMl,
       lastPourEvent: lastEvent ? {
         ...lastEvent,

@@ -15,6 +15,7 @@ interface TapFormData {
   name: string;
   posId: number | null;
   currentBeerStyleId: number | null;
+  deviceId: number | null;
   kegCapacityMl: number;
 }
 
@@ -25,6 +26,7 @@ export default function TapsManagement() {
     name: "",
     posId: null,
     currentBeerStyleId: null,
+    deviceId: null,
     kegCapacityMl: 30000,
   });
 
@@ -41,6 +43,10 @@ export default function TapsManagement() {
 
   const { data: beerStyles } = useQuery({
     queryKey: ["/api/beer-styles"],
+  });
+
+  const { data: devices } = useQuery({
+    queryKey: ["/api/devices"],
   });
 
   const createMutation = useMutation({
@@ -112,6 +118,7 @@ export default function TapsManagement() {
       name: "",
       posId: null,
       currentBeerStyleId: null,
+      deviceId: null,
       kegCapacityMl: 30000,
     });
     setEditingTap(null);
@@ -133,6 +140,7 @@ export default function TapsManagement() {
       name: tap.name || "",
       posId: tap.posId || null,
       currentBeerStyleId: tap.currentBeerStyleId || null,
+      deviceId: tap.deviceId || null,
       kegCapacityMl: tap.kegCapacityMl || 30000,
     });
     setIsDialogOpen(true);
