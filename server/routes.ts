@@ -40,11 +40,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Webhook endpoints for ESP32 hardware
   
+  // Test endpoint for ESP32 webhook
+  app.post('/api/test/pour', (req, res) => {
+    console.log('Test webhook called with:', JSON.stringify(req.body, null, 2));
+    res.status(200).json({ message: "Test endpoint working", body: req.body });
+  });
+  
   // Flow meter webhook - receives pour data from ESP32
   app.post('/api/webhooks/pour', async (req, res) => {
     try {
-      console.log('Webhook payload received:', JSON.stringify(req.body, null, 2));
-      
       // Support both device_id (ESP32) and tap_id (direct) formats
       const { device_id, tap_id, datetime, total_volume_ml } = req.body;
       
