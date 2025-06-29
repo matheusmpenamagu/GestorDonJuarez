@@ -73,6 +73,7 @@ export const taps = pgTable("taps", {
   name: varchar("name", { length: 255 }).notNull(),
   posId: integer("pos_id").references(() => pointsOfSale.id),
   currentBeerStyleId: integer("current_beer_style_id").references(() => beerStyles.id),
+  deviceId: integer("device_id").references(() => devices.id), // Reference to ESP32 device
   kegCapacityMl: integer("keg_capacity_ml").default(30000), // Default 30L
   currentVolumeUsedMl: integer("current_volume_used_ml").default(0),
   isActive: boolean("is_active").default(true),
@@ -113,7 +114,7 @@ export const beerStylesRelations = relations(beerStyles, ({ many }) => ({
 }));
 
 export const devicesRelations = relations(devices, ({ many }) => ({
-  // Add device-specific relations if needed in the future
+  taps: many(taps),
 }));
 
 export const tapsRelations = relations(taps, ({ one, many }) => ({
@@ -124,6 +125,10 @@ export const tapsRelations = relations(taps, ({ one, many }) => ({
   currentBeerStyle: one(beerStyles, {
     fields: [taps.currentBeerStyleId],
     references: [beerStyles.id],
+  }),
+  device: one(devices, {
+    fields: [taps.deviceId],
+    references: [devices.id],
   }),
   pourEvents: many(pourEvents),
   kegChangeEvents: many(kegChangeEvents),
@@ -174,6 +179,8 @@ export const insertTapSchema = createInsertSchema(taps).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  deviceId: z.number().optional(),
 });
 
 export const insertPourEventSchema = createInsertSchema(pourEvents).omit({
@@ -206,6 +213,7 @@ export type InsertKegChangeEvent = z.infer<typeof insertKegChangeEventSchema>;
 export type TapWithRelations = Tap & {
   pointOfSale?: PointOfSale;
   currentBeerStyle?: BeerStyle;
+  device?: Device;
   currentVolumeAvailableMl: number;
   lastPourEvent?: PourEvent & { datetime: string };
 };

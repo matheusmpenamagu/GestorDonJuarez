@@ -200,10 +200,12 @@ export class DatabaseStorage implements IStorage {
         tap: taps,
         pointOfSale: pointsOfSale,
         currentBeerStyle: beerStyles,
+        device: devices,
       })
       .from(taps)
       .leftJoin(pointsOfSale, eq(taps.posId, pointsOfSale.id))
       .leftJoin(beerStyles, eq(taps.currentBeerStyleId, beerStyles.id))
+      .leftJoin(devices, eq(taps.deviceId, devices.id))
       .where(eq(taps.isActive, true))
       .orderBy(taps.id);
 
