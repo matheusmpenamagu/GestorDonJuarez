@@ -115,7 +115,7 @@ export function RealtimePours() {
                           <span className="text-white text-sm font-bold">{pour.tap.id}</span>
                         </div>
                         <span className="text-sm text-foreground">
-                          {pour.tap.name || `Torneira ${pour.tap.id}`}
+                          {pour.tapName || pour.tap.name || `Torneira ${pour.tap.id}`}
                         </span>
                       </div>
                     </td>
@@ -123,10 +123,10 @@ export function RealtimePours() {
                       {pour.pourVolumeMl}ml
                     </td>
                     <td className="py-3 text-sm text-muted-foreground">
-                      {pour.tap.pointOfSale?.name || "N/A"}
+                      {pour.posName || pour.tap.pointOfSale?.name || "N/A"}
                     </td>
                     <td className="py-3 text-sm text-muted-foreground">
-                      {pour.tap.currentBeerStyle?.name || "N/A"}
+                      {pour.beerStyleName || pour.tap.currentBeerStyle?.name || "N/A"}
                     </td>
                   </tr>
                 ))}

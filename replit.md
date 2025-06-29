@@ -171,6 +171,10 @@ This is a Brazilian craft beer monitoring system designed for real-time tracking
 - ✓ Corrected volume measurement recording to match ESP32 readings exactly
 - ✓ Fixed webhook storage logic to treat each reading as individual consumption
 - ✓ Historical data now displays accurate volumes matching sensor inputs
+- ✓ Implemented snapshot capture of tap and beer style data at webhook moment
+- ✓ Added new database fields for storing contextual information with each pour event
+- ✓ Dashboard and history now show information from webhook capture time
+- ✓ Enhanced data integrity by preserving tap/beer configurations at consumption time
 
 ## User Preferences
 
