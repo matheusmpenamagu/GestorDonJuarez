@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { setupWebSocket } from "./websocket";
+import { setupWebSocket, broadcastUpdate } from "./websocket";
 import { storage } from "./storage";
 // Removed Replit Auth for demo purposes
 import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, insertPointOfSaleSchema, insertBeerStyleSchema, insertDeviceSchema } from "@shared/schema";
@@ -437,6 +437,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting device:", error);
       res.status(500).json({ message: "Error deleting device" });
+    }
+  });
+
+  // Webhook endpoints for ESP32 devices
+  
+  // Webhook for beer consumption data
+  app.post('/api/webhooks/pour', async (req, res) => {
+    try {
+      const { device_id, datetime, total_volume_ml } = req.body;
+      
+      // Validate required fields
+      if (!device_id || !datetime || total_volume_ml === undefined) {
+        return res.status(400).json({ 
+          message: "Missing required fields: device_id, datetime, total_volume_ml" 
+        });
+      }
+
+      // Find the device and associated tap
+      const device = await storage.getDevice(device_id);
+      if (!device) {
+        return res.status(404).json({ message: "Device not found" });
+      }
+
+      // Find the tap associated with this device
+      const taps = await storage.getTaps();
+      const tap = taps.find(t => t.deviceId === device_id);
+      if (!tap) {
+        return res.status(404).json({ message: "No tap found for this device" });
+      }
+
+      // Get the last pour event for this tap to calculate volume difference
+      const lastPourEvents = await storage.getPourEvents(undefined, undefined, tap.id);
+      const lastEvent = lastPourEvents[0]; // Most recent event
+      
+      const previousTotalVolume = lastEvent ? lastEvent.totalVolumeMl : 0;
+      const pourVolumeMl = total_volume_ml - previousTotalVolume;
+
+      // Only create event if there's actual consumption (positive difference)
+      if (pourVolumeMl > 0) {
+        // Create pour event
+        const pourEvent = await storage.createPourEvent({
+          tapId: tap.id,
+          totalVolumeMl: total_volume_ml,
+          pourVolumeMl: pourVolumeMl,
+          datetime: fromSaoPauloTime(datetime)
+        });
+
+        // Update tap's current volume used
+        await storage.updateTap(tap.id, {
+          currentVolumeUsedMl: total_volume_ml
+        });
+
+        // Broadcast update via WebSocket
+        await broadcastUpdate('pour_event', {
+          event: pourEvent,
+          tap: tap
+        });
+
+        console.log(`Pour event recorded: Tap ${tap.name}, ${pourVolumeMl}ml consumed`);
+        res.json({ success: true, pourVolumeMl });
+      } else {
+        // No consumption detected, just acknowledge
+        res.json({ success: true, pourVolumeMl: 0, message: "No consumption detected" });
+      }
+
+    } catch (error) {
+      console.error("Error processing pour webhook:", error);
+      res.status(500).json({ message: "Error processing pour data" });
+    }
+  });
+
+  // Webhook for keg change events
+  app.post('/api/webhooks/keg-change', async (req, res) => {
+    try {
+      const { device_id, datetime } = req.body;
+      
+      // Validate required fields
+      if (!device_id || !datetime) {
+        return res.status(400).json({ 
+          message: "Missing required fields: device_id, datetime" 
+        });
+      }
+
+      // Find the device and associated tap
+      const device = await storage.getDevice(device_id);
+      if (!device) {
+        return res.status(404).json({ message: "Device not found" });
+      }
+
+      // Find the tap associated with this device
+      const taps = await storage.getTaps();
+      const tap = taps.find(t => t.deviceId === device_id);
+      if (!tap) {
+        return res.status(404).json({ message: "No tap found for this device" });
+      }
+
+      // Create keg change event
+      const kegChangeEvent = await storage.createKegChangeEvent({
+        tapId: tap.id,
+        datetime: fromSaoPauloTime(datetime)
+      });
+
+      // Reset tap's volume usage to 0 (new keg)
+      await storage.updateTap(tap.id, {
+        currentVolumeUsedMl: 0
+      });
+
+      // Broadcast update via WebSocket
+      await broadcastUpdate('keg_change', {
+        event: kegChangeEvent,
+        tap: tap
+      });
+
+      console.log(`Keg change recorded: Tap ${tap.name} at ${datetime}`);
+      res.json({ success: true });
+
+    } catch (error) {
+      console.error("Error processing keg change webhook:", error);
+      res.status(500).json({ message: "Error processing keg change data" });
     }
   });
 
