@@ -150,8 +150,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Validate and create the pour event data
         const pourEventData = insertPourEventSchema.parse({
           tapId: targetTapId,
-          totalVolumeMl: newTotalConsumed, // Cumulative total for the tap
-          pourVolumeMl: pourVolumeMl, // Volume consumed in this event
+          totalVolumeMl: pourVolumeMl, // Volume of this individual measurement
+          pourVolumeMl: pourVolumeMl, // Same as totalVolumeMl for individual events
           datetime: pourDate,
         });
 

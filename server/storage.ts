@@ -331,31 +331,29 @@ export class DatabaseStorage implements IStorage {
   
   // Pour Events operations
   async createPourEvent(event: InsertPourEvent): Promise<PourEvent> {
-    // Calculate pour volume from previous total
-    const [previousEvent] = await db
-      .select()
-      .from(pourEvents)
-      .where(eq(pourEvents.tapId, event.tapId))
-      .orderBy(desc(pourEvents.datetime))
-      .limit(1);
-
-    const pourVolumeMl = previousEvent 
-      ? event.totalVolumeMl - previousEvent.totalVolumeMl 
-      : event.totalVolumeMl;
+    // Get current total consumed for this tap
+    const currentTap = await this.getTap(event.tapId);
+    const currentTotalConsumed = currentTap?.currentVolumeUsedMl || 0;
+    
+    // The event.totalVolumeMl now contains the individual pour volume
+    // The event.pourVolumeMl should be the same as totalVolumeMl for individual events
+    const pourVolumeMl = event.totalVolumeMl; // Individual volume from ESP32
+    const newTotalConsumed = currentTotalConsumed + pourVolumeMl; // New cumulative total
 
     const [created] = await db
       .insert(pourEvents)
       .values({
         ...event,
-        pourVolumeMl,
+        totalVolumeMl: pourVolumeMl, // Individual volume for this event
+        pourVolumeMl: pourVolumeMl,   // Same as totalVolumeMl for individual events
       })
       .returning();
 
-    // Update tap's current volume used
+    // Update tap's current volume used (cumulative)
     await db
       .update(taps)
       .set({ 
-        currentVolumeUsedMl: event.totalVolumeMl,
+        currentVolumeUsedMl: newTotalConsumed,
         updatedAt: new Date(),
       })
       .where(eq(taps.id, event.tapId));
