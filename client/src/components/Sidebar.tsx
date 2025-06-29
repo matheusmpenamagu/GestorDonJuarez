@@ -5,7 +5,8 @@ import {
   RefreshCw, 
   Wrench, 
   Store, 
-  Beer 
+  Beer,
+  Smartphone
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,7 @@ const menuItems = [
       { href: "/torneiras", icon: Wrench, label: "Torneiras" },
       { href: "/pontos-venda", icon: Store, label: "Pontos de Venda" },
       { href: "/estilos-cerveja", icon: Beer, label: "Estilos de Cerveja" },
+      { href: "/dispositivos", icon: Smartphone, label: "Dispositivos" },
     ],
   },
 ];

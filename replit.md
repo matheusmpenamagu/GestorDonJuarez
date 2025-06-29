@@ -39,6 +39,7 @@ This is a Brazilian craft beer monitoring system designed for real-time tracking
 - **Users**: Required for Replit Auth integration
 - **Points of Sale**: Physical locations where taps are installed
 - **Beer Styles**: Different types of beer served
+- **Devices**: ESP32 hardware controllers with 5-digit alphanumeric codes
 - **Taps**: Individual beer dispensing points with flow sensors
 - **Pour Events**: Real-time consumption data from ESP32 sensors
 - **Keg Change Events**: Barrel replacement tracking
@@ -140,6 +141,14 @@ This is a Brazilian craft beer monitoring system designed for real-time tracking
 
 ## Changelog
 - June 28, 2025. Initial setup
+- June 29, 2025. Added device management system with ESP32 hardware tracking
+
+## Recent Changes
+- ✓ Device management system implemented with CRUD operations
+- ✓ Added devices table with 5-digit alphanumeric codes
+- ✓ Frontend interface for managing ESP32 devices
+- ✓ Sample devices created (ESP01-ESP05) with realistic descriptions
+- ✓ Integration with sidebar navigation
 
 ## User Preferences
 
