@@ -224,6 +224,26 @@ export default function TapsManagement() {
                   </SelectContent>
                 </Select>
               </div>
+
+              <div>
+                <Label htmlFor="device">Dispositivo ESP32</Label>
+                <Select 
+                  value={formData.deviceId?.toString() || ""} 
+                  onValueChange={(value) => setFormData({ ...formData, deviceId: value ? parseInt(value) : null })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um dispositivo (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhum dispositivo</SelectItem>
+                    {devices?.filter((device: any) => device.isActive).map((device: any) => (
+                      <SelectItem key={device.id} value={device.id.toString()}>
+                        {device.code} - {device.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               
               <div>
                 <Label htmlFor="capacity">Capacidade do Barril (ml)</Label>
@@ -270,6 +290,7 @@ export default function TapsManagement() {
                     <th className="text-left py-3 text-sm font-medium text-muted-foreground">Nome</th>
                     <th className="text-left py-3 text-sm font-medium text-muted-foreground">Ponto de Venda</th>
                     <th className="text-left py-3 text-sm font-medium text-muted-foreground">Estilo</th>
+                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Dispositivo</th>
                     <th className="text-left py-3 text-sm font-medium text-muted-foreground">Status</th>
                     <th className="text-left py-3 text-sm font-medium text-muted-foreground">Ações</th>
                   </tr>
@@ -284,6 +305,16 @@ export default function TapsManagement() {
                       </td>
                       <td className="py-4 text-sm text-muted-foreground">
                         {tap.currentBeerStyle?.name || "N/A"}
+                      </td>
+                      <td className="py-4 text-sm text-muted-foreground">
+                        {tap.device ? (
+                          <div className="flex flex-col">
+                            <span className="font-medium">{tap.device.code}</span>
+                            <span className="text-xs text-muted-foreground">{tap.device.name}</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">Sem dispositivo</span>
+                        )}
                       </td>
                       <td className="py-4">
                         <Badge variant={tap.isActive ? "default" : "secondary"}>
