@@ -112,8 +112,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Validate and create the pour event data
         const pourEventData = insertPourEventSchema.parse({
           tapId: targetTapId,
-          totalVolumeMl: parseInt(total_volume_ml),
-          pourVolumeMl: pourVolumeMl,
+          totalVolumeMl: Math.round(total_volume_ml),
+          pourVolumeMl: Math.round(pourVolumeMl),
           datetime: pourDate,
         });
 
@@ -121,7 +121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Update tap's current volume used
         await storage.updateTap(targetTapId, {
-          currentVolumeUsedMl: total_volume_ml
+          currentVolumeUsedMl: Math.round(total_volume_ml)
         });
 
         // Broadcast update via WebSocket
