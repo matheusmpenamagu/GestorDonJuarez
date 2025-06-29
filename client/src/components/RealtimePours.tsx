@@ -87,7 +87,7 @@ export function RealtimePours() {
       </CardHeader>
       
       <CardContent>
-        {!Array.isArray(recentPours) || recentPours.length === 0 ? (
+        {safePours.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
             Nenhuma atividade recente
           </div>
@@ -104,7 +104,7 @@ export function RealtimePours() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {Array.isArray(recentPours) && recentPours.map((pour) => (
+                {safePours.map((pour) => (
                   <tr key={pour.id} className="hover:bg-muted/50">
                     <td className="py-3 text-sm text-foreground">
                       {formatDateTime(pour.datetime)}

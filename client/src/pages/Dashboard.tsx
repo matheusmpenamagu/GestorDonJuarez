@@ -39,13 +39,17 @@ export default function Dashboard() {
       switch (lastMessage.type) {
         case 'initial_data':
           if (lastMessage.data.stats) setStats(lastMessage.data.stats);
-          if (lastMessage.data.taps) setTaps(lastMessage.data.taps);
+          if (lastMessage.data.taps && Array.isArray(lastMessage.data.taps)) {
+            setTaps(lastMessage.data.taps);
+          }
           break;
         case 'stats_updated':
           if (lastMessage.data) setStats(lastMessage.data);
           break;
         case 'taps_updated':
-          if (lastMessage.data) setTaps(lastMessage.data);
+          if (lastMessage.data && Array.isArray(lastMessage.data)) {
+            setTaps(lastMessage.data);
+          }
           break;
       }
     }
@@ -59,7 +63,7 @@ export default function Dashboard() {
   }, [initialStats, lastMessage]);
 
   useEffect(() => {
-    if (initialTaps && !lastMessage) {
+    if (initialTaps && Array.isArray(initialTaps) && !lastMessage) {
       setTaps(initialTaps);
     }
   }, [initialTaps, lastMessage]);
