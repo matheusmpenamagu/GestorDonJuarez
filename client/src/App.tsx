@@ -12,6 +12,7 @@ import KegChanges from "@/pages/KegChanges";
 import TapsManagement from "@/pages/TapsManagement";
 import POSManagement from "@/pages/POSManagement";
 import BeerStylesManagement from "@/pages/BeerStylesManagement";
+import DevicesManagement from "@/pages/DevicesManagement";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -62,6 +63,11 @@ function Router() {
           <Route path="/estilos-cerveja">
             <Layout>
               <BeerStylesManagement />
+            </Layout>
+          </Route>
+          <Route path="/dispositivos">
+            <Layout>
+              <DevicesManagement />
             </Layout>
           </Route>
         </>

@@ -157,6 +157,42 @@ export class DatabaseStorage implements IStorage {
     await db.delete(beerStyles).where(eq(beerStyles.id, id));
   }
   
+  // Devices operations
+  async getDevices(): Promise<Device[]> {
+    return await db.select().from(devices).orderBy(devices.createdAt);
+  }
+
+  async getDevice(id: number): Promise<Device | undefined> {
+    const [device] = await db.select().from(devices).where(eq(devices.id, id));
+    return device;
+  }
+
+  async getDeviceByCode(code: string): Promise<Device | undefined> {
+    const [device] = await db.select().from(devices).where(eq(devices.code, code));
+    return device;
+  }
+
+  async createDevice(device: InsertDevice): Promise<Device> {
+    const [created] = await db
+      .insert(devices)
+      .values(device)
+      .returning();
+    return created;
+  }
+
+  async updateDevice(id: number, device: Partial<InsertDevice>): Promise<Device> {
+    const [updated] = await db
+      .update(devices)
+      .set({ ...device, updatedAt: new Date() })
+      .where(eq(devices.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteDevice(id: number): Promise<void> {
+    await db.delete(devices).where(eq(devices.id, id));
+  }
+  
   // Taps operations
   async getTaps(): Promise<TapWithRelations[]> {
     const results = await db

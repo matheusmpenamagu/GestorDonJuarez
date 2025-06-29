@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupWebSocket } from "./websocket";
 import { storage } from "./storage";
 // Removed Replit Auth for demo purposes
-import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, insertPointOfSaleSchema, insertBeerStyleSchema } from "@shared/schema";
+import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, insertPointOfSaleSchema, insertBeerStyleSchema, insertDeviceSchema } from "@shared/schema";
 import { z } from "zod";
 import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
@@ -363,6 +363,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting beer style:", error);
       res.status(500).json({ message: "Error deleting beer style" });
+    }
+  });
+
+  // Devices API endpoints
+  
+  // Get all devices
+  app.get('/api/devices', demoAuth, async (req, res) => {
+    try {
+      const devices = await storage.getDevices();
+      res.json(devices);
+    } catch (error) {
+      console.error("Error fetching devices:", error);
+      res.status(500).json({ message: "Error fetching devices" });
+    }
+  });
+
+  // Create new device
+  app.post('/api/devices', demoAuth, async (req, res) => {
+    try {
+      const deviceData = insertDeviceSchema.parse(req.body);
+      const device = await storage.createDevice(deviceData);
+      res.status(201).json(device);
+    } catch (error) {
+      console.error("Error creating device:", error);
+      res.status(500).json({ message: "Error creating device" });
+    }
+  });
+
+  // Update device
+  app.put('/api/devices/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deviceData = insertDeviceSchema.partial().parse(req.body);
+      const device = await storage.updateDevice(id, deviceData);
+      res.json(device);
+    } catch (error) {
+      console.error("Error updating device:", error);
+      res.status(500).json({ message: "Error updating device" });
+    }
+  });
+
+  // Delete device
+  app.delete('/api/devices/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteDevice(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting device:", error);
+      res.status(500).json({ message: "Error deleting device" });
     }
   });
 
