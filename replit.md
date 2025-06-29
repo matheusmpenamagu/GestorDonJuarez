@@ -142,13 +142,16 @@ This is a Brazilian craft beer monitoring system designed for real-time tracking
 ## Changelog
 - June 28, 2025. Initial setup
 - June 29, 2025. Added device management system with ESP32 hardware tracking
+- June 29, 2025. Implemented sensor-to-tap connection system
 
 ## Recent Changes
-- ✓ Device management system implemented with CRUD operations
-- ✓ Added devices table with 5-digit alphanumeric codes
-- ✓ Frontend interface for managing ESP32 devices
-- ✓ Sample devices created (ESP01-ESP05) with realistic descriptions
-- ✓ Integration with sidebar navigation
+- ✓ Sensor-to-tap connection system fully implemented
+- ✓ Database schema updated with deviceId foreign key in taps table
+- ✓ TapsManagement interface updated with device selection dropdown
+- ✓ API endpoints fixed to handle string tap IDs correctly
+- ✓ Zod validation updated to accept nullable deviceId values
+- ✓ Devices inventory reduced to single sensor (KE42H "Sensor Torneira Principal")
+- ✓ Successfully tested connection/disconnection between sensors and taps via interface
 
 ## User Preferences
 
