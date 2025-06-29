@@ -52,10 +52,7 @@ export default function DevicesManagement() {
   // Create device mutation
   const createMutation = useMutation({
     mutationFn: async (data: DeviceFormData) => {
-      return await apiRequest("/api/devices", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return await apiRequest("POST", "/api/devices", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/devices"] });
@@ -67,9 +64,10 @@ export default function DevicesManagement() {
       });
     },
     onError: (error) => {
+      console.error("Erro ao criar dispositivo:", error);
       toast({
         title: "Erro ao criar dispositivo",
-        description: "Ocorreu um erro ao criar o dispositivo.",
+        description: error.message || "Ocorreu um erro ao criar o dispositivo.",
         variant: "destructive",
       });
     },
@@ -78,10 +76,7 @@ export default function DevicesManagement() {
   // Update device mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: DeviceFormData }) => {
-      return await apiRequest(`/api/devices/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
+      return await apiRequest("PUT", `/api/devices/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/devices"] });
@@ -94,9 +89,10 @@ export default function DevicesManagement() {
       });
     },
     onError: (error) => {
+      console.error("Erro ao atualizar dispositivo:", error);
       toast({
         title: "Erro ao atualizar dispositivo",
-        description: "Ocorreu um erro ao atualizar o dispositivo.",
+        description: error.message || "Ocorreu um erro ao atualizar o dispositivo.",
         variant: "destructive",
       });
     },
@@ -105,9 +101,7 @@ export default function DevicesManagement() {
   // Delete device mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/devices/${id}`, {
-        method: "DELETE",
-      });
+      return await apiRequest("DELETE", `/api/devices/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/devices"] });
@@ -137,16 +131,23 @@ export default function DevicesManagement() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log("Submitting form data:", formData);
+    console.log("Editing device:", editingDevice);
+    
     // Validate form data
     try {
-      insertDeviceSchema.parse(formData);
+      const validatedData = insertDeviceSchema.parse(formData);
+      console.log("Validated data:", validatedData);
       
       if (editingDevice) {
+        console.log("Updating device with ID:", editingDevice.id);
         updateMutation.mutate({ id: editingDevice.id, data: formData });
       } else {
+        console.log("Creating new device");
         createMutation.mutate(formData);
       }
     } catch (error) {
+      console.error("Validation error:", error);
       toast({
         title: "Erro de validação",
         description: "Por favor, verifique os dados informados.",
