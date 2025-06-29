@@ -280,11 +280,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTap(tap: InsertTap): Promise<Tap> {
+    // Check if device is already assigned to another tap
+    if (tap.deviceId) {
+      const existingTap = await db
+        .select()
+        .from(taps)
+        .where(eq(taps.deviceId, tap.deviceId))
+        .limit(1);
+      
+      if (existingTap.length > 0) {
+        throw new Error(`Device is already assigned to tap: ${existingTap[0].name}`);
+      }
+    }
+
     const [created] = await db.insert(taps).values(tap).returning();
     return created;
   }
 
   async updateTap(id: number, tap: Partial<InsertTap>): Promise<Tap> {
+    // Check if device is already assigned to another tap
+    if (tap.deviceId) {
+      const existingTap = await db
+        .select()
+        .from(taps)
+        .where(eq(taps.deviceId, tap.deviceId))
+        .limit(1);
+      
+      if (existingTap.length > 0 && existingTap[0].id !== id) {
+        throw new Error(`Device is already assigned to tap: ${existingTap[0].name}`);
+      }
+    }
+
     const [updated] = await db
       .update(taps)
       .set({ ...tap, updatedAt: new Date() })

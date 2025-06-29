@@ -63,9 +63,14 @@ export default function TapsManagement() {
       });
     },
     onError: (error) => {
+      let errorMessage = "Erro ao criar torneira";
+      if (error.message.includes("Device is already assigned")) {
+        errorMessage = "Este dispositivo já está sendo usado por outra torneira";
+      }
+      
       toast({
         title: "Erro",
-        description: "Erro ao criar torneira",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -85,9 +90,14 @@ export default function TapsManagement() {
       });
     },
     onError: (error) => {
+      let errorMessage = "Erro ao atualizar torneira";
+      if (error.message.includes("Device is already assigned")) {
+        errorMessage = "Este dispositivo já está sendo usado por outra torneira";
+      }
+      
       toast({
         title: "Erro",
-        description: "Erro ao atualizar torneira",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -236,11 +246,23 @@ export default function TapsManagement() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="0">Nenhum dispositivo</SelectItem>
-                    {devices?.filter((device: any) => device.isActive).map((device: any) => (
-                      <SelectItem key={device.id} value={device.id.toString()}>
-                        {device.code} - {device.name}
-                      </SelectItem>
-                    ))}
+                    {devices?.filter((device: any) => device.isActive).map((device: any) => {
+                      // Check if device is already assigned to another tap
+                      const isAssigned = taps?.some((tap: any) => 
+                        tap.deviceId === device.id && tap.id !== editingTap?.id
+                      );
+                      
+                      return (
+                        <SelectItem 
+                          key={device.id} 
+                          value={device.id.toString()}
+                          disabled={isAssigned}
+                        >
+                          {device.code} - {device.name}
+                          {isAssigned && " (Em uso)"}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
