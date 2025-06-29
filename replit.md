@@ -175,6 +175,9 @@ This is a Brazilian craft beer monitoring system designed for real-time tracking
 - ✓ Added new database fields for storing contextual information with each pour event
 - ✓ Dashboard and history now show information from webhook capture time
 - ✓ Enhanced data integrity by preserving tap/beer configurations at consumption time
+- ✓ Simplified webhook interface to receive only essential data (datetime, device_id, volume)
+- ✓ Storage layer automatically queries database for contextual information during save
+- ✓ Clean separation between webhook input and business logic for data capture
 
 ## User Preferences
 

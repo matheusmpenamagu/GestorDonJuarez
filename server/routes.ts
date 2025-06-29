@@ -147,22 +147,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const currentTotalConsumed = currentTap?.currentVolumeUsedMl || 0;
         const newTotalConsumed = currentTotalConsumed + pourVolumeMl;
         
-        // Capture snapshot information at the moment of the webhook
-        const tapName = currentTap?.name || '';
-        const posName = currentTap?.pointOfSale?.name || '';
-        const beerStyleName = currentTap?.currentBeerStyle?.name || '';
-        const deviceCode = device_id || '';
-        
-        // Validate and create the pour event data with snapshot information
+        // Validate and create the pour event data (snapshot information will be captured in storage)
         const pourEventData = insertPourEventSchema.parse({
           tapId: targetTapId,
           totalVolumeMl: pourVolumeMl, // Volume of this individual measurement
           pourVolumeMl: pourVolumeMl, // Same as totalVolumeMl for individual events
           datetime: pourDate,
-          tapName: tapName,
-          posName: posName,
-          beerStyleName: beerStyleName,
-          deviceCode: deviceCode,
         });
 
         const pourEvent = await storage.createPourEvent(pourEventData);

@@ -331,7 +331,7 @@ export class DatabaseStorage implements IStorage {
   
   // Pour Events operations
   async createPourEvent(event: InsertPourEvent): Promise<PourEvent> {
-    // Get current total consumed for this tap
+    // Get current tap information to capture snapshot data
     const currentTap = await this.getTap(event.tapId);
     const currentTotalConsumed = currentTap?.currentVolumeUsedMl || 0;
     
@@ -340,13 +340,20 @@ export class DatabaseStorage implements IStorage {
     const pourVolumeMl = event.totalVolumeMl; // Individual volume from ESP32
     const newTotalConsumed = currentTotalConsumed + pourVolumeMl; // New cumulative total
 
+    // Capture snapshot information at the moment of creation
+    const eventWithSnapshot = {
+      ...event,
+      totalVolumeMl: pourVolumeMl, // Individual volume for this event
+      pourVolumeMl: pourVolumeMl,   // Same as totalVolumeMl for individual events
+      tapName: currentTap?.name || null,
+      posName: currentTap?.pointOfSale?.name || null,
+      beerStyleName: currentTap?.currentBeerStyle?.name || null,
+      deviceCode: currentTap?.device?.code || null,
+    };
+
     const [created] = await db
       .insert(pourEvents)
-      .values({
-        ...event,
-        totalVolumeMl: pourVolumeMl, // Individual volume for this event
-        pourVolumeMl: pourVolumeMl,   // Same as totalVolumeMl for individual events
-      })
+      .values(eventWithSnapshot)
       .returning();
 
     // Update tap's current volume used (cumulative)
