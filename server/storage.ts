@@ -402,11 +402,17 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(pourEvents.datetime))
       .limit(limit);
 
-    return results.map((pourEvent) => ({
+    // Filter out events that don't have snapshot data captured
+    const validEvents = results.filter(event => {
+      // Only keep events that have captured snapshot data (tapName is not null)
+      return event.tapName !== null && event.tapName !== undefined;
+    });
+
+    return validEvents.map((pourEvent) => ({
       ...pourEvent,
       tap: {
         id: pourEvent.tapId,
-        name: pourEvent.tapName || '',
+        name: pourEvent.tapName || `Torneira ${pourEvent.tapId}`,
         pointOfSale: pourEvent.posName ? { name: pourEvent.posName } : undefined,
         currentBeerStyle: pourEvent.beerStyleName ? { name: pourEvent.beerStyleName } : undefined,
       },
