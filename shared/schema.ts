@@ -58,7 +58,7 @@ export const beerStyles = pgTable("beer_styles", {
 
 // Taps table
 export const taps = pgTable("taps", {
-  id: varchar("id", { length: 5 }).primaryKey(), // 5-digit alphanumeric code
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   posId: integer("pos_id").references(() => pointsOfSale.id),
   currentBeerStyleId: integer("current_beer_style_id").references(() => beerStyles.id),
@@ -72,7 +72,7 @@ export const taps = pgTable("taps", {
 // Pour Events table (webhook data from ESP32)
 export const pourEvents = pgTable("pour_events", {
   id: serial("id").primaryKey(),
-  tapId: varchar("tap_id", { length: 5 }).references(() => taps.id).notNull(),
+  tapId: integer("tap_id").references(() => taps.id).notNull(),
   totalVolumeMl: integer("total_volume_ml").notNull(),
   pourVolumeMl: integer("pour_volume_ml").notNull(), // Calculated difference
   datetime: timestamp("datetime").notNull(),
@@ -82,7 +82,7 @@ export const pourEvents = pgTable("pour_events", {
 // Keg Change Events table (webhook data for barrel changes)
 export const kegChangeEvents = pgTable("keg_change_events", {
   id: serial("id").primaryKey(),
-  tapId: varchar("tap_id", { length: 5 }).references(() => taps.id).notNull(),
+  tapId: integer("tap_id").references(() => taps.id).notNull(),
   previousVolumeMl: integer("previous_volume_ml"), // Volume remaining before change
   datetime: timestamp("datetime").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -150,11 +150,6 @@ export const insertBeerStyleSchema = createInsertSchema(beerStyles).omit({
 });
 
 export const insertTapSchema = createInsertSchema(taps).omit({
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertTapWithoutIdSchema = createInsertSchema(taps).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -179,7 +174,6 @@ export type BeerStyle = typeof beerStyles.$inferSelect;
 export type InsertBeerStyle = z.infer<typeof insertBeerStyleSchema>;
 export type Tap = typeof taps.$inferSelect;
 export type InsertTap = z.infer<typeof insertTapSchema>;
-export type InsertTapWithoutId = z.infer<typeof insertTapWithoutIdSchema>;
 export type PourEvent = typeof pourEvents.$inferSelect;
 export type InsertPourEvent = z.infer<typeof insertPourEventSchema>;
 export type KegChangeEvent = typeof kegChangeEvents.$inferSelect;
