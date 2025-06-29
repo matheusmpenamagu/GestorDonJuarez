@@ -162,6 +162,9 @@ This is a Brazilian craft beer monitoring system designed for real-time tracking
 - ✓ Enhanced ESP32 webhook compatibility with CORS headers and timeout protection
 - ✓ Comprehensive error handling and logging for webhook debugging
 - ✓ Robust data validation preventing malformed requests from causing crashes
+- ✓ Corrected webhook logic to treat each ESP32 reading as independent consumption
+- ✓ Every volume reading now registers as consumption regardless of previous values
+- ✓ Accurate cumulative volume tracking with proper event logging
 
 ## User Preferences
 
