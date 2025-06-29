@@ -58,7 +58,7 @@ export interface IStorage {
   getTaps(): Promise<TapWithRelations[]>;
   getTap(id: number): Promise<TapWithRelations | undefined>;
   createTap(tap: InsertTap): Promise<Tap>;
-  updateTap(id: string, tap: Partial<InsertTap>): Promise<Tap>;
+  updateTap(id: number, tap: Partial<InsertTap>): Promise<Tap>;
   deleteTap(id: number): Promise<void>;
   
   // Pour Events operations
@@ -284,7 +284,7 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async updateTap(id: string, tap: Partial<InsertTap>): Promise<Tap> {
+  async updateTap(id: number, tap: Partial<InsertTap>): Promise<Tap> {
     const [updated] = await db
       .update(taps)
       .set({ ...tap, updatedAt: new Date() })

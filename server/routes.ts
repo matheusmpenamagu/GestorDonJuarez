@@ -255,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/taps/:id', demoAuth, async (req, res) => {
     try {
-      const id = req.params.id; // Keep as string since tap IDs are strings
+      const id = parseInt(req.params.id); // Convert to integer
       const tapData = insertTapSchema.partial().parse(req.body);
       const tap = await storage.updateTap(id, tapData);
       res.json(tap);
