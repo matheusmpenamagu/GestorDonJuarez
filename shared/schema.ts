@@ -88,6 +88,11 @@ export const pourEvents = pgTable("pour_events", {
   totalVolumeMl: integer("total_volume_ml").notNull(),
   pourVolumeMl: integer("pour_volume_ml").notNull(), // Calculated difference
   datetime: timestamp("datetime").notNull(),
+  // Snapshot data captured at the moment of the webhook
+  tapName: varchar("tap_name"), // Nome da torneira no momento do webhook
+  posName: varchar("pos_name"), // Nome do ponto de venda no momento do webhook
+  beerStyleName: varchar("beer_style_name"), // Nome do estilo de chope no momento do webhook
+  deviceCode: varchar("device_code"), // Código do dispositivo no momento do webhook
   createdAt: timestamp("created_at").defaultNow(),
 });
 

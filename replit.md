@@ -168,6 +168,9 @@ This is a Brazilian craft beer monitoring system designed for real-time tracking
 - ✓ Fixed React component crashes when receiving WebSocket updates
 - ✓ Added robust array validation to prevent white screen errors
 - ✓ Dashboard now updates smoothly without interrupting user experience
+- ✓ Corrected volume measurement recording to match ESP32 readings exactly
+- ✓ Fixed webhook storage logic to treat each reading as individual consumption
+- ✓ Historical data now displays accurate volumes matching sensor inputs
 
 ## User Preferences
 
