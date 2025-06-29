@@ -180,7 +180,7 @@ export const insertTapSchema = createInsertSchema(taps).omit({
   createdAt: true,
   updatedAt: true,
 }).extend({
-  deviceId: z.number().optional(),
+  deviceId: z.number().nullable().optional(),
 });
 
 export const insertPourEventSchema = createInsertSchema(pourEvents).omit({
