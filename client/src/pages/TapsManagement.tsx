@@ -12,6 +12,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Plus, Edit, Trash2 } from "lucide-react";
 
 interface TapFormData {
+  id?: string; // 5-digit alphanumeric code
   name: string;
   posId: number | null;
   currentBeerStyleId: number | null;
@@ -22,6 +23,7 @@ export default function TapsManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTap, setEditingTap] = useState<any>(null);
   const [formData, setFormData] = useState<TapFormData>({
+    id: "",
     name: "",
     posId: null,
     currentBeerStyleId: null,
@@ -31,15 +33,15 @@ export default function TapsManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: taps, isLoading: tapsLoading } = useQuery({
+  const { data: taps = [], isLoading: tapsLoading } = useQuery({
     queryKey: ["/api/taps"],
   });
 
-  const { data: pointsOfSale } = useQuery({
+  const { data: pointsOfSale = [] } = useQuery({
     queryKey: ["/api/points-of-sale"],
   });
 
-  const { data: beerStyles } = useQuery({
+  const { data: beerStyles = [] } = useQuery({
     queryKey: ["/api/beer-styles"],
   });
 
@@ -109,6 +111,7 @@ export default function TapsManagement() {
 
   const resetForm = () => {
     setFormData({
+      id: "",
       name: "",
       posId: null,
       currentBeerStyleId: null,
@@ -130,6 +133,7 @@ export default function TapsManagement() {
   const handleEdit = (tap: any) => {
     setEditingTap(tap);
     setFormData({
+      id: tap.id || "",
       name: tap.name || "",
       posId: tap.posId || null,
       currentBeerStyleId: tap.currentBeerStyleId || null,
@@ -168,6 +172,26 @@ export default function TapsManagement() {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {!editingTap && (
+                <div>
+                  <Label htmlFor="id">Código de Identificação</Label>
+                  <Input
+                    id="id"
+                    value={formData.id}
+                    onChange={(e) => setFormData({ ...formData, id: e.target.value.toUpperCase() })}
+                    placeholder="Ex: TAP01, TOR05"
+                    maxLength={5}
+                    minLength={5}
+                    pattern="[A-Z0-9]{5}"
+                    title="Código de 5 caracteres alfanuméricos (ex: TAP01)"
+                    required
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Código único de 5 caracteres (letras e números)
+                  </p>
+                </div>
+              )}
+              
               <div>
                 <Label htmlFor="name">Nome</Label>
                 <Input
