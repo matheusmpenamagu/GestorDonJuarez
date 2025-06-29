@@ -136,31 +136,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert datetime to proper Date object
       const pourDate = fromSaoPauloTime(datetime);
       
-      // Get the last pour event for this tap to calculate volume difference
-      const lastPourEvents = await storage.getPourEvents(undefined, undefined, targetTapId);
-      const lastEvent = lastPourEvents[0]; // Most recent event
-      
-      const previousTotalVolume = lastEvent ? lastEvent.totalVolumeMl : 0;
-      const pourVolumeMl = total_volume_ml - previousTotalVolume;
+      // The ESP32 reports the volume that flowed out in this reading
+      // We treat this as a direct consumption event, not cumulative
+      const pourVolumeMl = Math.round(total_volume_ml);
 
-      // Only create event if there's actual consumption (positive difference)
+      // Only create event if there's actual volume reported (> 0)
       if (pourVolumeMl > 0) {
+        // Get current total consumed volume for this tap
+        const currentTap = await storage.getTap(targetTapId);
+        const currentTotalConsumed = currentTap?.currentVolumeUsedMl || 0;
+        const newTotalConsumed = currentTotalConsumed + pourVolumeMl;
+        
         // Validate and create the pour event data
         const pourEventData = insertPourEventSchema.parse({
           tapId: targetTapId,
-          totalVolumeMl: Math.round(total_volume_ml),
-          pourVolumeMl: Math.round(pourVolumeMl),
+          totalVolumeMl: newTotalConsumed, // Cumulative total for the tap
+          pourVolumeMl: pourVolumeMl, // Volume consumed in this event
           datetime: pourDate,
         });
 
         const pourEvent = await storage.createPourEvent(pourEventData);
 
-        // Update tap's current volume used
+        // Update tap's current volume used (cumulative)
         await storage.updateTap(targetTapId, {
-          currentVolumeUsedMl: Math.round(total_volume_ml)
+          currentVolumeUsedMl: newTotalConsumed
         });
 
-        console.log(`Pour event created: Tap ${targetTapId}, ${pourVolumeMl}ml consumed at ${toSaoPauloTime(pourDate)}`);
+        console.log(`Pour event created: Tap ${targetTapId}, ${pourVolumeMl}ml consumed at ${toSaoPauloTime(pourDate)} (Total: ${newTotalConsumed}ml)`);
         
         // Send response first, then broadcast update
         res.json({ success: true, event: pourEvent, pourVolumeMl });
@@ -170,9 +172,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('WebSocket broadcast error:', err)
         );
       } else {
-        // No consumption detected, just acknowledge
-        console.log(`No consumption detected: Tap ${targetTapId}, total_volume: ${total_volume_ml}ml`);
-        res.json({ success: true, pourVolumeMl: 0, message: "No consumption detected" });
+        // No volume reported, just acknowledge
+        console.log(`No volume reported: Tap ${targetTapId}, volume: ${total_volume_ml}ml`);
+        res.json({ success: true, pourVolumeMl: 0, message: "No volume reported" });
       }
       
     } catch (error) {
