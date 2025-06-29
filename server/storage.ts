@@ -285,7 +285,10 @@ export class DatabaseStorage implements IStorage {
       const existingTap = await db
         .select()
         .from(taps)
-        .where(eq(taps.deviceId, tap.deviceId))
+        .where(and(
+          eq(taps.deviceId, tap.deviceId),
+          eq(taps.isActive, true)
+        ))
         .limit(1);
       
       if (existingTap.length > 0) {
@@ -303,7 +306,10 @@ export class DatabaseStorage implements IStorage {
       const existingTap = await db
         .select()
         .from(taps)
-        .where(eq(taps.deviceId, tap.deviceId))
+        .where(and(
+          eq(taps.deviceId, tap.deviceId),
+          eq(taps.isActive, true)
+        ))
         .limit(1);
       
       if (existingTap.length > 0 && existingTap[0].id !== id) {

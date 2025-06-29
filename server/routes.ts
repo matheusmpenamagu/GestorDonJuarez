@@ -379,6 +379,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get available devices (not assigned to any tap)
+  app.get('/api/devices/available', demoAuth, async (req, res) => {
+    try {
+      const excludeTapId = req.query.excludeTapId ? parseInt(req.query.excludeTapId as string) : null;
+      const devices = await storage.getDevices();
+      const taps = await storage.getTaps();
+      
+      const availableDevices = devices.filter(device => {
+        if (!device.isActive) return false;
+        
+        const assignedTap = taps.find(tap => tap.deviceId === device.id);
+        if (!assignedTap) return true;
+        
+        // Include device if it's assigned to the tap we're editing
+        return excludeTapId && assignedTap.id === excludeTapId;
+      });
+      
+      res.json(availableDevices);
+    } catch (error) {
+      console.error("Error fetching available devices:", error);
+      res.status(500).json({ message: "Error fetching available devices" });
+    }
+  });
+
   // Create new device
   app.post('/api/devices', demoAuth, async (req, res) => {
     try {
