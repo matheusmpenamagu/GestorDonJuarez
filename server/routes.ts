@@ -45,6 +45,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('Test webhook called with:', JSON.stringify(req.body, null, 2));
     res.status(200).json({ message: "Test endpoint working", body: req.body });
   });
+
+  // Simple health check endpoint for ESP32
+  app.get('/api/health', (req, res) => {
+    res.status(200).json({ 
+      status: "OK", 
+      timestamp: new Date().toISOString(),
+      timezone: "America/Sao_Paulo"
+    });
+  });
   
   // Flow meter webhook - receives pour data from ESP32
   app.post('/api/webhooks/pour', async (req, res) => {
@@ -124,12 +133,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currentVolumeUsedMl: Math.round(total_volume_ml)
         });
 
-        // Broadcast update via WebSocket
-        await broadcastUpdate('pour_event', pourEvent);
-        
         console.log(`Pour event created: Tap ${targetTapId}, ${pourVolumeMl}ml consumed at ${toSaoPauloTime(pourDate)}`);
         
+        // Send response first, then broadcast update
         res.json({ success: true, event: pourEvent, pourVolumeMl });
+        
+        // Broadcast update via WebSocket (async, don't wait)
+        broadcastUpdate('pour_event', pourEvent).catch(err => 
+          console.error('WebSocket broadcast error:', err)
+        );
       } else {
         // No consumption detected, just acknowledge
         console.log(`No consumption detected: Tap ${targetTapId}, total_volume: ${total_volume_ml}ml`);
