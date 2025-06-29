@@ -64,15 +64,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // If device_id is provided, find the associated tap
       if (device_id && !tap_id) {
-        const device = await storage.getDevice(device_id);
+        let device;
+        
+        // Try to find device by code (string) or by ID (numeric)
+        if (typeof device_id === 'string' && isNaN(Number(device_id))) {
+          // Look for device by code first
+          device = await storage.getDeviceByCode(device_id);
+        } else {
+          // Look for device by ID
+          device = await storage.getDevice(Number(device_id));
+        }
+        
         if (!device) {
-          return res.status(404).json({ message: "Device not found" });
+          return res.status(404).json({ 
+            message: `Device not found with ID/code: ${device_id}` 
+          });
         }
 
         const taps = await storage.getTaps();
-        const tap = taps.find(t => t.deviceId === device_id);
+        const tap = taps.find(t => t.deviceId === device.id);
         if (!tap) {
-          return res.status(404).json({ message: "No tap found for this device" });
+          return res.status(404).json({ 
+            message: `No tap found for device: ${device.code} (${device.name})` 
+          });
         }
         targetTapId = tap.id;
       }
