@@ -2,6 +2,7 @@ import {
   users,
   pointsOfSale,
   beerStyles,
+  devices,
   taps,
   pourEvents,
   kegChangeEvents,
@@ -11,6 +12,8 @@ import {
   type InsertPointOfSale,
   type BeerStyle,
   type InsertBeerStyle,
+  type Device,
+  type InsertDevice,
   type Tap,
   type InsertTap,
   type PourEvent,
@@ -42,6 +45,14 @@ export interface IStorage {
   createBeerStyle(style: InsertBeerStyle): Promise<BeerStyle>;
   updateBeerStyle(id: number, style: Partial<InsertBeerStyle>): Promise<BeerStyle>;
   deleteBeerStyle(id: number): Promise<void>;
+  
+  // Devices operations
+  getDevices(): Promise<Device[]>;
+  getDevice(id: number): Promise<Device | undefined>;
+  getDeviceByCode(code: string): Promise<Device | undefined>;
+  createDevice(device: InsertDevice): Promise<Device>;
+  updateDevice(id: number, device: Partial<InsertDevice>): Promise<Device>;
+  deleteDevice(id: number): Promise<void>;
   
   // Taps operations
   getTaps(): Promise<TapWithRelations[]>;

@@ -56,6 +56,17 @@ export const beerStyles = pgTable("beer_styles", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Devices table (ESP32 hardware controllers)
+export const devices = pgTable("devices", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 5 }).notNull().unique(), // Alphanumeric 5-digit identifier
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Taps table
 export const taps = pgTable("taps", {
   id: serial("id").primaryKey(),
@@ -99,6 +110,10 @@ export const pointsOfSaleRelations = relations(pointsOfSale, ({ many }) => ({
 
 export const beerStylesRelations = relations(beerStyles, ({ many }) => ({
   taps: many(taps),
+}));
+
+export const devicesRelations = relations(devices, ({ many }) => ({
+  // Add device-specific relations if needed in the future
 }));
 
 export const tapsRelations = relations(taps, ({ one, many }) => ({
@@ -149,6 +164,12 @@ export const insertBeerStyleSchema = createInsertSchema(beerStyles).omit({
   updatedAt: true,
 });
 
+export const insertDeviceSchema = createInsertSchema(devices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertTapSchema = createInsertSchema(taps).omit({
   id: true,
   createdAt: true,
@@ -172,6 +193,8 @@ export type PointOfSale = typeof pointsOfSale.$inferSelect;
 export type InsertPointOfSale = z.infer<typeof insertPointOfSaleSchema>;
 export type BeerStyle = typeof beerStyles.$inferSelect;
 export type InsertBeerStyle = z.infer<typeof insertBeerStyleSchema>;
+export type Device = typeof devices.$inferSelect;
+export type InsertDevice = z.infer<typeof insertDeviceSchema>;
 export type Tap = typeof taps.$inferSelect;
 export type InsertTap = z.infer<typeof insertTapSchema>;
 export type PourEvent = typeof pourEvents.$inferSelect;
