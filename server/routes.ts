@@ -57,6 +57,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Flow meter webhook - receives pour data from ESP32
   app.post('/api/webhooks/pour', async (req, res) => {
+    // Set response timeout to prevent ESP32 timeouts
+    res.setTimeout(10000); // 10 seconds
+    
     try {
       console.log('Pour webhook received:', JSON.stringify(req.body, null, 2));
       
