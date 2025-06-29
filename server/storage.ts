@@ -363,16 +363,8 @@ export class DatabaseStorage implements IStorage {
 
   async getPourEvents(startDate?: Date, endDate?: Date, tapId?: number): Promise<PourEventWithRelations[]> {
     let query = db
-      .select({
-        pourEvent: pourEvents,
-        tap: taps,
-        pointOfSale: pointsOfSale,
-        currentBeerStyle: beerStyles,
-      })
-      .from(pourEvents)
-      .leftJoin(taps, eq(pourEvents.tapId, taps.id))
-      .leftJoin(pointsOfSale, eq(taps.posId, pointsOfSale.id))
-      .leftJoin(beerStyles, eq(taps.currentBeerStyleId, beerStyles.id));
+      .select()
+      .from(pourEvents);
 
     const conditions = [];
     if (startDate) conditions.push(gte(pourEvents.datetime, startDate));
@@ -385,39 +377,33 @@ export class DatabaseStorage implements IStorage {
 
     const results = await query.orderBy(desc(pourEvents.datetime));
 
-    return results.map(({ pourEvent, tap, pointOfSale, currentBeerStyle }) => ({
+    return results.map((pourEvent) => ({
       ...pourEvent,
       tap: {
-        ...tap!,
-        pointOfSale: pointOfSale || undefined,
-        currentBeerStyle: currentBeerStyle || undefined,
+        id: pourEvent.tapId,
+        name: pourEvent.tapName || '',
+        pointOfSale: pourEvent.posName ? { name: pourEvent.posName } : undefined,
+        currentBeerStyle: pourEvent.beerStyleName ? { name: pourEvent.beerStyleName } : undefined,
       },
-    }));
+    } as PourEventWithRelations));
   }
 
   async getRecentPourEvents(limit = 10): Promise<PourEventWithRelations[]> {
     const results = await db
-      .select({
-        pourEvent: pourEvents,
-        tap: taps,
-        pointOfSale: pointsOfSale,
-        currentBeerStyle: beerStyles,
-      })
+      .select()
       .from(pourEvents)
-      .leftJoin(taps, eq(pourEvents.tapId, taps.id))
-      .leftJoin(pointsOfSale, eq(taps.posId, pointsOfSale.id))
-      .leftJoin(beerStyles, eq(taps.currentBeerStyleId, beerStyles.id))
       .orderBy(desc(pourEvents.datetime))
       .limit(limit);
 
-    return results.map(({ pourEvent, tap, pointOfSale, currentBeerStyle }) => ({
+    return results.map((pourEvent) => ({
       ...pourEvent,
       tap: {
-        ...tap!,
-        pointOfSale: pointOfSale || undefined,
-        currentBeerStyle: currentBeerStyle || undefined,
+        id: pourEvent.tapId,
+        name: pourEvent.tapName || '',
+        pointOfSale: pourEvent.posName ? { name: pourEvent.posName } : undefined,
+        currentBeerStyle: pourEvent.beerStyleName ? { name: pourEvent.beerStyleName } : undefined,
       },
-    }));
+    } as PourEventWithRelations));
   }
   
   // Keg Change Events operations

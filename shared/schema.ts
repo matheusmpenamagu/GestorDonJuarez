@@ -224,8 +224,10 @@ export type TapWithRelations = Tap & {
 };
 
 export type PourEventWithRelations = PourEvent & {
-  tap: Tap & {
-    pointOfSale?: PointOfSale;
-    currentBeerStyle?: BeerStyle;
+  tap: {
+    id: number;
+    name: string;
+    pointOfSale?: { name: string };
+    currentBeerStyle?: { name: string };
   };
 };
