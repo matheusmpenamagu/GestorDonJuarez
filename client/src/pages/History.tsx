@@ -93,6 +93,36 @@ export default function History() {
     return type === "pour" ? "bg-primary" : "bg-green-600";
   };
 
+  const formatDateTime = (datetime: string) => {
+    try {
+      // Try parsing the datetime string
+      let date: Date;
+      
+      if (datetime.includes('T')) {
+        // Already in ISO format
+        date = parseISO(datetime);
+      } else if (datetime.includes(' ')) {
+        // Format like "2024-01-01 12:00:00"
+        date = parseISO(datetime.replace(' ', 'T'));
+      } else {
+        // Fallback
+        date = new Date(datetime);
+      }
+      
+      if (isNaN(date.getTime())) {
+        return { date: 'Data inválida', time: 'Hora inválida' };
+      }
+      
+      return {
+        date: format(date, "dd/MM/yyyy", { locale: ptBR }),
+        time: format(date, "HH:mm:ss", { locale: ptBR })
+      };
+    } catch (error) {
+      console.error('Error formatting datetime:', datetime, error);
+      return { date: 'Data inválida', time: 'Hora inválida' };
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -254,20 +284,15 @@ export default function History() {
                             </div>
 
                             <div className="text-right">
-                              <p className="text-sm font-medium">
-                                {format(
-                                  parseISO(event.datetime.replace(" ", "T")),
-                                  "dd/MM/yyyy",
-                                  { locale: ptBR },
-                                )}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {format(
-                                  parseISO(event.datetime.replace(" ", "T")),
-                                  "HH:mm:ss",
-                                  { locale: ptBR },
-                                )}
-                              </p>
+                              {(() => {
+                                const { date, time } = formatDateTime(event.datetime);
+                                return (
+                                  <>
+                                    <p className="text-sm font-medium">{date}</p>
+                                    <p className="text-xs text-muted-foreground">{time}</p>
+                                  </>
+                                );
+                              })()}
                             </div>
                           </div>
                         </div>
