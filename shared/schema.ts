@@ -52,6 +52,7 @@ export const beerStyles = pgTable("beer_styles", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
+  ebcColor: integer("ebc_color"), // EBC color value (0-80+ range)
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

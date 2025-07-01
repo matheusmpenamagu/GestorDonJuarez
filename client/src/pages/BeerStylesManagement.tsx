@@ -6,26 +6,53 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Plus, Beer, MoreVertical, Edit, Trash2 } from "lucide-react";
+import { Plus, Beer, MoreVertical, Edit, Trash2, Palette } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface BeerStyleFormData {
   name: string;
   description: string;
+  ebcColor: number | null;
 }
 
-const colorClasses = [
-  "bg-amber-500",
-  "bg-yellow-500", 
-  "bg-orange-500",
-  "bg-red-500",
-  "bg-purple-500",
-  "bg-blue-500",
-  "bg-green-500",
-  "bg-pink-500",
+// EBC Color Scale: European Brewery Convention color mapping
+const ebcColors = [
+  { value: 2, name: "Palha", color: "#FFE699", description: "Cerveja muito clara, cor de palha" },
+  { value: 4, name: "Amarelo claro", color: "#FFD700", description: "Cor dourada clara" },
+  { value: 6, name: "Dourado", color: "#DAA520", description: "Dourado típico de lagers" },
+  { value: 8, name: "Âmbar claro", color: "#CD853F", description: "Âmbar claro, ales douradas" },
+  { value: 12, name: "Âmbar", color: "#B8860B", description: "Âmbar médio, IPAs e ales" },
+  { value: 16, name: "Cobre", color: "#B87333", description: "Cor de cobre, brown ales" },
+  { value: 20, name: "Marrom claro", color: "#8B4513", description: "Marrom claro, porters" },
+  { value: 30, name: "Marrom", color: "#654321", description: "Marrom escuro, stouts" },
+  { value: 40, name: "Marrom escuro", color: "#3C2415", description: "Muito escuro, imperial stouts" },
+  { value: 80, name: "Preto", color: "#1C1C1C", description: "Preto opaco, stouts robustos" },
 ];
+
+const getEbcColorStyle = (ebcValue: number | null) => {
+  if (!ebcValue) return { backgroundColor: "#f3f4f6" };
+  
+  const colorRange = ebcColors.find((color, index) => {
+    const nextColor = ebcColors[index + 1];
+    return ebcValue <= color.value || !nextColor;
+  });
+  
+  return { backgroundColor: colorRange?.color || "#f3f4f6" };
+};
+
+const getEbcColorName = (ebcValue: number | null) => {
+  if (!ebcValue) return "Não definido";
+  
+  const colorRange = ebcColors.find((color, index) => {
+    const nextColor = ebcColors[index + 1];
+    return ebcValue <= color.value || !nextColor;
+  });
+  
+  return colorRange?.name || "Personalizado";
+};
 
 export default function BeerStylesManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -33,6 +60,7 @@ export default function BeerStylesManagement() {
   const [formData, setFormData] = useState<BeerStyleFormData>({
     name: "",
     description: "",
+    ebcColor: null,
   });
 
   const { toast } = useToast();
