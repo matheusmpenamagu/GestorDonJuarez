@@ -31,7 +31,7 @@ import {
   type EmployeeWithRelations,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
+import { eq, desc, and, gte, lte, sql, sum } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -408,12 +408,9 @@ export class DatabaseStorage implements IStorage {
   async createPourEvent(event: InsertPourEvent): Promise<PourEvent> {
     // Get current tap information to capture snapshot data
     const currentTap = await this.getTap(event.tapId);
-    const currentTotalConsumed = currentTap?.currentVolumeUsedMl || 0;
     
-    // The event.totalVolumeMl now contains the individual pour volume
-    // The event.pourVolumeMl should be the same as totalVolumeMl for individual events
-    const pourVolumeMl = event.totalVolumeMl; // Individual volume from ESP32
-    const newTotalConsumed = currentTotalConsumed + pourVolumeMl; // New cumulative total
+    // The event.totalVolumeMl contains the individual pour volume from ESP32
+    const pourVolumeMl = event.totalVolumeMl;
 
     // Capture snapshot information at the moment of creation
     const eventWithSnapshot = {
@@ -430,15 +427,6 @@ export class DatabaseStorage implements IStorage {
       .insert(pourEvents)
       .values(eventWithSnapshot)
       .returning();
-
-    // Update tap's current volume used (cumulative)
-    await db
-      .update(taps)
-      .set({ 
-        currentVolumeUsedMl: newTotalConsumed,
-        updatedAt: new Date(),
-      })
-      .where(eq(taps.id, event.tapId));
 
     return created;
   }
