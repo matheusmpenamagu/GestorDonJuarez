@@ -6,6 +6,8 @@ import {
   taps,
   pourEvents,
   kegChangeEvents,
+  roles,
+  employees,
   type User,
   type UpsertUser,
   type PointOfSale,
@@ -20,8 +22,13 @@ import {
   type InsertPourEvent,
   type KegChangeEvent,
   type InsertKegChangeEvent,
+  type Role,
+  type InsertRole,
+  type Employee,
+  type InsertEmployee,
   type TapWithRelations,
   type PourEventWithRelations,
+  type EmployeeWithRelations,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
@@ -77,6 +84,21 @@ export interface IStorage {
     weekVolumeLiters: number;
     lowKegs: number;
   }>;
+  
+  // Roles operations
+  getRoles(): Promise<Role[]>;
+  getRole(id: number): Promise<Role | undefined>;
+  createRole(role: InsertRole): Promise<Role>;
+  updateRole(id: number, role: Partial<InsertRole>): Promise<Role>;
+  deleteRole(id: number): Promise<void>;
+  
+  // Employees operations
+  getEmployees(): Promise<EmployeeWithRelations[]>;
+  getEmployee(id: number): Promise<EmployeeWithRelations | undefined>;
+  getEmployeeByEmail(email: string): Promise<EmployeeWithRelations | undefined>;
+  createEmployee(employee: InsertEmployee): Promise<Employee>;
+  updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee>;
+  deleteEmployee(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -514,6 +536,158 @@ export class DatabaseStorage implements IStorage {
       weekVolumeLiters: Math.round((weekVolumeResult.total || 0) / 1000 * 10) / 10,
       lowKegs: lowKegsResult.count || 0,
     };
+  }
+
+  // Roles operations
+  async getRoles(): Promise<Role[]> {
+    return await db.select().from(roles).orderBy(roles.name);
+  }
+
+  async getRole(id: number): Promise<Role | undefined> {
+    const [role] = await db.select().from(roles).where(eq(roles.id, id));
+    return role;
+  }
+
+  async createRole(roleData: InsertRole): Promise<Role> {
+    const [role] = await db
+      .insert(roles)
+      .values(roleData)
+      .returning();
+    return role;
+  }
+
+  async updateRole(id: number, roleData: Partial<InsertRole>): Promise<Role> {
+    const [role] = await db
+      .update(roles)
+      .set({ ...roleData, updatedAt: new Date() })
+      .where(eq(roles.id, id))
+      .returning();
+    return role;
+  }
+
+  async deleteRole(id: number): Promise<void> {
+    await db.delete(roles).where(eq(roles.id, id));
+  }
+
+  // Employees operations
+  async getEmployees(): Promise<EmployeeWithRelations[]> {
+    const result = await db
+      .select({
+        id: employees.id,
+        email: employees.email,
+        password: employees.password,
+        firstName: employees.firstName,
+        lastName: employees.lastName,
+        roleId: employees.roleId,
+        isActive: employees.isActive,
+        createdAt: employees.createdAt,
+        updatedAt: employees.updatedAt,
+        role: {
+          id: roles.id,
+          name: roles.name,
+          description: roles.description,
+          permissions: roles.permissions,
+          createdAt: roles.createdAt,
+          updatedAt: roles.updatedAt,
+        },
+      })
+      .from(employees)
+      .leftJoin(roles, eq(employees.roleId, roles.id))
+      .orderBy(employees.firstName, employees.lastName);
+
+    return result.map(row => ({
+      ...row,
+      role: row.role.id ? row.role : undefined,
+    })) as EmployeeWithRelations[];
+  }
+
+  async getEmployee(id: number): Promise<EmployeeWithRelations | undefined> {
+    const result = await db
+      .select({
+        id: employees.id,
+        email: employees.email,
+        password: employees.password,
+        firstName: employees.firstName,
+        lastName: employees.lastName,
+        roleId: employees.roleId,
+        isActive: employees.isActive,
+        createdAt: employees.createdAt,
+        updatedAt: employees.updatedAt,
+        role: {
+          id: roles.id,
+          name: roles.name,
+          description: roles.description,
+          permissions: roles.permissions,
+          createdAt: roles.createdAt,
+          updatedAt: roles.updatedAt,
+        },
+      })
+      .from(employees)
+      .leftJoin(roles, eq(employees.roleId, roles.id))
+      .where(eq(employees.id, id));
+
+    if (!result.length) return undefined;
+
+    const row = result[0];
+    return {
+      ...row,
+      role: row.role.id ? row.role : undefined,
+    } as EmployeeWithRelations;
+  }
+
+  async getEmployeeByEmail(email: string): Promise<EmployeeWithRelations | undefined> {
+    const result = await db
+      .select({
+        id: employees.id,
+        email: employees.email,
+        password: employees.password,
+        firstName: employees.firstName,
+        lastName: employees.lastName,
+        roleId: employees.roleId,
+        isActive: employees.isActive,
+        createdAt: employees.createdAt,
+        updatedAt: employees.updatedAt,
+        role: {
+          id: roles.id,
+          name: roles.name,
+          description: roles.description,
+          permissions: roles.permissions,
+          createdAt: roles.createdAt,
+          updatedAt: roles.updatedAt,
+        },
+      })
+      .from(employees)
+      .leftJoin(roles, eq(employees.roleId, roles.id))
+      .where(eq(employees.email, email));
+
+    if (!result.length) return undefined;
+
+    const row = result[0];
+    return {
+      ...row,
+      role: row.role.id ? row.role : undefined,
+    } as EmployeeWithRelations;
+  }
+
+  async createEmployee(employeeData: InsertEmployee): Promise<Employee> {
+    const [employee] = await db
+      .insert(employees)
+      .values(employeeData)
+      .returning();
+    return employee;
+  }
+
+  async updateEmployee(id: number, employeeData: Partial<InsertEmployee>): Promise<Employee> {
+    const [employee] = await db
+      .update(employees)
+      .set({ ...employeeData, updatedAt: new Date() })
+      .where(eq(employees.id, id))
+      .returning();
+    return employee;
+  }
+
+  async deleteEmployee(id: number): Promise<void> {
+    await db.delete(employees).where(eq(employees.id, id));
   }
 }
 

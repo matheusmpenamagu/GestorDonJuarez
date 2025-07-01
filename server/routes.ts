@@ -592,7 +592,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ ROLES ROUTES ============
 
+  // Get all roles
+  app.get('/api/roles', demoAuth, async (req, res) => {
+    try {
+      const roles = await storage.getRoles();
+      res.json(roles);
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+      res.status(500).json({ message: "Error fetching roles" });
+    }
+  });
+
+  // Create new role
+  app.post('/api/roles', demoAuth, async (req, res) => {
+    try {
+      const { insertRoleSchema } = await import("@shared/schema");
+      const roleData = insertRoleSchema.parse(req.body);
+      const role = await storage.createRole(roleData);
+      res.status(201).json(role);
+    } catch (error) {
+      console.error("Error creating role:", error);
+      res.status(500).json({ message: "Error creating role" });
+    }
+  });
+
+  // Update role
+  app.put('/api/roles/:id', demoAuth, async (req, res) => {
+    try {
+      const { insertRoleSchema } = await import("@shared/schema");
+      const id = parseInt(req.params.id);
+      const roleData = insertRoleSchema.partial().parse(req.body);
+      const role = await storage.updateRole(id, roleData);
+      res.json(role);
+    } catch (error) {
+      console.error("Error updating role:", error);
+      res.status(500).json({ message: "Error updating role" });
+    }
+  });
+
+  // Delete role
+  app.delete('/api/roles/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteRole(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting role:", error);
+      res.status(500).json({ message: "Error deleting role" });
+    }
+  });
+
+  // ============ EMPLOYEES ROUTES ============
+
+  // Get all employees
+  app.get('/api/employees', demoAuth, async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      res.json(employees);
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      res.status(500).json({ message: "Error fetching employees" });
+    }
+  });
+
+  // Create new employee
+  app.post('/api/employees', demoAuth, async (req, res) => {
+    try {
+      const { insertEmployeeSchema } = await import("@shared/schema");
+      const employeeData = insertEmployeeSchema.parse(req.body);
+      const employee = await storage.createEmployee(employeeData);
+      res.status(201).json(employee);
+    } catch (error) {
+      console.error("Error creating employee:", error);
+      res.status(500).json({ message: "Error creating employee" });
+    }
+  });
+
+  // Update employee
+  app.put('/api/employees/:id', demoAuth, async (req, res) => {
+    try {
+      const { insertEmployeeSchema } = await import("@shared/schema");
+      const id = parseInt(req.params.id);
+      const employeeData = insertEmployeeSchema.partial().parse(req.body);
+      const employee = await storage.updateEmployee(id, employeeData);
+      res.json(employee);
+    } catch (error) {
+      console.error("Error updating employee:", error);
+      res.status(500).json({ message: "Error updating employee" });
+    }
+  });
+
+  // Delete employee
+  app.delete('/api/employees/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteEmployee(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      res.status(500).json({ message: "Error deleting employee" });
+    }
+  });
 
   const httpServer = createServer(app);
   
