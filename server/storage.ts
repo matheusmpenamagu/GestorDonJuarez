@@ -231,36 +231,61 @@ export class DatabaseStorage implements IStorage {
       .where(eq(taps.isActive, true))
       .orderBy(taps.id);
 
-    // Get last pour event for each tap
-    const tapIds = results.map(r => r.tap.id);
-    const lastPourEvents = await Promise.all(
-      tapIds.map(async (tapId) => {
-        const [lastEvent] = await db
+    // Calculate volume for each tap based on last keg change
+    const tapsWithVolume = await Promise.all(
+      results.map(async ({ tap, pointOfSale, currentBeerStyle, device }) => {
+        // Get last pour event for display
+        const [lastPourEvent] = await db
           .select()
           .from(pourEvents)
-          .where(eq(pourEvents.tapId, tapId))
+          .where(eq(pourEvents.tapId, tap.id))
           .orderBy(desc(pourEvents.datetime))
           .limit(1);
-        return { tapId, lastEvent };
+
+        // Get last keg change to determine capacity
+        const [lastKegChange] = await db
+          .select()
+          .from(kegChangeEvents)
+          .where(eq(kegChangeEvents.tapId, tap.id))
+          .orderBy(desc(kegChangeEvents.datetime))
+          .limit(1);
+
+        let currentVolumeAvailableMl = 0;
+        
+        if (lastKegChange) {
+          // Calculate total consumption since last keg change
+          const consumptionResult = await db
+            .select({
+              totalConsumption: sum(pourEvents.pourVolumeMl),
+            })
+            .from(pourEvents)
+            .where(
+              and(
+                eq(pourEvents.tapId, tap.id),
+                gte(pourEvents.datetime, lastKegChange.datetime)
+              )
+            );
+            
+          const totalConsumptionMl = Number(consumptionResult[0]?.totalConsumption || 0);
+          const kegCapacityMl = lastKegChange.kegCapacityLiters * 1000;
+          currentVolumeAvailableMl = Math.max(0, kegCapacityMl - totalConsumptionMl);
+        }
+        
+        return {
+          ...tap,
+          pointOfSale: pointOfSale || undefined,
+          currentBeerStyle: currentBeerStyle || undefined,
+          device: device || undefined,
+          currentVolumeAvailableMl,
+          lastPourEvent: lastPourEvent ? {
+            ...lastPourEvent,
+            datetime: lastPourEvent.datetime.toISOString(),
+          } as any : undefined,
+        };
       })
     );
 
-    return results.map(({ tap, pointOfSale, currentBeerStyle, device }) => {
-      const lastPour = lastPourEvents.find(p => p.tapId === tap.id)?.lastEvent;
-      const currentVolumeAvailableMl = tap.kegCapacityMl! - tap.currentVolumeUsedMl!;
-      
-      return {
-        ...tap,
-        pointOfSale: pointOfSale || undefined,
-        currentBeerStyle: currentBeerStyle || undefined,
-        device: device || undefined,
-        currentVolumeAvailableMl,
-        lastPourEvent: lastPour ? {
-          ...lastPour,
-          datetime: lastPour.datetime.toISOString(),
-        } as any : undefined,
-      };
-    });
+    return tapsWithVolume;
   }
 
   async getTap(id: number): Promise<TapWithRelations | undefined> {
@@ -279,6 +304,7 @@ export class DatabaseStorage implements IStorage {
 
     if (!result) return undefined;
 
+    // Get last pour event
     const [lastEvent] = await db
       .select()
       .from(pourEvents)
@@ -286,7 +312,34 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(pourEvents.datetime))
       .limit(1);
 
-    const currentVolumeAvailableMl = result.tap.kegCapacityMl! - result.tap.currentVolumeUsedMl!;
+    // Get last keg change to calculate volume
+    const [lastKegChange] = await db
+      .select()
+      .from(kegChangeEvents)
+      .where(eq(kegChangeEvents.tapId, id))
+      .orderBy(desc(kegChangeEvents.datetime))
+      .limit(1);
+
+    let currentVolumeAvailableMl = 0;
+    
+    if (lastKegChange) {
+      // Calculate total consumption since last keg change
+      const consumptionResult = await db
+        .select({
+          totalConsumption: sum(pourEvents.pourVolumeMl),
+        })
+        .from(pourEvents)
+        .where(
+          and(
+            eq(pourEvents.tapId, id),
+            gte(pourEvents.datetime, lastKegChange.datetime)
+          )
+        );
+        
+      const totalConsumptionMl = Number(consumptionResult[0]?.totalConsumption || 0);
+      const kegCapacityMl = lastKegChange.kegCapacityLiters * 1000;
+      currentVolumeAvailableMl = Math.max(0, kegCapacityMl - totalConsumptionMl);
+    }
 
     return {
       ...result.tap,

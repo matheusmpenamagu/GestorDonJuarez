@@ -74,8 +74,6 @@ export const taps = pgTable("taps", {
   posId: integer("pos_id").references(() => pointsOfSale.id),
   currentBeerStyleId: integer("current_beer_style_id").references(() => beerStyles.id),
   deviceId: integer("device_id").references(() => devices.id), // Reference to ESP32 device
-  kegCapacityMl: integer("keg_capacity_ml").default(30000), // Default 30L
-  currentVolumeUsedMl: integer("current_volume_used_ml").default(0),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -101,6 +99,7 @@ export const kegChangeEvents = pgTable("keg_change_events", {
   id: serial("id").primaryKey(),
   tapId: integer("tap_id").references(() => taps.id).notNull(),
   previousVolumeMl: integer("previous_volume_ml"), // Volume remaining before change
+  kegCapacityLiters: integer("keg_capacity_liters").notNull(), // 30 or 50 liters
   datetime: timestamp("datetime").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -231,6 +230,8 @@ export const insertPourEventSchema = createInsertSchema(pourEvents).omit({
 export const insertKegChangeEventSchema = createInsertSchema(kegChangeEvents).omit({
   id: true,
   createdAt: true,
+}).extend({
+  kegCapacityLiters: z.number().min(1).max(100), // Allow 30L or 50L keg sizes
 });
 
 export const insertRoleSchema = createInsertSchema(roles).omit({
