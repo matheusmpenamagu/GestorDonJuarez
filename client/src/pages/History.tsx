@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Filter, Beer, RefreshCw, Clock } from "lucide-react";
+import { Filter, Beer, RefreshCw, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -10,9 +10,23 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface TimelineEvent {
   id: number;
@@ -29,6 +43,10 @@ export default function History() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedTap, setSelectedTap] = useState("");
+  const [selectedBeerStyle, setSelectedBeerStyle] = useState("");
+  const [selectedPOS, setSelectedPOS] = useState("");
+  const [selectedDevice, setSelectedDevice] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Get pour events
   const { data: pourEvents = [], isLoading: isLoadingPours } = useQuery({
@@ -62,13 +80,25 @@ export default function History() {
     enabled: true,
   });
 
-  // Get taps for filter
+  // Get filter options
   const { data: taps = [] } = useQuery({
     queryKey: ["/api/taps"],
   });
 
+  const { data: beerStyles = [] } = useQuery({
+    queryKey: ["/api/beer-styles"],
+  });
+
+  const { data: pointsOfSale = [] } = useQuery({
+    queryKey: ["/api/points-of-sale"],
+  });
+
+  const { data: devices = [] } = useQuery({
+    queryKey: ["/api/devices"],
+  });
+
   // Combine and sort events
-  const timelineEvents: TimelineEvent[] = [
+  const allEvents: TimelineEvent[] = [
     ...(Array.isArray(pourEvents) ? pourEvents : []).map((event: any) => ({
       id: event.id,
       type: "pour" as const,
@@ -107,6 +137,26 @@ export default function History() {
     const dateB = parseDate(b.datetime);
     
     return dateB.getTime() - dateA.getTime();
+  });
+
+  // Apply client-side filters
+  const filteredEvents = allEvents.filter(event => {
+    // Filter by beer style
+    if (selectedBeerStyle && event.beerStyleName !== selectedBeerStyle) {
+      return false;
+    }
+    
+    // Filter by point of sale
+    if (selectedPOS && event.posName !== selectedPOS) {
+      return false;
+    }
+    
+    // Filter by device
+    if (selectedDevice && event.deviceCode !== selectedDevice) {
+      return false;
+    }
+    
+    return true;
   });
 
   const isLoading = isLoadingPours || isLoadingKegs;
@@ -186,64 +236,121 @@ export default function History() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros
-          </CardTitle>
-          <CardDescription>
-            Filtre o histórico por período e torneira específica
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="start-date">Data Inicial</Label>
-              <Input
-                id="start-date"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="end-date">Data Final</Label>
-              <Input
-                id="end-date"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tap-filter">Torneira</Label>
-              <select
-                id="tap-filter"
-                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                value={selectedTap}
-                onChange={(e) => setSelectedTap(e.target.value)}
-              >
-                <option value="">Todas as torneiras</option>
-                {(Array.isArray(taps) ? taps : []).map((tap: any) => (
-                  <option key={tap.id} value={tap.id}>
-                    {tap.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <Card>
+          <CardHeader>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="flex items-center justify-between w-full p-0 h-auto">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-5 w-5" />
+                  <CardTitle className="text-left">Filtros</CardTitle>
+                </div>
+                {filtersOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CardDescription>
+              Filtre o histórico por período, torneira, estilo, local e dispositivo
+            </CardDescription>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="start-date">Data Inicial</Label>
+                  <Input
+                    id="start-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="end-date">Data Final</Label>
+                  <Input
+                    id="end-date"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tap-filter">Torneira</Label>
+                  <select
+                    id="tap-filter"
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    value={selectedTap}
+                    onChange={(e) => setSelectedTap(e.target.value)}
+                  >
+                    <option value="">Todas</option>
+                    {(Array.isArray(taps) ? taps : []).map((tap: any) => (
+                      <option key={tap.id} value={tap.id}>
+                        {tap.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="beer-style-filter">Estilo</Label>
+                  <select
+                    id="beer-style-filter"
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    value={selectedBeerStyle}
+                    onChange={(e) => setSelectedBeerStyle(e.target.value)}
+                  >
+                    <option value="">Todos</option>
+                    {(Array.isArray(beerStyles) ? beerStyles : []).map((style: any) => (
+                      <option key={style.id} value={style.name}>
+                        {style.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="pos-filter">Local</Label>
+                  <select
+                    id="pos-filter"
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    value={selectedPOS}
+                    onChange={(e) => setSelectedPOS(e.target.value)}
+                  >
+                    <option value="">Todos</option>
+                    {(Array.isArray(pointsOfSale) ? pointsOfSale : []).map((pos: any) => (
+                      <option key={pos.id} value={pos.name}>
+                        {pos.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="device-filter">Dispositivo</Label>
+                  <select
+                    id="device-filter"
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    value={selectedDevice}
+                    onChange={(e) => setSelectedDevice(e.target.value)}
+                  >
+                    <option value="">Todos</option>
+                    {(Array.isArray(devices) ? devices : []).map((device: any) => (
+                      <option key={device.id} value={device.code}>
+                        {device.code} - {device.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Timeline de Atividades
+            Histórico de Atividades
           </CardTitle>
           <CardDescription>
-            {timelineEvents.length} evento(s) encontrado(s)
+            {filteredEvents.length} evento(s) encontrado(s)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -251,110 +358,79 @@ export default function History() {
             <div className="text-center py-8">
               <p className="text-muted-foreground">Carregando histórico...</p>
             </div>
-          ) : timelineEvents.length === 0 ? (
+          ) : filteredEvents.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">
                 Nenhum evento encontrado para os filtros selecionados
               </p>
             </div>
           ) : (
-            <div className="relative">
-              {/* Timeline line */}
-              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border"></div>
-
-              <div className="space-y-6">
-                {timelineEvents.map((event, index) => {
-                  const Icon = getEventIcon(event.type);
-                  const eventBgColor = getEventBgColor(event.type);
-
-                  return (
-                    <div
-                      key={`${event.type}-${event.id}`}
-                      className="relative flex items-start gap-4"
-                    >
-                      {/* Timeline dot */}
-                      <div
-                        className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-full ${eventBgColor} text-white`}
-                      >
-                        <Icon className="h-5 w-5" />
-                      </div>
-
-                      {/* Event content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="bg-card border rounded-lg p-4 shadow-sm">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h3 className="font-semibold text-sm">
-                                  {event.type === "pour"
-                                    ? "Consumo de Chope"
-                                    : "Troca de Barril"}
-                                </h3>
-                                <Badge variant="outline" className="text-xs">
-                                  {event.tapName}
-                                </Badge>
-                              </div>
-
-                              <div className="space-y-1 text-sm text-muted-foreground">
-                                <p className="flex items-center gap-2">
-                                  <span className="font-medium">Local:</span>
-                                  {event.posName}
-                                </p>
-
-                                {event.beerStyleName && (
-                                  <p className="flex items-center gap-2">
-                                    <span className="font-medium">Estilo:</span>
-                                    {event.beerStyleName}
-                                  </p>
-                                )}
-
-                                {event.type === "pour" &&
-                                  event.totalVolumeMl && (
-                                    <p className="flex items-center gap-2">
-                                      <span className="font-medium">
-                                        Volume:
-                                      </span>
-                                      <span className="font-mono text-foreground">
-                                        {event.totalVolumeMl.toLocaleString()}{" "}
-                                        ml
-                                      </span>
-                                    </p>
-                                  )}
-
-                                {event.deviceCode && (
-                                  <p className="flex items-center gap-2">
-                                    <span className="font-medium">
-                                      Dispositivo:
-                                    </span>
-                                    <Badge
-                                      variant="secondary"
-                                      className="text-xs"
-                                    >
-                                      {event.deviceCode}
-                                    </Badge>
-                                  </p>
-                                )}
-                              </div>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[120px]">Tipo</TableHead>
+                    <TableHead>Data/Hora</TableHead>
+                    <TableHead>Torneira</TableHead>
+                    <TableHead>Local</TableHead>
+                    <TableHead>Estilo</TableHead>
+                    <TableHead>Volume</TableHead>
+                    <TableHead>Dispositivo</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEvents.map((event) => {
+                    const Icon = getEventIcon(event.type);
+                    const { date, time } = formatDateTime(event.datetime);
+                    
+                    return (
+                      <TableRow key={`${event.type}-${event.id}`}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className={`p-2 rounded-full ${getEventBgColor(event.type)} text-white`}>
+                              <Icon className="h-3 w-3" />
                             </div>
-
-                            <div className="text-right">
-                              {(() => {
-                                const { date, time } = formatDateTime(event.datetime);
-                                return (
-                                  <>
-                                    <p className="text-sm font-medium">{date}</p>
-                                    <p className="text-xs text-muted-foreground">{time}</p>
-                                  </>
-                                );
-                              })()}
-                            </div>
+                            <span className="text-xs font-medium">
+                              {event.type === "pour" ? "Consumo" : "Troca"}
+                            </span>
                           </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          <div>
+                            <div className="font-medium">{date}</div>
+                            <div className="text-xs text-muted-foreground">{time}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {event.tapName}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {event.posName}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {event.beerStyleName || "-"}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {event.type === "pour" && event.totalVolumeMl
+                            ? `${event.totalVolumeMl.toLocaleString()} ml`
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {event.deviceCode ? (
+                            <Badge variant="secondary" className="text-xs">
+                              {event.deviceCode}
+                            </Badge>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
