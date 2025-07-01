@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupWebSocket, broadcastUpdate } from "./websocket";
 import { storage } from "./storage";
 // Removed Replit Auth for demo purposes
-import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, insertPointOfSaleSchema, insertBeerStyleSchema, insertDeviceSchema, insertUnitSchema } from "@shared/schema";
+import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, insertPointOfSaleSchema, insertBeerStyleSchema, insertDeviceSchema, insertUnitSchema, insertCo2RefillSchema } from "@shared/schema";
 import { z } from "zod";
 import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";

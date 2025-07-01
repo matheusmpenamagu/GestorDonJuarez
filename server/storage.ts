@@ -113,6 +113,13 @@ export interface IStorage {
   createUnit(unit: InsertUnit): Promise<Unit>;
   updateUnit(id: number, unit: Partial<InsertUnit>): Promise<Unit>;
   deleteUnit(id: number): Promise<void>;
+  
+  // CO2 Refills operations
+  getCo2Refills(): Promise<Co2RefillWithRelations[]>;
+  getCo2Refill(id: number): Promise<Co2RefillWithRelations | undefined>;
+  createCo2Refill(refill: InsertCo2Refill): Promise<Co2Refill>;
+  updateCo2Refill(id: number, refill: Partial<InsertCo2Refill>): Promise<Co2Refill>;
+  deleteCo2Refill(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -770,6 +777,73 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUnit(id: number): Promise<void> {
     await db.delete(units).where(eq(units.id, id));
+  }
+
+  // CO2 Refills operations
+  async getCo2Refills(): Promise<Co2RefillWithRelations[]> {
+    const result = await db
+      .select()
+      .from(co2Refills)
+      .leftJoin(units, eq(co2Refills.unitId, units.id))
+      .orderBy(desc(co2Refills.date));
+
+    return result.map(row => ({
+      ...row.co2_refills,
+      unit: row.units || undefined,
+    }));
+  }
+
+  async getCo2Refill(id: number): Promise<Co2RefillWithRelations | undefined> {
+    const result = await db
+      .select()
+      .from(co2Refills)
+      .leftJoin(units, eq(co2Refills.unitId, units.id))
+      .where(eq(co2Refills.id, id));
+
+    if (result.length === 0) return undefined;
+
+    const row = result[0];
+    return {
+      ...row.co2_refills,
+      unit: row.units || undefined,
+    };
+  }
+
+  async createCo2Refill(refillData: InsertCo2Refill): Promise<Co2Refill> {
+    const [refill] = await db
+      .insert(co2Refills)
+      .values({
+        date: refillData.date,
+        supplier: refillData.supplier,
+        kilosRefilled: refillData.kilosRefilled.toString(),
+        valuePaid: refillData.valuePaid.toString(),
+        unitId: refillData.unitId,
+      })
+      .returning();
+    return refill;
+  }
+
+  async updateCo2Refill(id: number, refillData: Partial<InsertCo2Refill>): Promise<Co2Refill> {
+    const updateData: any = {
+      updatedAt: new Date(),
+    };
+    
+    if (refillData.date) updateData.date = refillData.date;
+    if (refillData.supplier) updateData.supplier = refillData.supplier;
+    if (refillData.kilosRefilled) updateData.kilosRefilled = refillData.kilosRefilled.toString();
+    if (refillData.valuePaid) updateData.valuePaid = refillData.valuePaid.toString();
+    if (refillData.unitId) updateData.unitId = refillData.unitId;
+
+    const [refill] = await db
+      .update(co2Refills)
+      .set(updateData)
+      .where(eq(co2Refills.id, id))
+      .returning();
+    return refill;
+  }
+
+  async deleteCo2Refill(id: number): Promise<void> {
+    await db.delete(co2Refills).where(eq(co2Refills.id, id));
   }
 }
 
