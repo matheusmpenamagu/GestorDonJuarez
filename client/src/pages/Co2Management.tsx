@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Edit, Trash2, Wind } from "lucide-react";
+import { Plus, Edit, Trash2, Wind, TrendingUp, TrendingDown, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { insertCo2RefillSchema, type Co2RefillWithRelations, type Unit } from "@shared/schema";
 import { z } from "zod";
 
@@ -33,6 +35,10 @@ export default function Co2Management() {
 
   const { data: units = [] } = useQuery<Unit[]>({
     queryKey: ["/api/units"],
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: ["/api/co2-stats"],
   });
 
   const createForm = useForm<FormData>({
@@ -67,6 +73,7 @@ export default function Co2Management() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/co2-refills"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/co2-stats"] });
       setIsCreateDialogOpen(false);
       createForm.reset();
       toast({
@@ -93,6 +100,7 @@ export default function Co2Management() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/co2-refills"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/co2-stats"] });
       setIsEditDialogOpen(false);
       setEditingRefill(null);
       editForm.reset();
@@ -116,6 +124,7 @@ export default function Co2Management() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/co2-refills"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/co2-stats"] });
       toast({
         title: "Recarga excluída",
         description: "Recarga de CO2 excluída com sucesso.",
@@ -161,8 +170,85 @@ export default function Co2Management() {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
+  const formatPercentage = (value: number) => {
+    const isPositive = value >= 0;
+    const formatted = Math.abs(value).toFixed(1);
+    return { value: `${isPositive ? '+' : '-'}${formatted}%`, isPositive };
+  };
+
   return (
     <div className="p-6 space-y-6">
+      {/* Cards de estatísticas */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Card 1: Total de recargas dos últimos 30 dias */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Recargas - Últimos 30 dias
+              </CardTitle>
+              <Wind className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {new Intl.NumberFormat('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL'
+                }).format(stats.last30DaysTotal.cost)}
+              </div>
+              <div className="text-sm text-muted-foreground mb-2">
+                {stats.last30DaysTotal.kg.toFixed(1)} kg de CO2
+              </div>
+              {stats.percentageChange !== 0 && (
+                <div className="flex items-center">
+                  {stats.percentageChange > 0 ? (
+                    <TrendingUp className="h-4 w-4 text-red-500 mr-1" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-green-500 mr-1" />
+                  )}
+                  <Badge variant={stats.percentageChange > 0 ? "destructive" : "secondary"}>
+                    {formatPercentage(stats.percentageChange).value}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground ml-2">
+                    vs período anterior
+                  </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Card 2: Eficiência de CO2 por litro */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Eficiência CO2/L
+              </CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {stats.kgPerLiterLast30Days.toFixed(3)} kg/L
+              </div>
+              <div className="text-sm text-muted-foreground mb-2">
+                CO2 por litro de chope
+              </div>
+              {stats.efficiencyChange !== 0 && (
+                <div className="flex items-center">
+                  {stats.efficiencyChange > 0 ? (
+                    <TrendingUp className="h-4 w-4 text-red-500 mr-1" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-green-500 mr-1" />
+                  )}
+                  <span className="text-xs text-muted-foreground">
+                    {formatPercentage(stats.efficiencyChange).value} vs anterior
+                  </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Wind className="h-6 w-6 text-primary" />
