@@ -48,53 +48,76 @@ function HistoryTimeline() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedTap, setSelectedTap] = useState("");
-  const [selectedBeerStyle, setSelectedBeerStyle] = useState("");
-  const [selectedPOS, setSelectedPOS] = useState("");
-  const [selectedDevice, setSelectedDevice] = useState("");
+  const [sortColumn, setSortColumn] = useState<keyof TimelineEvent>("datetime");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Fetch data for filters
-  const { data: taps = [] } = useQuery({ queryKey: ["/api/taps"] });
-  const { data: pointsOfSale = [] } = useQuery({ queryKey: ["/api/points-of-sale"] });
-  const { data: beerStyles = [] } = useQuery({ queryKey: ["/api/beer-styles"] });
-  const { data: devices = [] } = useQuery({ queryKey: ["/api/devices"] });
-
-  // Build query parameters
-  const queryParams = new URLSearchParams();
-  if (startDate) queryParams.append("startDate", startDate);
-  if (endDate) queryParams.append("endDate", endDate);
-  if (selectedTap) queryParams.append("tapId", selectedTap);
-
-  // Fetch timeline data
-  const { data: events = [], isLoading } = useQuery({
-    queryKey: ["/api/timeline", queryParams.toString()],
+  const { data: events, isLoading } = useQuery({
+    queryKey: ["/api/timeline"],
   });
 
-  // Filter events by beer style, POS, and device on the frontend
-  const filteredEvents = events.filter((event: TimelineEvent) => {
-    if (selectedBeerStyle && event.beerStyleName !== selectedBeerStyle) return false;
-    if (selectedPOS && event.posName !== selectedPOS) return false;
-    if (selectedDevice && event.deviceCode !== selectedDevice) return false;
+  const { data: taps } = useQuery({
+    queryKey: ["/api/taps"],
+  });
+
+  const { data: beerStyles } = useQuery({
+    queryKey: ["/api/beer-styles"],
+  });
+
+  const { data: pointsOfSale } = useQuery({
+    queryKey: ["/api/points-of-sale"],
+  });
+
+  const { data: devices } = useQuery({
+    queryKey: ["/api/devices"],
+  });
+
+  const filteredEvents = events ? (events as TimelineEvent[]).filter((event: TimelineEvent) => {
+    if (startDate) {
+      let date: Date;
+      
+      if (event.datetime.includes('T')) {
+        date = parseISO(event.datetime);
+      } else {
+        const [datePart] = event.datetime.split(' ');
+        const [day, month, year] = datePart.split('/');
+        const isoString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        date = parseISO(isoString);
+      }
+      
+      if (date < parseISO(startDate)) return false;
+    }
+
+    if (endDate) {
+      let date: Date;
+      
+      if (event.datetime.includes('T')) {
+        date = parseISO(event.datetime);
+      } else {
+        const [datePart] = event.datetime.split(' ');
+        const [day, month, year] = datePart.split('/');
+        const isoString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        date = parseISO(isoString);
+      }
+      
+      if (date > parseISO(endDate)) return false;
+    }
+
+    if (selectedTap && event.tapName !== selectedTap) return false;
+
     return true;
-  });
+  }) : [];
+
+  const hasActiveFilters = startDate || endDate || selectedTap;
 
   const clearFilters = () => {
     setStartDate("");
     setEndDate("");
     setSelectedTap("");
-    setSelectedBeerStyle("");
-    setSelectedPOS("");
-    setSelectedDevice("");
   };
-
-  const hasActiveFilters = startDate || endDate || selectedTap || selectedBeerStyle || selectedPOS || selectedDevice;
 
   const getEventIcon = (type: string) => {
-    return type === "pour" ? <Beer className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />;
-  };
-
-  const getEventColor = (type: string) => {
-    return type === "pour" ? "text-orange-600" : "text-green-600";
+    return type === "pour" ? <Beer className="h-3 w-3" /> : <RefreshCw className="h-3 w-3" />;
   };
 
   const formatEventDateTime = (datetime: string) => {
@@ -102,10 +125,8 @@ function HistoryTimeline() {
       let date: Date;
       
       if (datetime.includes('T')) {
-        // ISO format
         date = parseISO(datetime);
       } else {
-        // Assume it's in "DD/MM/YYYY HH:MM:SS" format and convert it
         const [datePart, timePart] = datetime.split(' ');
         const [day, month, year] = datePart.split('/');
         const isoString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart || '00:00:00'}`;
@@ -117,7 +138,7 @@ function HistoryTimeline() {
       }
       
       return {
-        date: format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }),
+        date: format(date, "dd/MM/yyyy", { locale: ptBR }),
         time: format(date, "HH:mm", { locale: ptBR })
       };
     } catch (error) {
@@ -126,122 +147,32 @@ function HistoryTimeline() {
     }
   };
 
+  const handleSort = (column: keyof TimelineEvent) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const sortedEvents = [...filteredEvents].sort((a, b) => {
+    let aValue = a[sortColumn];
+    let bValue = b[sortColumn];
+
+    // Handle datetime sorting specially
+    if (sortColumn === "datetime") {
+      aValue = new Date(a.datetime).getTime();
+      bValue = new Date(b.datetime).getTime();
+    }
+
+    if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+    if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
   return (
     <div className="space-y-6">
-      <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <div className="border border-dashed border-muted-foreground/30 rounded-lg">
-          <div className="p-3">
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="flex items-center justify-between w-full p-2 h-auto hover:bg-muted/50">
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-muted-foreground">Filtros</span>
-                </div>
-                {filtersOpen ? <ChevronUp className="h-3 w-3 text-muted-foreground" /> : <ChevronDown className="h-3 w-3 text-muted-foreground" />}
-              </Button>
-            </CollapsibleTrigger>
-          </div>
-          <CollapsibleContent>
-            <div className="px-3 pb-3 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="start-date">Data Inicial</Label>
-                  <Input
-                    id="start-date"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="end-date">Data Final</Label>
-                  <Input
-                    id="end-date"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tap-filter">Torneira</Label>
-                  <select
-                    id="tap-filter"
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                    value={selectedTap}
-                    onChange={(e) => setSelectedTap(e.target.value)}
-                  >
-                    <option value="">Todas as torneiras</option>
-                    {taps.map((tap: any) => (
-                      <option key={tap.id} value={tap.id}>
-                        {tap.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="beer-style-filter">Estilo de Chope</Label>
-                  <select
-                    id="beer-style-filter"
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                    value={selectedBeerStyle}
-                    onChange={(e) => setSelectedBeerStyle(e.target.value)}
-                  >
-                    <option value="">Todos os estilos</option>
-                    {beerStyles.map((style: any) => (
-                      <option key={style.id} value={style.name}>
-                        {style.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="pos-filter">Ponto de Venda</Label>
-                  <select
-                    id="pos-filter"
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                    value={selectedPOS}
-                    onChange={(e) => setSelectedPOS(e.target.value)}
-                  >
-                    <option value="">Todos os locais</option>
-                    {pointsOfSale.map((pos: any) => (
-                      <option key={pos.id} value={pos.name}>
-                        {pos.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="device-filter">Dispositivo</Label>
-                  <select
-                    id="device-filter"
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                    value={selectedDevice}
-                    onChange={(e) => setSelectedDevice(e.target.value)}
-                  >
-                    <option value="">Todos os dispositivos</option>
-                    {devices.map((device: any) => (
-                      <option key={device.id} value={device.code}>
-                        {device.code} - {device.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              {hasActiveFilters && (
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <p className="text-sm text-muted-foreground">
-                    {filteredEvents.length} evento(s) encontrado(s)
-                  </p>
-                  <Button variant="outline" onClick={clearFilters}>
-                    Limpar filtros
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CollapsibleContent>
-        </div>
-      </Collapsible>
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -253,88 +184,174 @@ function HistoryTimeline() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Filtros */}
+          <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen} className="mb-6">
+            <div className="border border-dashed border-muted-foreground/30 rounded-lg">
+              <div className="p-3">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="flex items-center justify-between w-full p-2 h-auto hover:bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium text-muted-foreground">Filtros</span>
+                    </div>
+                    {filtersOpen ? <ChevronUp className="h-3 w-3 text-muted-foreground" /> : <ChevronDown className="h-3 w-3 text-muted-foreground" />}
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent>
+                <div className="px-3 pb-3 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="start-date" className="text-sm">Data inicial</Label>
+                      <Input
+                        id="start-date"
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="h-9"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="end-date" className="text-sm">Data final</Label>
+                      <Input
+                        id="end-date"
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="h-9"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="tap-select" className="text-sm">Torneira</Label>
+                      <select
+                        id="tap-select"
+                        value={selectedTap}
+                        onChange={(e) => setSelectedTap(e.target.value)}
+                        className="h-9 w-full px-3 py-1 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      >
+                        <option value="">Todas as torneiras</option>
+                        {taps && (taps as any[]).map((tap: any) => (
+                          <option key={tap.id} value={tap.name}>
+                            {tap.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  {hasActiveFilters && (
+                    <div className="flex items-center justify-between pt-4 border-t">
+                      <p className="text-sm text-muted-foreground">
+                        {filteredEvents.length} evento(s) encontrado(s)
+                      </p>
+                      <Button variant="outline" onClick={clearFilters}>
+                        Limpar filtros
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+
+          {/* Tabela de Eventos */}
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-muted-foreground">Carregando eventos...</div>
             </div>
-          ) : filteredEvents.length === 0 ? (
+          ) : sortedEvents.length === 0 ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-muted-foreground">
                 Nenhum evento encontrado para os filtros selecionados.
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
-              {/* Cabeçalho da tabela */}
-              <div className="flex items-center p-3 bg-gray-50 border rounded-lg font-medium text-sm text-gray-700">
-                <div className="w-10 mr-4"></div> {/* Espaço para o ícone */}
-                <div className="flex-1 min-w-0 mr-4">Tipo</div>
-                <div className="flex-1 min-w-0 mr-4">Data/Hora</div>
-                <div className="flex-1 min-w-0 mr-4">Torneira</div>
-                <div className="flex-1 min-w-0 mr-4">Local</div>
-                <div className="flex-1 min-w-0 mr-4">Estilo</div>
-                <div className="flex-1 min-w-0 mr-4">Volume</div>
-                <div className="flex-1 min-w-0">Dispositivo</div>
-              </div>
-              
-              {filteredEvents.map((event: TimelineEvent) => {
-                const { date, time } = formatEventDateTime(event.datetime);
-                return (
-                  <div key={`${event.type}-${event.id}`} className="flex items-center p-4 bg-white border rounded-lg shadow-sm">
-                    {/* Ícone do tipo de evento */}
-                    <div className={`flex items-center justify-center w-10 h-10 rounded-full mr-4 ${
-                      event.type === 'pour' 
-                        ? 'bg-orange-100 text-orange-600' 
-                        : 'bg-green-100 text-green-600'
-                    }`}>
-                      {getEventIcon(event.type)}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50" 
+                    onClick={() => handleSort("datetime")}
+                  >
+                    <div className="flex items-center gap-1">
+                      Data/Hora
+                      {sortColumn === "datetime" && (
+                        sortDirection === "asc" ? 
+                        <ChevronUp className="h-3 w-3" /> : 
+                        <ChevronDown className="h-3 w-3" />
+                      )}
                     </div>
-                    
-                    {/* Tipo */}
-                    <div className="flex-1 min-w-0 mr-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {event.type === "pour" ? "Consumo" : "Troca"}
-                      </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50" 
+                    onClick={() => handleSort("tapName")}
+                  >
+                    <div className="flex items-center gap-1">
+                      Torneira
+                      {sortColumn === "tapName" && (
+                        sortDirection === "asc" ? 
+                        <ChevronUp className="h-3 w-3" /> : 
+                        <ChevronDown className="h-3 w-3" />
+                      )}
                     </div>
-                    
-                    {/* Data/Hora */}
-                    <div className="flex-1 min-w-0 mr-4">
-                      <div className="text-sm font-medium text-gray-900">{date}</div>
-                      <div className="text-sm text-gray-500">{time}</div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50" 
+                    onClick={() => handleSort("posName")}
+                  >
+                    <div className="flex items-center gap-1">
+                      Local
+                      {sortColumn === "posName" && (
+                        sortDirection === "asc" ? 
+                        <ChevronUp className="h-3 w-3" /> : 
+                        <ChevronDown className="h-3 w-3" />
+                      )}
                     </div>
-                    
-                    {/* Torneira */}
-                    <div className="flex-1 min-w-0 mr-4">
-                      <div className="text-sm font-medium text-gray-900">{event.tapName}</div>
-                    </div>
-                    
-                    {/* Local */}
-                    <div className="flex-1 min-w-0 mr-4">
-                      <div className="text-sm text-gray-900">{event.posName}</div>
-                    </div>
-                    
-                    {/* Estilo */}
-                    <div className="flex-1 min-w-0 mr-4">
-                      <div className="text-sm text-gray-900">{event.beerStyleName || "-"}</div>
-                    </div>
-                    
-                    {/* Volume */}
-                    <div className="flex-1 min-w-0 mr-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {event.totalVolumeMl ? `${event.totalVolumeMl} ml` : "-"}
-                      </div>
-                    </div>
-                    
-                    {/* Dispositivo */}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-mono text-gray-900">
-                        {event.deviceCode || "-"}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  </TableHead>
+                  <TableHead>Estilo</TableHead>
+                  <TableHead>Volume</TableHead>
+                  <TableHead>Dispositivo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedEvents.map((event: TimelineEvent) => {
+                  const { date, time } = formatEventDateTime(event.datetime);
+                  return (
+                    <TableRow key={`${event.type}-${event.id}`}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className={`flex items-center justify-center w-6 h-6 rounded-full ${
+                            event.type === 'pour' 
+                              ? 'bg-orange-100 text-orange-600' 
+                              : 'bg-green-100 text-green-600'
+                          }`}>
+                            {getEventIcon(event.type)}
+                          </div>
+                          <Badge variant={event.type === 'pour' ? 'default' : 'secondary'}>
+                            {event.type === "pour" ? "Consumo" : "Troca"}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{date}</div>
+                          <div className="text-sm text-muted-foreground">{time}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">{event.tapName}</TableCell>
+                      <TableCell>{event.posName}</TableCell>
+                      <TableCell>{event.beerStyleName || "-"}</TableCell>
+                      <TableCell>
+                        {event.totalVolumeMl ? `${event.totalVolumeMl}ml` : "-"}
+                      </TableCell>
+                      <TableCell>{event.deviceCode || "-"}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
