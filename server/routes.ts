@@ -763,7 +763,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new CO2 refill
   app.post('/api/co2-refills', demoAuth, async (req, res) => {
     try {
-      const refillData = insertCo2RefillSchema.parse(req.body);
+      const refillData = {
+        date: new Date(req.body.date),
+        supplier: req.body.supplier,
+        kilosRefilled: parseFloat(req.body.kilosRefilled),
+        valuePaid: parseFloat(req.body.valuePaid),
+        unitId: parseInt(req.body.unitId)
+      };
       const refill = await storage.createCo2Refill(refillData);
       await broadcastUpdate('stats_updated');
       res.json(refill);
@@ -777,7 +783,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/co2-refills/:id', demoAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const refillData = insertCo2RefillSchema.partial().parse(req.body);
+      // Convert date string to Date object if present
+      const body = req.body.date ? {
+        ...req.body,
+        date: new Date(req.body.date)
+      } : req.body;
+      const refillData = insertCo2RefillSchema.partial().parse(body);
       const refill = await storage.updateCo2Refill(id, refillData);
       await broadcastUpdate('stats_updated');
       res.json(refill);
