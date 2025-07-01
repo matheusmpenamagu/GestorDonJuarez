@@ -875,6 +875,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get CO2 statistics
+  app.get('/api/co2-stats', demoAuth, async (req, res) => {
+    try {
+      const stats = await storage.getCo2Stats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching CO2 stats:", error);
+      res.status(500).json({ message: "Error fetching CO2 stats" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket for real-time updates

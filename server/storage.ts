@@ -38,7 +38,7 @@ import {
   type EmployeeWithRelations,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, lte, sql, sum } from "drizzle-orm";
+import { eq, desc, and, gte, lte, lt, sql, sum } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -120,6 +120,14 @@ export interface IStorage {
   createCo2Refill(refill: InsertCo2Refill): Promise<Co2Refill>;
   updateCo2Refill(id: number, refill: Partial<InsertCo2Refill>): Promise<Co2Refill>;
   deleteCo2Refill(id: number): Promise<void>;
+  getCo2Stats(): Promise<{
+    last30DaysTotal: { kg: number; cost: number };
+    previous30DaysTotal: { kg: number; cost: number };
+    percentageChange: number;
+    kgPerLiterLast30Days: number;
+    kgPerLiterPrevious30Days: number;
+    efficiencyChange: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -844,6 +852,103 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCo2Refill(id: number): Promise<void> {
     await db.delete(co2Refills).where(eq(co2Refills.id, id));
+  }
+
+  async getCo2Stats(): Promise<{
+    last30DaysTotal: { kg: number; cost: number };
+    previous30DaysTotal: { kg: number; cost: number };
+    percentageChange: number;
+    kgPerLiterLast30Days: number;
+    kgPerLiterPrevious30Days: number;
+    efficiencyChange: number;
+  }> {
+    const today = new Date();
+    const last30Days = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const previous60Days = new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+    // Recargas dos últimos 30 dias
+    const last30DaysRefills = await db
+      .select()
+      .from(co2Refills)
+      .where(gte(co2Refills.date, last30Days));
+
+    // Recargas dos 30 dias anteriores (30-60 dias atrás)
+    const previous30DaysRefills = await db
+      .select()
+      .from(co2Refills)
+      .where(and(
+        gte(co2Refills.date, previous60Days),
+        lt(co2Refills.date, last30Days)
+      ));
+
+    // Calcular totais dos últimos 30 dias
+    const last30DaysTotal = last30DaysRefills.reduce(
+      (acc, refill) => ({
+        kg: acc.kg + parseFloat(refill.kilosRefilled),
+        cost: acc.cost + parseFloat(refill.valuePaid)
+      }),
+      { kg: 0, cost: 0 }
+    );
+
+    // Calcular totais dos 30 dias anteriores
+    const previous30DaysTotal = previous30DaysRefills.reduce(
+      (acc, refill) => ({
+        kg: acc.kg + parseFloat(refill.kilosRefilled),
+        cost: acc.cost + parseFloat(refill.valuePaid)
+      }),
+      { kg: 0, cost: 0 }
+    );
+
+    // Calcular porcentagem de mudança
+    const percentageChange = previous30DaysTotal.cost > 0 
+      ? ((last30DaysTotal.cost - previous30DaysTotal.cost) / previous30DaysTotal.cost) * 100
+      : 0;
+
+    // Calcular consumo de chope dos últimos 30 dias
+    const last30DaysPours = await db
+      .select()
+      .from(pourEvents)
+      .where(gte(pourEvents.datetime, last30Days));
+
+    const previous30DaysPours = await db
+      .select()
+      .from(pourEvents)
+      .where(and(
+        gte(pourEvents.datetime, previous60Days),
+        lt(pourEvents.datetime, last30Days)
+      ));
+
+    // Calcular volume total em litros
+    const last30DaysVolumeLiters = last30DaysPours.reduce(
+      (acc, pour) => acc + (pour.totalVolumeMl / 1000), 0
+    );
+
+    const previous30DaysVolumeLiters = previous30DaysPours.reduce(
+      (acc, pour) => acc + (pour.totalVolumeMl / 1000), 0
+    );
+
+    // Calcular kg de CO2 por litro
+    const kgPerLiterLast30Days = last30DaysVolumeLiters > 0 
+      ? last30DaysTotal.kg / last30DaysVolumeLiters 
+      : 0;
+
+    const kgPerLiterPrevious30Days = previous30DaysVolumeLiters > 0 
+      ? previous30DaysTotal.kg / previous30DaysVolumeLiters 
+      : 0;
+
+    // Calcular mudança na eficiência
+    const efficiencyChange = kgPerLiterPrevious30Days > 0 
+      ? ((kgPerLiterLast30Days - kgPerLiterPrevious30Days) / kgPerLiterPrevious30Days) * 100
+      : 0;
+
+    return {
+      last30DaysTotal,
+      previous30DaysTotal,
+      percentageChange,
+      kgPerLiterLast30Days,
+      kgPerLiterPrevious30Days,
+      efficiencyChange
+    };
   }
 }
 
