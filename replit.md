@@ -191,6 +191,9 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Limitação para exibir apenas os últimos 3 registros de consumo
 - ✓ Remoção do card wrapper da atividade em tempo real para layout mais limpo
 - ✓ Design compacto com informações essenciais em formato horizontal
+- ✓ Monitoramento de torneiras com visual mais compacto mantendo barra de status
+- ✓ Redução de padding, tamanhos de fonte e espaçamentos nos cards das torneiras
+- ✓ Preservação da funcionalidade de indicador visual de status (verde/vermelho)
 
 ## User Preferences
 

@@ -31,60 +31,54 @@ export function TapCard({ tap }: TapCardProps) {
 
   return (
     <Card className="overflow-hidden">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">{tap.id}</span>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-2">
+            <div className="w-7 h-7 bg-primary rounded-full flex items-center justify-center">
+              <span className="text-white text-sm font-bold">{tap.id}</span>
             </div>
             <div>
-              <h3 className="text-lg font-medium text-foreground">
+              <h3 className="text-sm font-medium text-foreground">
                 {tap.name || `Torneira ${tap.id}`}
               </h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {tap.pointOfSale?.name || "Sem ponto de venda"}
               </p>
             </div>
           </div>
-          <div className={`w-3 h-3 rounded-full ${isLow ? 'bg-red-500' : 'bg-green-500'} ${!isLow ? 'animate-pulse' : ''}`} />
+          <div className={`w-2.5 h-2.5 rounded-full ${isLow ? 'bg-red-500' : 'bg-green-500'} ${!isLow ? 'animate-pulse' : ''}`} />
         </div>
         
-        {/* Beer Info */}
-        <div className="mb-4">
-          <p className="text-sm font-medium text-foreground">
+        {/* Beer Info - Compact */}
+        <div className="mb-3">
+          <p className="text-xs font-medium text-foreground">
             {tap.currentBeerStyle?.name || "Sem estilo definido"}
           </p>
-          <p className="text-xs text-muted-foreground">Estilo atual</p>
         </div>
         
-        {/* Volume Progress */}
-        <div className="mb-4">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-muted-foreground">Volume Disponível</span>
+        {/* Volume Progress - Compact */}
+        <div className="mb-2">
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-muted-foreground">Disponível</span>
             <span className={`font-medium ${isLow ? 'text-red-600' : 'text-foreground'}`}>
-              {availableLiters}L
+              {availableLiters}L / {totalLiters}L
             </span>
           </div>
           <Progress 
             value={volumePercentage} 
-            className={`h-2 ${isLow ? '[&>div]:bg-red-500' : '[&>div]:bg-green-500'}`}
+            className={`h-1.5 ${isLow ? '[&>div]:bg-red-500' : '[&>div]:bg-green-500'}`}
           />
-          <div className="flex items-center justify-between mt-1">
-            <p className="text-xs text-muted-foreground">
-              de {totalLiters}L total
-            </p>
-            {isLow && (
-              <div className="flex items-center text-red-600">
-                <AlertTriangle className="h-3 w-3 mr-1" />
-                <span className="text-xs">Barril baixo</span>
-              </div>
-            )}
-          </div>
+          {isLow && (
+            <div className="flex items-center text-red-600 mt-1">
+              <AlertTriangle className="h-3 w-3 mr-1" />
+              <span className="text-xs">Barril baixo</span>
+            </div>
+          )}
         </div>
         
-        {/* Recent Activity */}
+        {/* Recent Activity - Compact */}
         <div className="text-xs text-muted-foreground">
-          <p>Último consumo: {formatLastPour(tap.lastPourEvent)}</p>
+          <p>Último: {formatLastPour(tap.lastPourEvent)}</p>
         </div>
       </CardContent>
     </Card>
