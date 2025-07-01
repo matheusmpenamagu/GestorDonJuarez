@@ -886,6 +886,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate test pour events for CO2 efficiency calculation
+  app.post('/api/generate-test-pours', async (req, res) => {
+    try {
+      const today = new Date();
+      
+      // Gerar eventos dos últimos 30 dias
+      for (let i = 0; i < 30; i++) {
+        const eventDate = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
+        
+        // 3-5 eventos por dia
+        const eventsPerDay = Math.floor(Math.random() * 3) + 3;
+        
+        for (let j = 0; j < eventsPerDay; j++) {
+          const eventDateTime = new Date(eventDate);
+          eventDateTime.setHours(12 + Math.floor(Math.random() * 10)); // Entre 12h e 22h
+          eventDateTime.setMinutes(Math.floor(Math.random() * 60));
+          
+          const volumeMl = Math.floor(Math.random() * 500) + 200;
+          await storage.createPourEvent({
+            tapId: Math.random() > 0.5 ? 1 : 2, // Alternar entre torneiras 1 e 2
+            totalVolumeMl: volumeMl,
+            pourVolumeMl: volumeMl, // Mesmo valor para teste
+            datetime: eventDateTime
+          });
+        }
+      }
+      
+      // Gerar eventos dos 30 dias anteriores (30-60 dias atrás)
+      for (let i = 30; i < 60; i++) {
+        const eventDate = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
+        
+        // 2-4 eventos por dia (menos que o período atual)
+        const eventsPerDay = Math.floor(Math.random() * 3) + 2;
+        
+        for (let j = 0; j < eventsPerDay; j++) {
+          const eventDateTime = new Date(eventDate);
+          eventDateTime.setHours(12 + Math.floor(Math.random() * 10));
+          eventDateTime.setMinutes(Math.floor(Math.random() * 60));
+          
+          const volumeMl2 = Math.floor(Math.random() * 400) + 150;
+          await storage.createPourEvent({
+            tapId: Math.random() > 0.5 ? 1 : 2,
+            totalVolumeMl: volumeMl2,
+            pourVolumeMl: volumeMl2, // Mesmo valor para teste
+            datetime: eventDateTime
+          });
+        }
+      }
+      
+      await broadcastUpdate('stats_updated');
+      res.json({ message: "Test pour events generated successfully" });
+    } catch (error) {
+      console.error("Error generating test pour events:", error);
+      res.status(500).json({ message: "Error generating test pour events" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket for real-time updates
