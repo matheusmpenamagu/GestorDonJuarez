@@ -747,6 +747,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ CO2 REFILLS ROUTES ============
+
+  // Get all CO2 refills
+  app.get('/api/co2-refills', demoAuth, async (req, res) => {
+    try {
+      const refills = await storage.getCo2Refills();
+      res.json(refills);
+    } catch (error) {
+      console.error("Error fetching CO2 refills:", error);
+      res.status(500).json({ message: "Error fetching CO2 refills" });
+    }
+  });
+
+  // Create new CO2 refill
+  app.post('/api/co2-refills', demoAuth, async (req, res) => {
+    try {
+      const refillData = insertCo2RefillSchema.parse(req.body);
+      const refill = await storage.createCo2Refill(refillData);
+      await broadcastUpdate('stats_updated');
+      res.json(refill);
+    } catch (error) {
+      console.error("Error creating CO2 refill:", error);
+      res.status(500).json({ message: "Error creating CO2 refill" });
+    }
+  });
+
+  // Update CO2 refill
+  app.put('/api/co2-refills/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const refillData = insertCo2RefillSchema.partial().parse(req.body);
+      const refill = await storage.updateCo2Refill(id, refillData);
+      await broadcastUpdate('stats_updated');
+      res.json(refill);
+    } catch (error) {
+      console.error("Error updating CO2 refill:", error);
+      res.status(500).json({ message: "Error updating CO2 refill" });
+    }
+  });
+
+  // Delete CO2 refill
+  app.delete('/api/co2-refills/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteCo2Refill(id);
+      await broadcastUpdate('stats_updated');
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting CO2 refill:", error);
+      res.status(500).json({ message: "Error deleting CO2 refill" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket for real-time updates

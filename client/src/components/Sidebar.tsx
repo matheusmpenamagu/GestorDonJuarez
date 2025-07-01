@@ -12,7 +12,8 @@ import {
   UserCog,
   Building2,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Wind
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ const menuItems = [
       { href: "/pontos-venda", icon: Store, label: "Pontos de venda" },
       { href: "/estilos-cerveja", icon: Beer, label: "Estilos de chopes" },
       { href: "/dispositivos", icon: Smartphone, label: "Dispositivos" },
+      { href: "/co2", icon: Wind, label: "CO2" },
     ],
   },
   {

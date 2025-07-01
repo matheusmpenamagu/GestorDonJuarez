@@ -16,6 +16,7 @@ import DevicesManagement from "@/pages/DevicesManagement";
 import EmployeesManagement from "@/pages/EmployeesManagement";
 import RolesManagement from "@/pages/RolesManagement";
 import UnitsManagement from "@/pages/UnitsManagement";
+import Co2Management from "@/pages/Co2Management";
 import NotFound from "@/pages/not-found";
 
 function Router() {
