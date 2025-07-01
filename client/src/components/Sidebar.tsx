@@ -23,11 +23,7 @@ const menuItems = [
     icon: Beer,
     items: [
       { href: "/", icon: BarChart3, label: "Dashboard" },
-      { href: "/historico", icon: History, label: "Histórico" },
-      { href: "/torneiras", icon: Wrench, label: "Torneiras" },
-      { href: "/pontos-venda", icon: Store, label: "Pontos de venda" },
-      { href: "/estilos-cerveja", icon: Beer, label: "Estilos de chopes" },
-      { href: "/dispositivos", icon: Smartphone, label: "Dispositivos" },
+      { href: "/historico", icon: History, label: "Consumo de chopes" },
       { href: "/co2", icon: Wind, label: "CO2" },
     ],
   },

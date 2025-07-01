@@ -54,26 +54,7 @@ function Router() {
               <KegChanges />
             </Layout>
           </Route>
-          <Route path="/torneiras">
-            <Layout>
-              <TapsManagement />
-            </Layout>
-          </Route>
-          <Route path="/pontos-venda">
-            <Layout>
-              <POSManagement />
-            </Layout>
-          </Route>
-          <Route path="/estilos-cerveja">
-            <Layout>
-              <BeerStylesManagement />
-            </Layout>
-          </Route>
-          <Route path="/dispositivos">
-            <Layout>
-              <DevicesManagement />
-            </Layout>
-          </Route>
+
           <Route path="/colaboradores">
             <Layout>
               <EmployeesManagement />

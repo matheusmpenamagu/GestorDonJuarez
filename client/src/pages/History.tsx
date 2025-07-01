@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Filter, Beer, RefreshCw, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Filter, Beer, RefreshCw, Clock, ChevronDown, ChevronUp, Wrench, Store, Smartphone } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -27,6 +27,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import TapsManagement from "@/pages/TapsManagement";
+import POSManagement from "@/pages/POSManagement";
+import BeerStylesManagement from "@/pages/BeerStylesManagement";
+import DevicesManagement from "@/pages/DevicesManagement";
 
 interface TimelineEvent {
   id: number;
@@ -39,7 +44,7 @@ interface TimelineEvent {
   deviceCode?: string;
 }
 
-export default function History() {
+function HistoryTimeline() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedTap, setSelectedTap] = useState("");
@@ -48,169 +53,63 @@ export default function History() {
   const [selectedDevice, setSelectedDevice] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Get pour events
-  const { data: pourEvents = [], isLoading: isLoadingPours } = useQuery({
-    queryKey: ["/api/history/pours", startDate, endDate, selectedTap],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (startDate) params.append('start_date', startDate);
-      if (endDate) params.append('end_date', endDate);
-      if (selectedTap) params.append('tap_id', selectedTap);
-      
-      const response = await fetch(`/api/history/pours?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch pour events');
-      return response.json();
-    },
-    enabled: true,
+  // Fetch data for filters
+  const { data: taps = [] } = useQuery({ queryKey: ["/api/taps"] });
+  const { data: pointsOfSale = [] } = useQuery({ queryKey: ["/api/points-of-sale"] });
+  const { data: beerStyles = [] } = useQuery({ queryKey: ["/api/beer-styles"] });
+  const { data: devices = [] } = useQuery({ queryKey: ["/api/devices"] });
+
+  // Build query parameters
+  const queryParams = new URLSearchParams();
+  if (startDate) queryParams.append("startDate", startDate);
+  if (endDate) queryParams.append("endDate", endDate);
+  if (selectedTap) queryParams.append("tapId", selectedTap);
+
+  // Fetch timeline data
+  const { data: events = [], isLoading } = useQuery({
+    queryKey: ["/api/timeline", queryParams.toString()],
   });
 
-  // Get keg change events
-  const { data: kegChangeEvents = [], isLoading: isLoadingKegs } = useQuery({
-    queryKey: ["/api/history/keg-changes", startDate, endDate, selectedTap],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (startDate) params.append('start_date', startDate);
-      if (endDate) params.append('end_date', endDate);
-      if (selectedTap) params.append('tap_id', selectedTap);
-      
-      const response = await fetch(`/api/history/keg-changes?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch keg change events');
-      return response.json();
-    },
-    enabled: true,
-  });
-
-  // Get filter options
-  const { data: taps = [] } = useQuery({
-    queryKey: ["/api/taps"],
-  });
-
-  const { data: beerStyles = [] } = useQuery({
-    queryKey: ["/api/beer-styles"],
-  });
-
-  const { data: pointsOfSale = [] } = useQuery({
-    queryKey: ["/api/points-of-sale"],
-  });
-
-  const { data: devices = [] } = useQuery({
-    queryKey: ["/api/devices"],
-  });
-
-  // Combine and sort events
-  const allEvents: TimelineEvent[] = [
-    ...(Array.isArray(pourEvents) ? pourEvents : []).map((event: any) => ({
-      id: event.id,
-      type: "pour" as const,
-      datetime: event.datetime,
-      tapName: event.tapName,
-      posName: event.posName,
-      beerStyleName: event.beerStyleName,
-      totalVolumeMl: event.totalVolumeMl,
-      deviceCode: event.deviceCode,
-    })),
-    ...(Array.isArray(kegChangeEvents) ? kegChangeEvents : []).map(
-      (event: any) => ({
-        id: event.id,
-        type: "keg_change" as const,
-        datetime: event.datetime,
-        tapName: event.tap?.name || `Torneira ${event.tapId}`,
-        posName: event.tap?.pointOfSale?.name || 'Local não especificado',
-        beerStyleName: undefined,
-        totalVolumeMl: undefined,
-        deviceCode: undefined,
-      }),
-    ),
-  ].sort((a, b) => {
-    // Safe date parsing for sorting
-    const parseDate = (datetime: string) => {
-      if (/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/.test(datetime)) {
-        const [datePart, timePart] = datetime.split(' ');
-        const [day, month, year] = datePart.split('/');
-        const [hour, minute, second] = timePart.split(':');
-        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second));
-      }
-      return new Date(datetime);
-    };
-    
-    const dateA = parseDate(a.datetime);
-    const dateB = parseDate(b.datetime);
-    
-    return dateB.getTime() - dateA.getTime();
-  });
-
-  // Apply client-side filters
-  const filteredEvents = allEvents.filter(event => {
-    // Filter by beer style
-    if (selectedBeerStyle && event.beerStyleName !== selectedBeerStyle) {
-      return false;
-    }
-    
-    // Filter by point of sale
-    if (selectedPOS && event.posName !== selectedPOS) {
-      return false;
-    }
-    
-    // Filter by device
-    if (selectedDevice && event.deviceCode !== selectedDevice) {
-      return false;
-    }
-    
+  // Filter events by beer style, POS, and device on the frontend
+  const filteredEvents = events.filter((event: TimelineEvent) => {
+    if (selectedBeerStyle && event.beerStyleName !== selectedBeerStyle) return false;
+    if (selectedPOS && event.posName !== selectedPOS) return false;
+    if (selectedDevice && event.deviceCode !== selectedDevice) return false;
     return true;
   });
 
-  const isLoading = isLoadingPours || isLoadingKegs;
+  const clearFilters = () => {
+    setStartDate("");
+    setEndDate("");
+    setSelectedTap("");
+    setSelectedBeerStyle("");
+    setSelectedPOS("");
+    setSelectedDevice("");
+  };
 
-
+  const hasActiveFilters = startDate || endDate || selectedTap || selectedBeerStyle || selectedPOS || selectedDevice;
 
   const getEventIcon = (type: string) => {
-    return type === "pour" ? Beer : RefreshCw;
+    return type === "pour" ? <Beer className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />;
   };
 
-  const getEventBgColor = (type: string) => {
-    return type === "pour" ? "bg-primary" : "bg-green-600";
+  const getEventColor = (type: string) => {
+    return type === "pour" ? "text-orange-600" : "text-green-600";
   };
 
-  const formatDateTime = (datetime: string) => {
+  const formatEventDateTime = (datetime: string) => {
     try {
-      // Check if datetime is already in Brazilian format "dd/MM/yyyy HH:mm:ss"
-      if (/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/.test(datetime)) {
-        // Parse Brazilian format manually
-        const [datePart, timePart] = datetime.split(' ');
-        const [day, month, year] = datePart.split('/');
-        const [hour, minute, second] = timePart.split(':');
-        
-        const date = new Date(
-          parseInt(year), 
-          parseInt(month) - 1, // Month is 0-indexed
-          parseInt(day), 
-          parseInt(hour), 
-          parseInt(minute), 
-          parseInt(second)
-        );
-        
-        if (isNaN(date.getTime())) {
-          return { date: 'Data inválida', time: 'Hora inválida' };
-        }
-        
-        return {
-          date: format(date, "dd/MM/yyyy", { locale: ptBR }),
-          time: format(date, "HH:mm:ss", { locale: ptBR })
-        };
-      }
-      
-      // Try other formats
       let date: Date;
       
       if (datetime.includes('T')) {
-        // Already in ISO format
+        // ISO format
         date = parseISO(datetime);
-      } else if (datetime.includes(' ')) {
-        // Format like "2024-01-01 12:00:00"
-        date = parseISO(datetime.replace(' ', 'T'));
       } else {
-        // Fallback
-        date = new Date(datetime);
+        // Assume it's in "DD/MM/YYYY HH:MM:SS" format and convert it
+        const [datePart, timePart] = datetime.split(' ');
+        const [day, month, year] = datePart.split('/');
+        const isoString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart || '00:00:00'}`;
+        date = parseISO(isoString);
       }
       
       if (isNaN(date.getTime())) {
@@ -218,11 +117,11 @@ export default function History() {
       }
       
       return {
-        date: format(date, "dd/MM/yyyy", { locale: ptBR }),
-        time: format(date, "HH:mm:ss", { locale: ptBR })
+        date: format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }),
+        time: format(date, "HH:mm", { locale: ptBR })
       };
     } catch (error) {
-      console.error('Error formatting datetime:', datetime, error);
+      console.error('Error formatting date:', error);
       return { date: 'Data inválida', time: 'Hora inválida' };
     }
   };
@@ -230,7 +129,7 @@ export default function History() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Histórico</h1>
+        <h2 className="text-xl font-semibold mb-2">Timeline de eventos</h2>
         <p className="text-muted-foreground">
           Timeline de consumo e trocas de barril
         </p>
@@ -277,12 +176,12 @@ export default function History() {
                   <Label htmlFor="tap-filter">Torneira</Label>
                   <select
                     id="tap-filter"
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    className="w-full p-2 border border-gray-300 rounded-md"
                     value={selectedTap}
                     onChange={(e) => setSelectedTap(e.target.value)}
                   >
-                    <option value="">Todas</option>
-                    {(Array.isArray(taps) ? taps : []).map((tap: any) => (
+                    <option value="">Todas as torneiras</option>
+                    {taps.map((tap: any) => (
                       <option key={tap.id} value={tap.id}>
                         {tap.name}
                       </option>
@@ -290,15 +189,15 @@ export default function History() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="beer-style-filter">Estilo</Label>
+                  <Label htmlFor="beer-style-filter">Estilo de Chope</Label>
                   <select
                     id="beer-style-filter"
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    className="w-full p-2 border border-gray-300 rounded-md"
                     value={selectedBeerStyle}
                     onChange={(e) => setSelectedBeerStyle(e.target.value)}
                   >
-                    <option value="">Todos</option>
-                    {(Array.isArray(beerStyles) ? beerStyles : []).map((style: any) => (
+                    <option value="">Todos os estilos</option>
+                    {beerStyles.map((style: any) => (
                       <option key={style.id} value={style.name}>
                         {style.name}
                       </option>
@@ -306,15 +205,15 @@ export default function History() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="pos-filter">Local</Label>
+                  <Label htmlFor="pos-filter">Ponto de Venda</Label>
                   <select
                     id="pos-filter"
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    className="w-full p-2 border border-gray-300 rounded-md"
                     value={selectedPOS}
                     onChange={(e) => setSelectedPOS(e.target.value)}
                   >
-                    <option value="">Todos</option>
-                    {(Array.isArray(pointsOfSale) ? pointsOfSale : []).map((pos: any) => (
+                    <option value="">Todos os locais</option>
+                    {pointsOfSale.map((pos: any) => (
                       <option key={pos.id} value={pos.name}>
                         {pos.name}
                       </option>
@@ -325,12 +224,12 @@ export default function History() {
                   <Label htmlFor="device-filter">Dispositivo</Label>
                   <select
                     id="device-filter"
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    className="w-full p-2 border border-gray-300 rounded-md"
                     value={selectedDevice}
                     onChange={(e) => setSelectedDevice(e.target.value)}
                   >
-                    <option value="">Todos</option>
-                    {(Array.isArray(devices) ? devices : []).map((device: any) => (
+                    <option value="">Todos os dispositivos</option>
+                    {devices.map((device: any) => (
                       <option key={device.id} value={device.code}>
                         {device.code} - {device.name}
                       </option>
@@ -338,6 +237,16 @@ export default function History() {
                   </select>
                 </div>
               </div>
+              {hasActiveFilters && (
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    {filteredEvents.length} evento(s) encontrado(s)
+                  </p>
+                  <Button variant="outline" onClick={clearFilters}>
+                    Limpar filtros
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </CollapsibleContent>
         </Card>
@@ -347,29 +256,29 @@ export default function History() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Histórico de Atividades
+            Timeline de Eventos
           </CardTitle>
           <CardDescription>
-            {filteredEvents.length} evento(s) encontrado(s)
+            Histórico cronológico de consumo de chopes e trocas de barril
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Carregando histórico...</p>
+            <div className="flex items-center justify-center py-8">
+              <div className="text-muted-foreground">Carregando eventos...</div>
             </div>
           ) : filteredEvents.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">
-                Nenhum evento encontrado para os filtros selecionados
-              </p>
+            <div className="flex items-center justify-center py-8">
+              <div className="text-muted-foreground">
+                Nenhum evento encontrado para os filtros selecionados.
+              </div>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="space-y-4">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[120px]">Tipo</TableHead>
+                    <TableHead className="w-24">Tipo</TableHead>
                     <TableHead>Data/Hora</TableHead>
                     <TableHead>Torneira</TableHead>
                     <TableHead>Local</TableHead>
@@ -379,52 +288,32 @@ export default function History() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredEvents.map((event) => {
-                    const Icon = getEventIcon(event.type);
-                    const { date, time } = formatDateTime(event.datetime);
-                    
+                  {filteredEvents.map((event: TimelineEvent) => {
+                    const { date, time } = formatEventDateTime(event.datetime);
                     return (
                       <TableRow key={`${event.type}-${event.id}`}>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className={`p-2 rounded-full ${getEventBgColor(event.type)} text-white`}>
-                              <Icon className="h-3 w-3" />
-                            </div>
-                            <span className="text-xs font-medium">
+                          <div className={`flex items-center gap-2 ${getEventColor(event.type)}`}>
+                            {getEventIcon(event.type)}
+                            <Badge variant={event.type === "pour" ? "default" : "secondary"}>
                               {event.type === "pour" ? "Consumo" : "Troca"}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">
-                          <div>
-                            <div className="font-medium">{date}</div>
-                            <div className="text-xs text-muted-foreground">{time}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {event.tapName}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {event.posName}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {event.beerStyleName || "-"}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {event.type === "pour" && event.totalVolumeMl
-                            ? `${event.totalVolumeMl.toLocaleString()} ml`
-                            : "-"}
-                        </TableCell>
-                        <TableCell>
-                          {event.deviceCode ? (
-                            <Badge variant="secondary" className="text-xs">
-                              {event.deviceCode}
                             </Badge>
-                          ) : (
-                            "-"
-                          )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{date}</span>
+                            <span className="text-sm text-muted-foreground">{time}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">{event.tapName}</TableCell>
+                        <TableCell>{event.posName}</TableCell>
+                        <TableCell>{event.beerStyleName || "-"}</TableCell>
+                        <TableCell>
+                          {event.totalVolumeMl ? `${(event.totalVolumeMl / 1000).toFixed(2)}L` : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-mono text-sm">{event.deviceCode || "-"}</span>
                         </TableCell>
                       </TableRow>
                     );
@@ -435,6 +324,64 @@ export default function History() {
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+export default function History() {
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Consumo de chopes</h1>
+        <p className="text-muted-foreground">
+          Gestão completa do sistema de chopes
+        </p>
+      </div>
+
+      <Tabs defaultValue="historico" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="historico" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Histórico
+          </TabsTrigger>
+          <TabsTrigger value="torneiras" className="flex items-center gap-2">
+            <Wrench className="h-4 w-4" />
+            Torneiras
+          </TabsTrigger>
+          <TabsTrigger value="pontos-venda" className="flex items-center gap-2">
+            <Store className="h-4 w-4" />
+            Pontos de venda
+          </TabsTrigger>
+          <TabsTrigger value="estilos" className="flex items-center gap-2">
+            <Beer className="h-4 w-4" />
+            Estilos de chopes
+          </TabsTrigger>
+          <TabsTrigger value="dispositivos" className="flex items-center gap-2">
+            <Smartphone className="h-4 w-4" />
+            Dispositivos
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="historico" className="space-y-6">
+          <HistoryTimeline />
+        </TabsContent>
+
+        <TabsContent value="torneiras" className="space-y-6">
+          <TapsManagement />
+        </TabsContent>
+
+        <TabsContent value="pontos-venda" className="space-y-6">
+          <POSManagement />
+        </TabsContent>
+
+        <TabsContent value="estilos" className="space-y-6">
+          <BeerStylesManagement />
+        </TabsContent>
+
+        <TabsContent value="dispositivos" className="space-y-6">
+          <DevicesManagement />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
