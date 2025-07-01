@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Plus, Edit, Trash2, Users, Mail, User } from "lucide-react";
+import { Plus, Edit, Trash2, Users, Mail, User, Phone } from "lucide-react";
 import { EmployeeWithRelations } from "@shared/schema";
 
 interface EmployeeFormData {
@@ -119,6 +119,7 @@ export default function EmployeesManagement() {
       password: "",
       firstName: "",
       lastName: "",
+      whatsapp: "",
       roleId: null,
       employmentType: "Funcionário",
       isActive: true,
@@ -143,6 +144,7 @@ export default function EmployeesManagement() {
       password: "", // Não preencher senha na edição
       firstName: employee.firstName || "",
       lastName: employee.lastName || "",
+      whatsapp: employee.whatsapp || "",
       roleId: employee.roleId || null,
       employmentType: (employee.employmentType || "Funcionário") as "Sócio" | "Funcionário" | "Freelancer",
       isActive: employee.isActive ?? true,
@@ -211,6 +213,17 @@ export default function EmployeesManagement() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="Ex: joao.silva@donjuarez.com"
                   required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="whatsapp">WhatsApp</Label>
+                <Input
+                  id="whatsapp"
+                  type="tel"
+                  value={formData.whatsapp}
+                  onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                  placeholder="Ex: 33999123456"
                 />
               </div>
 
@@ -329,6 +342,12 @@ export default function EmployeesManagement() {
                     <Mail className="h-4 w-4" />
                     {employee.email}
                   </div>
+                  {employee.whatsapp && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Phone className="h-4 w-4" />
+                      {employee.whatsapp}
+                    </div>
+                  )}
                   {employee.role && (
                     <Badge variant="secondary">
                       {employee.role.name}

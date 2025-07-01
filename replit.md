@@ -237,6 +237,12 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Atualização automática de torneiras para usar estilos corretos
 - ✓ Remoção do campo "Capacidade do barril" do formulário de torneiras (Julho 1, 2025)
 - ✓ Simplificação da interface com capacidade gerenciada via eventos de troca
+- ✓ Adição do campo WhatsApp na tabela de colaboradores (Julho 1, 2025)
+- ✓ Limpeza completa do banco de dados de colaboradores existentes
+- ✓ Importação de 26 colaboradores autênticos a partir de planilha CSV
+- ✓ Criação automática de 9 novos cargos específicos da empresa
+- ✓ Interface atualizada para exibir WhatsApp nos cards dos colaboradores
+- ✓ Formulário de colaboradores expandido com campo de telefone
 
 ## User Preferences
 
