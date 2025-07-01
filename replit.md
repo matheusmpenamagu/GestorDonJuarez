@@ -178,6 +178,10 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Integração de Torneiras, Pontos de venda, Estilos de chopes e Dispositivos como abas
 - ✓ Simplificação da navegação lateral para melhor organização
 - ✓ Importação completa de dados históricos de CO2 (87 registros 2023-2025)
+- ✓ Implementação de cards de estatísticas de CO2 na tela de recargas (Julho 1, 2025)
+- ✓ Algoritmo de cálculo de eficiência CO2/litro com comparação de períodos
+- ✓ Filtro para contabilizar CO2 apenas das unidades Grão Pará e Beer Truck
+- ✓ API /api/co2-stats com métricas dos últimos 30 dias vs período anterior
 
 ## User Preferences
 
