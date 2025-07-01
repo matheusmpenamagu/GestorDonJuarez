@@ -59,9 +59,10 @@ export default function RolesManagement() {
       resetForm();
     },
     onError: (error) => {
+      console.error("Error creating role:", error);
       toast({
         title: "Erro",
-        description: "Erro ao criar cargo",
+        description: error.message || "Erro ao criar cargo",
         variant: "destructive",
       });
     },
@@ -80,9 +81,10 @@ export default function RolesManagement() {
       resetForm();
     },
     onError: (error) => {
+      console.error("Error updating role:", error);
       toast({
         title: "Erro",
-        description: "Erro ao atualizar cargo",
+        description: error.message || "Erro ao atualizar cargo",
         variant: "destructive",
       });
     },
@@ -100,9 +102,10 @@ export default function RolesManagement() {
       });
     },
     onError: (error) => {
+      console.error("Error deleting role:", error);
       toast({
         title: "Erro",
-        description: "Erro ao remover cargo",
+        description: error.message || "Erro ao remover cargo",
         variant: "destructive",
       });
     },
