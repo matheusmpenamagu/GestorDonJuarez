@@ -336,7 +336,7 @@ export type PourEventWithRelations = PourEvent & {
     id: number;
     name: string;
     pointOfSale?: { name: string };
-    currentBeerStyle?: { name: string };
+    currentBeerStyle?: { name: string; ebcColor?: number | null };
   };
 };
 

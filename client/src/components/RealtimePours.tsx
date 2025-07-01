@@ -5,6 +5,31 @@ import { Badge } from "@/components/ui/badge";
 import { PourEventWithRelations } from "@shared/schema";
 import { useWebSocket } from "@/hooks/useWebSocket";
 
+// EBC Color Scale mapping (same as TapCard and BeerStylesManagement)
+const ebcColors = [
+  { value: 2, name: "Palha", color: "#FFE699" },
+  { value: 4, name: "Amarelo claro", color: "#FFD700" },
+  { value: 6, name: "Dourado", color: "#DAA520" },
+  { value: 8, name: "Âmbar claro", color: "#CD853F" },
+  { value: 12, name: "Âmbar", color: "#B8860B" },
+  { value: 16, name: "Cobre", color: "#B87333" },
+  { value: 20, name: "Marrom claro", color: "#8B4513" },
+  { value: 30, name: "Marrom", color: "#654321" },
+  { value: 40, name: "Marrom escuro", color: "#3C2415" },
+  { value: 80, name: "Preto", color: "#1C1C1C" },
+];
+
+const getEbcColor = (ebcValue: number | null | undefined) => {
+  if (!ebcValue) return "hsl(20, 90%, 48%)"; // primary color default
+  
+  const colorRange = ebcColors.find((color, index) => {
+    const nextColor = ebcColors[index + 1];
+    return ebcValue <= color.value || !nextColor;
+  });
+  
+  return colorRange?.color || "hsl(20, 90%, 48%)";
+};
+
 export function RealtimePours() {
   const [recentPours, setRecentPours] = useState<PourEventWithRelations[]>([]);
   const { lastMessage } = useWebSocket('/');
@@ -97,31 +122,38 @@ export function RealtimePours() {
         </div>
       ) : (
         <div className="space-y-3">
-          {displayPours.map((pour) => (
-            <div key={pour.id} className="flex items-center justify-between py-3 px-4 rounded-lg hover:bg-muted/50 border border-dashed">
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">{pour.tap.id}</span>
+          {displayPours.map((pour) => {
+            // Get EBC color from tap's current beer style
+            const ebcColor = getEbcColor(pour.tap?.currentBeerStyle?.ebcColor);
+            return (
+              <div key={pour.id} className="flex items-center justify-between py-3 px-4 rounded-lg hover:bg-muted/50 border border-dashed">
+                <div className="flex items-center space-x-3">
+                  <div 
+                    className="w-6 h-6 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: ebcColor }}
+                  >
+                    <span className="text-white text-xs font-bold">{pour.tap.id}</span>
+                  </div>
+                  <div className="text-sm">
+                    <div className="font-medium text-foreground">
+                      {pour.tapName || pour.tap.name || `Torneira ${pour.tap.id}`}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {pour.posName || pour.tap.pointOfSale?.name || "N/A"} • {pour.beerStyleName || pour.tap.currentBeerStyle?.name || "N/A"}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-sm">
-                  <div className="font-medium text-foreground">
-                    {pour.tapName || pour.tap.name || `Torneira ${pour.tap.id}`}
+                <div className="text-right">
+                  <div className="text-sm font-medium text-foreground">
+                    {pour.pourVolumeMl}ml
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {pour.posName || pour.tap.pointOfSale?.name || "N/A"} • {pour.beerStyleName || pour.tap.currentBeerStyle?.name || "N/A"}
+                    {formatDateTime(pour.datetime).split(' ')[1]}
                   </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-sm font-medium text-foreground">
-                  {pour.pourVolumeMl}ml
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {formatDateTime(pour.datetime).split(' ')[1]}
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

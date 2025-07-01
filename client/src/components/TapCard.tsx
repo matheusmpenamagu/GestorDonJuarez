@@ -63,7 +63,10 @@ export function TapCard({ tap }: TapCardProps) {
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-2">
-            <div className="w-7 h-7 bg-primary rounded-full flex items-center justify-center">
+            <div 
+              className="w-7 h-7 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: ebcColor }}
+            >
               <span className="text-white text-sm font-bold">{tap.id}</span>
             </div>
             <div>
