@@ -1,61 +1,90 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { format, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Filter, Beer, RefreshCw, Clock } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Download } from "lucide-react";
-import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+
+interface TimelineEvent {
+  id: number;
+  type: 'pour' | 'keg_change';
+  datetime: string;
+  tapName: string;
+  posName: string;
+  beerStyleName?: string;
+  totalVolumeMl?: number;
+  deviceCode?: string;
+}
 
 export default function History() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  
-  const { data: historyData, isLoading } = useQuery({
-    queryKey: ["/api/history/pours", { start_date: startDate, end_date: endDate }],
-    enabled: false, // Only fetch when user searches
+  const [selectedTap, setSelectedTap] = useState("");
+
+  // Get pour events
+  const { data: pourEvents = [], isLoading: isLoadingPours } = useQuery({
+    queryKey: ['/api/pour-events', startDate, endDate, selectedTap],
+    enabled: true,
   });
 
-  const handleExportCSV = () => {
-    const params = new URLSearchParams();
-    if (startDate) params.append('start_date', startDate);
-    if (endDate) params.append('end_date', endDate);
-    params.append('format', 'csv');
-    
-    const url = `/api/history/pours?${params.toString()}`;
-    window.open(url, '_blank');
+  // Get keg change events
+  const { data: kegChangeEvents = [], isLoading: isLoadingKegs } = useQuery({
+    queryKey: ['/api/keg-changes', startDate, endDate, selectedTap],
+    enabled: true,
+  });
+
+  // Get taps for filter
+  const { data: taps = [] } = useQuery({
+    queryKey: ['/api/taps'],
+  });
+
+  // Combine and sort events
+  const timelineEvents: TimelineEvent[] = [
+    ...pourEvents.map((event: any) => ({
+      ...event,
+      type: 'pour' as const
+    })),
+    ...kegChangeEvents.map((event: any) => ({
+      ...event,
+      type: 'keg_change' as const
+    }))
+  ].sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime.getTime()));
+
+  const isLoading = isLoadingPours || isLoadingKegs;
+
+  const getEventIcon = (type: string) => {
+    return type === 'pour' ? Beer : RefreshCw;
   };
 
-  const formatDateTime = (datetime: string) => {
-    const date = new Date(datetime);
-    return date.toLocaleString("pt-BR", { 
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit", 
-      minute: "2-digit",
-      second: "2-digit",
-      timeZone: "America/Sao_Paulo"
-    });
+  const getEventBgColor = (type: string) => {
+    return type === 'pour' ? 'bg-primary' : 'bg-green-600';
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Histórico de Consumo</h2>
-        <p className="text-muted-foreground mt-1">
-          Visualize e exporte dados de consumo por período
+        <h1 className="text-3xl font-bold">Histórico</h1>
+        <p className="text-muted-foreground">
+          Timeline de consumo e trocas de barril
         </p>
       </div>
 
-      {/* Export Controls */}
       <Card>
         <CardHeader>
-          <CardTitle>Exportar Dados</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtros
+          </CardTitle>
+          <CardDescription>
+            Filtre o histórico por período e torneira específica
+          </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="start-date">Data Inicial</Label>
               <Input
                 id="start-date"
@@ -64,7 +93,7 @@ export default function History() {
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="end-date">Data Final</Label>
               <Input
                 id="end-date"
@@ -73,72 +102,124 @@ export default function History() {
                 onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
-            <div className="flex items-end">
-              <Button 
-                onClick={handleExportCSV}
-                className="w-full"
-                disabled={!startDate && !endDate}
+            <div className="space-y-2">
+              <Label htmlFor="tap-filter">Torneira</Label>
+              <select
+                id="tap-filter"
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                value={selectedTap}
+                onChange={(e) => setSelectedTap(e.target.value)}
               >
-                <Download className="mr-2 h-4 w-4" />
-                Exportar CSV
-              </Button>
+                <option value="">Todas as torneiras</option>
+                {taps.map((tap: any) => (
+                  <option key={tap.id} value={tap.id}>
+                    {tap.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* History Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Histórico Detalhado</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Timeline de Atividades
+          </CardTitle>
+          <CardDescription>
+            {timelineEvents.length} evento(s) encontrado(s)
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Carregando histórico...
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Carregando histórico...</p>
             </div>
-          ) : !historyData ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Selecione um período e clique em "Exportar CSV" para visualizar os dados
-            </div>
-          ) : historyData.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhum registro encontrado para o período selecionado
+          ) : timelineEvents.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Nenhum evento encontrado para os filtros selecionados</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Data/Hora</th>
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Torneira</th>
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Volume</th>
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Ponto de Venda</th>
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Estilo</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {historyData.map((event: any) => (
-                    <tr key={event.id} className="hover:bg-muted/50">
-                      <td className="py-4 text-sm text-foreground">
-                        {formatDateTime(event.datetime)}
-                      </td>
-                      <td className="py-4 text-sm text-foreground">
-                        {event.tap.name || `Torneira ${event.tap.id}`}
-                      </td>
-                      <td className="py-4 text-sm font-medium text-foreground">
-                        {event.pourVolumeMl}ml
-                      </td>
-                      <td className="py-4 text-sm text-muted-foreground">
-                        {event.tap.pointOfSale?.name || "N/A"}
-                      </td>
-                      <td className="py-4 text-sm text-muted-foreground">
-                        {event.tap.currentBeerStyle?.name || "N/A"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="relative">
+              {/* Timeline line */}
+              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border"></div>
+              
+              <div className="space-y-6">
+                {timelineEvents.map((event, index) => {
+                  const Icon = getEventIcon(event.type);
+                  const eventBgColor = getEventBgColor(event.type);
+                  
+                  return (
+                    <div key={`${event.type}-${event.id}`} className="relative flex items-start gap-4">
+                      {/* Timeline dot */}
+                      <div className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-full ${eventBgColor} text-white`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      
+                      {/* Event content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="bg-card border rounded-lg p-4 shadow-sm">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="font-semibold text-sm">
+                                  {event.type === 'pour' ? 'Consumo de Chope' : 'Troca de Barril'}
+                                </h3>
+                                <Badge variant="outline" className="text-xs">
+                                  {event.tapName}
+                                </Badge>
+                              </div>
+                              
+                              <div className="space-y-1 text-sm text-muted-foreground">
+                                <p className="flex items-center gap-2">
+                                  <span className="font-medium">Local:</span>
+                                  {event.posName}
+                                </p>
+                                
+                                {event.beerStyleName && (
+                                  <p className="flex items-center gap-2">
+                                    <span className="font-medium">Estilo:</span>
+                                    {event.beerStyleName}
+                                  </p>
+                                )}
+                                
+                                {event.type === 'pour' && event.totalVolumeMl && (
+                                  <p className="flex items-center gap-2">
+                                    <span className="font-medium">Volume:</span>
+                                    <span className="font-mono text-foreground">
+                                      {event.totalVolumeMl.toLocaleString()} ml
+                                    </span>
+                                  </p>
+                                )}
+                                
+                                {event.deviceCode && (
+                                  <p className="flex items-center gap-2">
+                                    <span className="font-medium">Dispositivo:</span>
+                                    <Badge variant="secondary" className="text-xs">
+                                      {event.deviceCode}
+                                    </Badge>
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="text-right">
+                              <p className="text-sm font-medium">
+                                {format(parseISO(event.datetime.replace(' ', 'T')), 'dd/MM/yyyy', { locale: ptBR })}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {format(parseISO(event.datetime.replace(' ', 'T')), 'HH:mm:ss', { locale: ptBR })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </CardContent>

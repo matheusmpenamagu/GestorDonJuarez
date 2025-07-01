@@ -156,6 +156,12 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Interface adaptada para gestão de múltiplas operações empresariais
 - ✓ Menu reorganizado: Dashboard, Histórico, Torneiras, Pontos de venda, Estilos de chopes, Dispositivos
 - ✓ Sistema preparado para adicionar novos módulos de gestão no futuro
+- ✓ Implementação de menu colapsável com ícones de expansão/colapso
+- ✓ Criação de timeline vertical na página de histórico
+- ✓ Timeline combina eventos de consumo e trocas de barril
+- ✓ Filtros por data e torneira mantidos na nova interface
+- ✓ Remoção da funcionalidade de exportação CSV da tela de histórico
+- ✓ Design visual aprimorado com ícones distintos para cada tipo de evento
 
 ## User Preferences
 
