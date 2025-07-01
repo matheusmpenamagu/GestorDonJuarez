@@ -128,6 +128,14 @@ export const employees = pgTable("employees", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const units = pgTable("units", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  address: text("address").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   // Add user-specific relations if needed
@@ -185,6 +193,10 @@ export const employeesRelations = relations(employees, ({ one }) => ({
     fields: [employees.roleId],
     references: [roles.id],
   }),
+}));
+
+export const unitsRelations = relations(units, ({ many }) => ({
+  // Add relations when needed (e.g., pointsOfSale, employees)
 }));
 
 // Insert schemas
@@ -248,6 +260,12 @@ export const insertEmployeeSchema = createInsertSchema(employees).omit({
   employmentType: z.enum(["Sócio", "Funcionário", "Freelancer"]),
 });
 
+export const insertUnitSchema = createInsertSchema(units).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -267,6 +285,8 @@ export type Role = typeof roles.$inferSelect;
 export type InsertRole = z.infer<typeof insertRoleSchema>;
 export type Employee = typeof employees.$inferSelect;
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
+export type Unit = typeof units.$inferSelect;
+export type InsertUnit = z.infer<typeof insertUnitSchema>;
 
 // Extended types for API responses
 export type TapWithRelations = Tap & {
