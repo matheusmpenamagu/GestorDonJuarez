@@ -18,18 +18,17 @@ interface BeerStyleFormData {
   ebcColor: number | null;
 }
 
-// EBC Color Scale: European Brewery Convention color mapping
 const ebcColors = [
-  { value: 2, name: "Palha", color: "#FFE699", description: "Cerveja muito clara, cor de palha" },
-  { value: 4, name: "Amarelo claro", color: "#FFD700", description: "Cor dourada clara" },
-  { value: 6, name: "Dourado", color: "#DAA520", description: "Dourado típico de lagers" },
-  { value: 8, name: "Âmbar claro", color: "#CD853F", description: "Âmbar claro, ales douradas" },
-  { value: 12, name: "Âmbar", color: "#B8860B", description: "Âmbar médio, IPAs e ales" },
-  { value: 16, name: "Cobre", color: "#B87333", description: "Cor de cobre, brown ales" },
-  { value: 20, name: "Marrom claro", color: "#8B4513", description: "Marrom claro, porters" },
-  { value: 30, name: "Marrom", color: "#654321", description: "Marrom escuro, stouts" },
-  { value: 40, name: "Marrom escuro", color: "#3C2415", description: "Muito escuro, imperial stouts" },
-  { value: 80, name: "Preto", color: "#1C1C1C", description: "Preto opaco, stouts robustos" },
+  { value: 2, name: "Palha", color: "#F3E5AB", description: "Muito claro, quase incolor" },
+  { value: 4, name: "Amarelo claro", color: "#F6F513", description: "Amarelo claro brilhante" },
+  { value: 6, name: "Dourado", color: "#FFD700", description: "Dourado clássico" },
+  { value: 8, name: "Âmbar claro", color: "#FFBF00", description: "Âmbar claro" },
+  { value: 12, name: "Âmbar", color: "#D2691E", description: "Âmbar médio" },
+  { value: 16, name: "Cobre", color: "#B87333", description: "Cobre avermelhado" },
+  { value: 20, name: "Marrom claro", color: "#8B4513", description: "Marrom claro" },
+  { value: 30, name: "Marrom", color: "#654321", description: "Marrom médio" },
+  { value: 40, name: "Marrom escuro", color: "#3C1810", description: "Marrom muito escuro" },
+  { value: 80, name: "Preto", color: "#0F0A08", description: "Preto opaco" },
 ];
 
 const getEbcColorStyle = (ebcValue: number | null) => {
@@ -245,7 +244,7 @@ export default function BeerStylesManagement() {
 
   const getTapsUsingStyle = (styleId: number) => {
     if (!taps || !Array.isArray(taps)) return 0;
-    return taps.filter((tap: any) => tap.currentBeerStyleId === styleId && tap.isActive).length;
+    return taps.filter((tap: any) => tap.currentBeerStyleId === styleId).length;
   };
 
   return (
@@ -270,86 +269,79 @@ export default function BeerStylesManagement() {
                 Novo Estilo
               </Button>
             </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editingStyle ? "Editar Estilo de Cerveja" : "Novo Estilo de Cerveja"}
-              </DialogTitle>
-              <DialogDescription>
-                {editingStyle 
-                  ? "Atualize as informações do estilo de cerveja incluindo a cor EBC."
-                  : "Adicione um novo estilo de cerveja com nome, descrição e cor EBC."
-                }
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Nome</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Ex: IPA Artesanal"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="description">Descrição</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Ex: Cerveja lupulada com amargor característico e aroma cítrico"
-                  rows={3}
-                />
-              </div>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {editingStyle ? "Editar Estilo de Cerveja" : "Novo Estilo de Cerveja"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingStyle 
+                    ? "Atualize as informações do estilo de cerveja incluindo a cor EBC."
+                    : "Adicione um novo estilo de cerveja com nome, descrição e cor EBC."
+                  }
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Nome</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Ex: IPA Artesanal"
+                    required
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="ebcColor">Cor EBC (European Brewery Convention)</Label>
-                <Select 
-                  value={formData.ebcColor?.toString() || "none"} 
-                  onValueChange={(value) => setFormData({ 
-                    ...formData, 
-                    ebcColor: value && value !== "none" ? parseInt(value) : null 
-                  })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a cor do estilo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Não definido</SelectItem>
-                    {ebcColors.map((color) => (
-                      <SelectItem key={color.value} value={color.value.toString()}>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-4 h-4 rounded border"
-                            style={{ backgroundColor: color.color }}
-                          />
-                          <span>{color.name} (EBC {color.value})</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {formData.ebcColor && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {ebcColors.find(c => c.value === formData.ebcColor)?.description}
-                  </p>
-                )}
-              </div>
-              
-              <div className="flex gap-2">
-                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                  {editingStyle ? "Atualizar" : "Criar"}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <div>
+                  <Label htmlFor="description">Descrição</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Descreva as características deste estilo de cerveja"
+                    rows={3}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="ebcColor">Cor EBC</Label>
+                  <Select value={formData.ebcColor?.toString() || ""} onValueChange={(value) => setFormData({ ...formData, ebcColor: value ? Number(value) : null })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a cor EBC" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ebcColors.map((color) => (
+                        <SelectItem key={color.value} value={color.value.toString()}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-4 h-4 rounded border" 
+                              style={{ backgroundColor: color.color }}
+                            />
+                            {color.name} (EBC {color.value})
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formData.ebcColor && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {ebcColors.find(c => c.value === formData.ebcColor)?.description}
+                    </p>
+                  )}
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                    {editingStyle ? "Atualizar" : "Criar"}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -369,25 +361,14 @@ export default function BeerStylesManagement() {
             <Card key={style.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div 
-                      className="w-10 h-10 rounded-full flex items-center justify-center border" 
-                      style={getEbcColorStyle(style.ebcColor)}
-                    >
-                      <Beer className="h-5 w-5" style={{ color: style.ebcColor && style.ebcColor > 20 ? 'white' : 'black' }} />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">{style.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground">ID: {style.id}</p>
-                    </div>
-                  </div>
+                  <CardTitle className="text-lg">{style.name}</CardTitle>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent>
+                    <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleEdit(style)}>
                         <Edit className="mr-2 h-4 w-4" />
                         Editar
@@ -397,7 +378,7 @@ export default function BeerStylesManagement() {
                         className="text-red-600"
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Excluir
+                        Remover
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
