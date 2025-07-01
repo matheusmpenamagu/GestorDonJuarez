@@ -201,6 +201,9 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Estatísticas CO2: atualização a cada 30 segundos (dados menos voláteis)
 - ✓ Remoção do título e subtítulo da página de histórico de consumo de chopes
 - ✓ Interface mais limpa começando diretamente com os filtros e timeline
+- ✓ Filtros tornados mais discretos com design sutil (Julho 1, 2025)
+- ✓ Substituição do card destacado por bordas tracejadas e cores esmaecidas
+- ✓ Ícones e textos em tom de cinza para menor destaque visual
 
 ## User Preferences
 

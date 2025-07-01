@@ -129,23 +129,20 @@ function HistoryTimeline() {
   return (
     <div className="space-y-6">
       <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <Card>
-          <CardHeader>
+        <div className="border border-dashed border-muted-foreground/30 rounded-lg">
+          <div className="p-3">
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="flex items-center justify-between w-full p-0 h-auto">
+              <Button variant="ghost" className="flex items-center justify-between w-full p-2 h-auto hover:bg-muted/50">
                 <div className="flex items-center gap-2">
-                  <Filter className="h-5 w-5" />
-                  <CardTitle className="text-left">Filtros</CardTitle>
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-muted-foreground">Filtros</span>
                 </div>
-                {filtersOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {filtersOpen ? <ChevronUp className="h-3 w-3 text-muted-foreground" /> : <ChevronDown className="h-3 w-3 text-muted-foreground" />}
               </Button>
             </CollapsibleTrigger>
-            <CardDescription>
-              Filtre o histórico por período, torneira, estilo, local e dispositivo
-            </CardDescription>
-          </CardHeader>
+          </div>
           <CollapsibleContent>
-            <CardContent className="space-y-4">
+            <div className="px-3 pb-3 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="start-date">Data Inicial</Label>
@@ -240,9 +237,9 @@ function HistoryTimeline() {
                   </Button>
                 </div>
               )}
-            </CardContent>
+            </div>
           </CollapsibleContent>
-        </Card>
+        </div>
       </Collapsible>
 
       <Card>
