@@ -274,6 +274,7 @@ export type TapWithRelations = Tap & {
   currentBeerStyle?: BeerStyle;
   device?: Device;
   currentVolumeAvailableMl: number;
+  kegCapacityMl: number;
   lastPourEvent?: PourEvent & { datetime: string };
 };
 

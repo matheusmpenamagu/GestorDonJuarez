@@ -277,6 +277,7 @@ export class DatabaseStorage implements IStorage {
           currentBeerStyle: currentBeerStyle || undefined,
           device: device || undefined,
           currentVolumeAvailableMl,
+          kegCapacityMl: lastKegChange ? lastKegChange.kegCapacityLiters * 1000 : 0,
           lastPourEvent: lastPourEvent ? {
             ...lastPourEvent,
             datetime: lastPourEvent.datetime.toISOString(),
@@ -347,6 +348,7 @@ export class DatabaseStorage implements IStorage {
       currentBeerStyle: result.currentBeerStyle || undefined,
       device: result.device || undefined,
       currentVolumeAvailableMl,
+      kegCapacityMl: lastKegChange ? lastKegChange.kegCapacityLiters * 1000 : 0,
       lastPourEvent: lastEvent ? {
         ...lastEvent,
         datetime: lastEvent.datetime.toISOString(),
