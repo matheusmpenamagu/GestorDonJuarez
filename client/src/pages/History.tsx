@@ -70,20 +70,48 @@ export default function History() {
   // Combine and sort events
   const timelineEvents: TimelineEvent[] = [
     ...(Array.isArray(pourEvents) ? pourEvents : []).map((event: any) => ({
-      ...event,
+      id: event.id,
       type: "pour" as const,
+      datetime: event.datetime,
+      tapName: event.tapName,
+      posName: event.posName,
+      beerStyleName: event.beerStyleName,
+      totalVolumeMl: event.totalVolumeMl,
+      deviceCode: event.deviceCode,
     })),
     ...(Array.isArray(kegChangeEvents) ? kegChangeEvents : []).map(
       (event: any) => ({
-        ...event,
+        id: event.id,
         type: "keg_change" as const,
+        datetime: event.datetime,
+        tapName: event.tap?.name || `Torneira ${event.tapId}`,
+        posName: event.tap?.pointOfSale?.name || 'Local não especificado',
+        beerStyleName: undefined,
+        totalVolumeMl: undefined,
+        deviceCode: undefined,
       }),
     ),
-  ].sort(
-    (a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime(),
-  );
+  ].sort((a, b) => {
+    // Safe date parsing for sorting
+    const parseDate = (datetime: string) => {
+      if (/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/.test(datetime)) {
+        const [datePart, timePart] = datetime.split(' ');
+        const [day, month, year] = datePart.split('/');
+        const [hour, minute, second] = timePart.split(':');
+        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second));
+      }
+      return new Date(datetime);
+    };
+    
+    const dateA = parseDate(a.datetime);
+    const dateB = parseDate(b.datetime);
+    
+    return dateB.getTime() - dateA.getTime();
+  });
 
   const isLoading = isLoadingPours || isLoadingKegs;
+
+
 
   const getEventIcon = (type: string) => {
     return type === "pour" ? Beer : RefreshCw;
