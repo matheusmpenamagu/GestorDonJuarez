@@ -69,21 +69,19 @@ export function Sidebar() {
           const SectionIcon = section.icon;
           
           return (
-            <div key={index}>
+            <div key={index} className="mb-2">
               <div 
-                className="px-6 mb-2 cursor-pointer flex items-center justify-between group pt-[10px] pb-[10px]"
+                className="group flex items-center justify-between px-8 py-3 text-sm font-medium transition-colors cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 onClick={() => toggleSection(section.title)}
               >
                 <div className="flex items-center gap-2">
-                  <SectionIcon className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors">
-                    {section.title}
-                  </p>
+                  <SectionIcon className="h-4 w-4" />
+                  <span>{section.title}</span>
                 </div>
-                <ChevronIcon className="h-3 w-3 text-muted-foreground group-hover:text-foreground transition-colors" />
+                <ChevronIcon className="h-3 w-3" />
               </div>
               {isExpanded && (
-                <div className="mb-6">
+                <div className="mb-4">
                   {section.items.map((item) => {
                     const isActive = location === item.href;
                     
