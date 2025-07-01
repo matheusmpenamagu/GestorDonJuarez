@@ -112,6 +112,9 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {/* Real-time Pour Activity */}
+      <RealtimePours />
+
       {/* Consumo de Chopes Box */}
       <Card>
         <CardHeader>
@@ -269,9 +272,6 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Real-time Pour Activity */}
-      <RealtimePours />
     </div>
   );
 }

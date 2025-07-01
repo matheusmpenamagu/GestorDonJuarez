@@ -74,64 +74,53 @@ export function RealtimePours() {
     );
   }
 
+  // Limit to last 5 records for compact display
+  const displayPours = safePours.slice(0, 5);
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center justify-between">
           Atividade em Tempo Real
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-sm text-muted-foreground">Atualização automática</span>
+            <span className="text-xs text-muted-foreground">Últimos 5 registros</span>
           </div>
         </CardTitle>
       </CardHeader>
       
-      <CardContent>
-        {safePours.length === 0 ? (
-          <div className="text-center text-muted-foreground py-8">
+      <CardContent className="pt-0">
+        {displayPours.length === 0 ? (
+          <div className="text-center text-muted-foreground py-4">
             Nenhuma atividade recente
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2 text-sm font-medium text-muted-foreground">Horário</th>
-                  <th className="text-left py-2 text-sm font-medium text-muted-foreground">Torneira</th>
-                  <th className="text-left py-2 text-sm font-medium text-muted-foreground">Volume</th>
-                  <th className="text-left py-2 text-sm font-medium text-muted-foreground">Ponto de Venda</th>
-                  <th className="text-left py-2 text-sm font-medium text-muted-foreground">Estilo</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {safePours.map((pour) => (
-                  <tr key={pour.id} className="hover:bg-muted/50">
-                    <td className="py-3 text-sm text-foreground">
-                      {formatDateTime(pour.datetime)}
-                    </td>
-                    <td className="py-3">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center mr-3">
-                          <span className="text-white text-sm font-bold">{pour.tap.id}</span>
-                        </div>
-                        <span className="text-sm text-foreground">
-                          {pour.tapName || pour.tap.name || `Torneira ${pour.tap.id}`}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3 text-sm font-medium text-foreground">
-                      {pour.pourVolumeMl}ml
-                    </td>
-                    <td className="py-3 text-sm text-muted-foreground">
-                      {pour.posName || pour.tap.pointOfSale?.name || "N/A"}
-                    </td>
-                    <td className="py-3 text-sm text-muted-foreground">
-                      {pour.beerStyleName || pour.tap.currentBeerStyle?.name || "N/A"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-2">
+            {displayPours.map((pour) => (
+              <div key={pour.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 border border-dashed">
+                <div className="flex items-center space-x-3">
+                  <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">{pour.tap.id}</span>
+                  </div>
+                  <div className="text-sm">
+                    <div className="font-medium text-foreground">
+                      {pour.tapName || pour.tap.name || `Torneira ${pour.tap.id}`}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {pour.posName || pour.tap.pointOfSale?.name || "N/A"} • {pour.beerStyleName || pour.tap.currentBeerStyle?.name || "N/A"}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-medium text-foreground">
+                    {pour.pourVolumeMl}ml
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {formatDateTime(pour.datetime).split(' ')[1]}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </CardContent>
