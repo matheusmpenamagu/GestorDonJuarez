@@ -199,6 +199,8 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Estatísticas do dashboard: atualização a cada 3 segundos
 - ✓ Dados das torneiras: atualização a cada 5 segundos
 - ✓ Estatísticas CO2: atualização a cada 30 segundos (dados menos voláteis)
+- ✓ Remoção do título e subtítulo da página de histórico de consumo de chopes
+- ✓ Interface mais limpa começando diretamente com os filtros e timeline
 
 ## User Preferences
 
