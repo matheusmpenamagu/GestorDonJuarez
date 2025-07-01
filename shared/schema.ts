@@ -122,6 +122,7 @@ export const employees = pgTable("employees", {
   password: varchar("password", { length: 255 }).notNull(),
   firstName: varchar("first_name", { length: 100 }).notNull(),
   lastName: varchar("last_name", { length: 100 }).notNull(),
+  whatsapp: varchar("whatsapp", { length: 15 }),
   roleId: integer("role_id").references(() => roles.id),
   employmentType: varchar("employment_type", { length: 50 }).notNull().default("Funcionário"),
   avatar: varchar("avatar", { length: 10 }).notNull().default("😊"),
