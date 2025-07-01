@@ -12,19 +12,13 @@ import { cn } from "@/lib/utils";
 
 const menuItems = [
   {
-    title: "Monitoramento",
+    title: "Chopes",
     items: [
-      { href: "/", icon: BarChart3, label: "Dashboard Principal" },
-      { href: "/historico", icon: History, label: "Histórico de Consumo" },
-      { href: "/trocas-barril", icon: RefreshCw, label: "Trocas de Barril" },
-    ],
-  },
-  {
-    title: "Administração",
-    items: [
+      { href: "/", icon: BarChart3, label: "Dashboard" },
+      { href: "/historico", icon: History, label: "Histórico" },
       { href: "/torneiras", icon: Wrench, label: "Torneiras" },
-      { href: "/pontos-venda", icon: Store, label: "Pontos de Venda" },
-      { href: "/estilos-cerveja", icon: Beer, label: "Estilos de Cerveja" },
+      { href: "/pontos-venda", icon: Store, label: "Pontos de venda" },
+      { href: "/estilos-cerveja", icon: Beer, label: "Estilos de chopes" },
       { href: "/dispositivos", icon: Smartphone, label: "Dispositivos" },
     ],
   },

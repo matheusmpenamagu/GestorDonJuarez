@@ -1,8 +1,8 @@
-# Sistema de Controle de Chopes - Beer Control System
+# Gestor Don Juarez - Sistema de Gestão Operacional
 
 ## Overview
 
-This is a Brazilian craft beer monitoring system designed for real-time tracking of beer dispensation from taps connected to ESP32 flow sensors. The system provides a comprehensive dashboard for monitoring beer consumption, managing kegs, and exporting consumption data with full Brazilian Portuguese localization and São Paulo timezone support.
+Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileira de cervejaria artesanal. Originalmente desenvolvido para monitoramento em tempo real de chopes e barris conectados a sensores ESP32, o sistema está sendo expandido para incluir várias operações administrativas que anteriormente eram gerenciadas através de planilhas. Fornece dashboard abrangente, monitoramento de consumo, gerenciamento de barris e exportação de dados com localização completa em português brasileiro e suporte ao fuso horário de São Paulo.
 
 ## System Architecture
 
@@ -146,39 +146,22 @@ This is a Brazilian craft beer monitoring system designed for real-time tracking
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
-- ✓ Implemented device exclusivity validation (one device per tap)
-- ✓ Backend validation prevents device assignment conflicts
-- ✓ Frontend interface shows device availability status  
-- ✓ Error messages explain when devices are already in use
-- ✓ Available devices API endpoint for improved UX
-- ✓ Select dropdown disables devices already assigned to other taps
-- ✓ Complete device management system with proper constraints
-- ✓ Implemented webhook storage system for ESP32 beer consumption data
-- ✓ Created `/api/webhooks/pour` endpoint accepting device_id, datetime, and total_volume_ml
-- ✓ Automatic volume calculation and real-time dashboard updates
-- ✓ Support for device lookup by code (KE42H) or numeric ID
-- ✓ Proper data validation and integer conversion for volume measurements
-- ✓ WebSocket broadcasting for live consumption events
-- ✓ Enhanced ESP32 webhook compatibility with CORS headers and timeout protection
-- ✓ Comprehensive error handling and logging for webhook debugging
-- ✓ Robust data validation preventing malformed requests from causing crashes
-- ✓ Corrected webhook logic to treat each ESP32 reading as independent consumption
-- ✓ Every volume reading now registers as consumption regardless of previous values
-- ✓ Accurate cumulative volume tracking with proper event logging
-- ✓ Fixed React component crashes when receiving WebSocket updates
-- ✓ Added robust array validation to prevent white screen errors
-- ✓ Dashboard now updates smoothly without interrupting user experience
-- ✓ Corrected volume measurement recording to match ESP32 readings exactly
-- ✓ Fixed webhook storage logic to treat each reading as individual consumption
-- ✓ Historical data now displays accurate volumes matching sensor inputs
-- ✓ Implemented snapshot capture of tap and beer style data at webhook moment
-- ✓ Added new database fields for storing contextual information with each pour event
-- ✓ Dashboard and history now show information from webhook capture time
-- ✓ Enhanced data integrity by preserving tap/beer configurations at consumption time
-- ✓ Simplified webhook interface to receive only essential data (datetime, device_id, volume)
-- ✓ Storage layer automatically queries database for contextual information during save
-- ✓ Clean separation between webhook input and business logic for data capture
+- ✓ Transformação para gestor operacional completo da Don Juarez
+- ✓ Reorganização do menu lateral em "Chopes" com submenus simplificados
+- ✓ Alteração do título da aplicação para "Gestor Don Juarez"
+- ✓ Implementação do tema laranja como cor principal
+- ✓ Substituição da fonte para Montserrat do Google Fonts
+- ✓ Preparação da arquitetura para expansão de módulos administrativos
+- ✓ Manutenção de todas as funcionalidades existentes de controle de chopes
+- ✓ Interface adaptada para gestão de múltiplas operações empresariais
+- ✓ Menu reorganizado: Dashboard, Histórico, Torneiras, Pontos de venda, Estilos de chopes, Dispositivos
+- ✓ Sistema preparado para adicionar novos módulos de gestão no futuro
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Company branding: Don Juarez (cervejaria artesanal brasileira)
+Theme color: Orange (hsl(20, 90%, 48%))
+Typography: Montserrat font family
+Interface language: Portuguese (Brazil)
+Menu structure: Simplified categorization with expandable modules
