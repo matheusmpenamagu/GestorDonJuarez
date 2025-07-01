@@ -31,6 +31,7 @@ export default function EmployeesManagement() {
     firstName: "",
     lastName: "",
     roleId: null,
+    employmentType: "Funcionário",
     isActive: true,
   });
 
@@ -117,6 +118,7 @@ export default function EmployeesManagement() {
       firstName: "",
       lastName: "",
       roleId: null,
+      employmentType: "Funcionário",
       isActive: true,
     });
     setEditingEmployee(null);
@@ -140,6 +142,7 @@ export default function EmployeesManagement() {
       firstName: employee.firstName || "",
       lastName: employee.lastName || "",
       roleId: employee.roleId || null,
+      employmentType: (employee.employmentType || "Funcionário") as "Sócio" | "Funcionário" | "Freelancer",
       isActive: employee.isActive ?? true,
     });
     setIsDialogOpen(true);
@@ -242,6 +245,23 @@ export default function EmployeesManagement() {
                 </Select>
               </div>
 
+              <div>
+                <Label htmlFor="employmentType">Vínculo com a Empresa</Label>
+                <Select 
+                  value={formData.employmentType} 
+                  onValueChange={(value) => setFormData({ ...formData, employmentType: value as "Sócio" | "Funcionário" | "Freelancer" })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o vínculo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Sócio">Sócio</SelectItem>
+                    <SelectItem value="Funcionário">Funcionário</SelectItem>
+                    <SelectItem value="Freelancer">Freelancer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -310,6 +330,9 @@ export default function EmployeesManagement() {
                       {employee.role.name}
                     </Badge>
                   )}
+                  <Badge variant="outline">
+                    {employee.employmentType || "Funcionário"}
+                  </Badge>
                   <Badge variant={employee.isActive ? "default" : "destructive"}>
                     {employee.isActive ? "Ativo" : "Inativo"}
                   </Badge>
