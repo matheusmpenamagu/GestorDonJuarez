@@ -22,6 +22,15 @@ const formSchema = insertCo2RefillSchema.extend({
 
 type FormData = z.infer<typeof formSchema>;
 
+interface Co2Stats {
+  last30DaysTotal: { kg: number; cost: number };
+  previous30DaysTotal: { kg: number; cost: number };
+  percentageChange: number;
+  kgPerLiterLast30Days: number;
+  kgPerLiterPrevious30Days: number;
+  efficiencyChange: number;
+}
+
 export default function Co2Management() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -37,7 +46,7 @@ export default function Co2Management() {
     queryKey: ["/api/units"],
   });
 
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<Co2Stats>({
     queryKey: ["/api/co2-stats"],
   });
 
