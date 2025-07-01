@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -200,6 +200,12 @@ export default function BeerStylesManagement() {
               <DialogTitle>
                 {editingStyle ? "Editar Estilo de Cerveja" : "Novo Estilo de Cerveja"}
               </DialogTitle>
+              <DialogDescription>
+                {editingStyle 
+                  ? "Atualize as informações do estilo de cerveja incluindo a cor EBC."
+                  : "Adicione um novo estilo de cerveja com nome, descrição e cor EBC."
+                }
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -227,17 +233,17 @@ export default function BeerStylesManagement() {
               <div>
                 <Label htmlFor="ebcColor">Cor EBC (European Brewery Convention)</Label>
                 <Select 
-                  value={formData.ebcColor?.toString() || ""} 
+                  value={formData.ebcColor?.toString() || "none"} 
                   onValueChange={(value) => setFormData({ 
                     ...formData, 
-                    ebcColor: value ? parseInt(value) : null 
+                    ebcColor: value && value !== "none" ? parseInt(value) : null 
                   })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a cor do estilo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Não definido</SelectItem>
+                    <SelectItem value="none">Não definido</SelectItem>
                     {ebcColors.map((color) => (
                       <SelectItem key={color.value} value={color.value.toString()}>
                         <div className="flex items-center gap-2">
