@@ -438,6 +438,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         deviceCode: null, // Keg change events don't have direct device access
       }));
 
+      // Debug logging
+      console.log('Pour events count:', timelinePourEvents.length);
+      console.log('Keg change events count:', timelineKegEvents.length);
+      if (timelineKegEvents.length > 0) {
+        console.log('First keg change event:', timelineKegEvents[0]);
+      }
+      if (timelinePourEvents.length > 0) {
+        console.log('First pour event:', timelinePourEvents[0]);
+      }
+
       // Combine and sort events by datetime (newest first)
       const allEvents = [...timelinePourEvents, ...timelineKegEvents];
       allEvents.sort((a, b) => {
@@ -445,6 +455,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const dateB = new Date(b.datetime).getTime();
         return dateB - dateA; // Most recent first
       });
+      
+      console.log('Combined events count:', allEvents.length);
+      console.log('First 3 events:', allEvents.slice(0, 3).map(e => ({type: e.type, datetime: e.datetime, id: e.id})));
       
       res.json(allEvents);
     } catch (error) {
