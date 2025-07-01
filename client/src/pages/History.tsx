@@ -43,15 +43,15 @@ export default function History() {
 
   // Combine and sort events
   const timelineEvents: TimelineEvent[] = [
-    ...pourEvents.map((event: any) => ({
+    ...(Array.isArray(pourEvents) ? pourEvents : []).map((event: any) => ({
       ...event,
       type: 'pour' as const
     })),
-    ...kegChangeEvents.map((event: any) => ({
+    ...(Array.isArray(kegChangeEvents) ? kegChangeEvents : []).map((event: any) => ({
       ...event,
       type: 'keg_change' as const
     }))
-  ].sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime.getTime()));
+  ].sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
 
   const isLoading = isLoadingPours || isLoadingKegs;
 
@@ -111,7 +111,7 @@ export default function History() {
                 onChange={(e) => setSelectedTap(e.target.value)}
               >
                 <option value="">Todas as torneiras</option>
-                {taps.map((tap: any) => (
+                {(Array.isArray(taps) ? taps : []).map((tap: any) => (
                   <option key={tap.id} value={tap.id}>
                     {tap.name}
                   </option>
