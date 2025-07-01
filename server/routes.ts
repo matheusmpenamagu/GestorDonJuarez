@@ -423,7 +423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         posName: event.tap?.pointOfSale?.name || 'Local desconhecido',
         beerStyleName: event.tap?.currentBeerStyle?.name,
         totalVolumeMl: event.totalVolumeMl,
-        deviceCode: null, // Pour events don't have direct device access
+        deviceCode: event.deviceCode || null,
       }));
 
       // Convert keg change events to timeline format
