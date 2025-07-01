@@ -32,14 +32,20 @@ export default function Dashboard() {
   // Initial data queries
   const { data: initialStats } = useQuery({
     queryKey: ["/api/dashboard/stats"],
+    refetchInterval: 3000, // Atualiza a cada 3 segundos
+    refetchIntervalInBackground: true,
   });
 
   const { data: initialTaps } = useQuery({
     queryKey: ["/api/taps"],
+    refetchInterval: 5000, // Atualiza a cada 5 segundos
+    refetchIntervalInBackground: true,
   });
 
   const { data: co2Stats } = useQuery<Co2Stats>({
     queryKey: ["/api/co2-stats"],
+    refetchInterval: 30000, // Atualiza a cada 30 segundos (dados menos voláteis)
+    refetchIntervalInBackground: true,
   });
 
   // Update state when WebSocket data arrives

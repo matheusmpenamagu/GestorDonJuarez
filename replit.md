@@ -194,6 +194,11 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Monitoramento de torneiras com visual mais compacto mantendo barra de status
 - ✓ Redução de padding, tamanhos de fonte e espaçamentos nos cards das torneiras
 - ✓ Preservação da funcionalidade de indicador visual de status (verde/vermelho)
+- ✓ Aumento da taxa de atualização em tempo real (Julho 1, 2025)
+- ✓ Atividade em tempo real: atualização a cada 2 segundos
+- ✓ Estatísticas do dashboard: atualização a cada 3 segundos
+- ✓ Dados das torneiras: atualização a cada 5 segundos
+- ✓ Estatísticas CO2: atualização a cada 30 segundos (dados menos voláteis)
 
 ## User Preferences
 

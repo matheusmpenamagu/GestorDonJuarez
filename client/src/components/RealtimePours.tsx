@@ -11,6 +11,8 @@ export function RealtimePours() {
 
   const { data: initialPours, isLoading } = useQuery({
     queryKey: ["/api/recent-pours"],
+    refetchInterval: 2000, // Atualiza a cada 2 segundos
+    refetchIntervalInBackground: true, // Continua atualizando mesmo em background
   });
 
   // Ensure recentPours is always an array
