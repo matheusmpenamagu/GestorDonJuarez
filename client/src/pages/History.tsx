@@ -95,7 +95,33 @@ export default function History() {
 
   const formatDateTime = (datetime: string) => {
     try {
-      // Try parsing the datetime string
+      // Check if datetime is already in Brazilian format "dd/MM/yyyy HH:mm:ss"
+      if (/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/.test(datetime)) {
+        // Parse Brazilian format manually
+        const [datePart, timePart] = datetime.split(' ');
+        const [day, month, year] = datePart.split('/');
+        const [hour, minute, second] = timePart.split(':');
+        
+        const date = new Date(
+          parseInt(year), 
+          parseInt(month) - 1, // Month is 0-indexed
+          parseInt(day), 
+          parseInt(hour), 
+          parseInt(minute), 
+          parseInt(second)
+        );
+        
+        if (isNaN(date.getTime())) {
+          return { date: 'Data inválida', time: 'Hora inválida' };
+        }
+        
+        return {
+          date: format(date, "dd/MM/yyyy", { locale: ptBR }),
+          time: format(date, "HH:mm:ss", { locale: ptBR })
+        };
+      }
+      
+      // Try other formats
       let date: Date;
       
       if (datetime.includes('T')) {
