@@ -219,9 +219,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Get keg capacity from request body (default to 30L)
+      const { keg_capacity_liters = 30 } = req.body;
+      const capacity = parseInt(keg_capacity_liters);
+      
+      if (isNaN(capacity) || (capacity !== 30 && capacity !== 50)) {
+        return res.status(400).json({ 
+          message: "Invalid keg_capacity_liters. Must be 30 or 50." 
+        });
+      }
+
       // Get current tap info to record previous volume
       const tap = await storage.getTap(targetTapId);
-      const previousVolumeMl = tap ? tap.kegCapacityMl! - tap.currentVolumeUsedMl! : null;
+      const previousVolumeMl = tap ? tap.currentVolumeAvailableMl : null;
 
       // Convert datetime to proper Date object
       const changeDate = fromSaoPauloTime(datetime);
@@ -230,20 +240,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const kegChangeData = insertKegChangeEventSchema.parse({
         tapId: targetTapId,
         previousVolumeMl,
+        kegCapacityLiters: capacity,
         datetime: changeDate,
       });
 
       const kegChangeEvent = await storage.createKegChangeEvent(kegChangeData);
 
-      // Reset tap's volume usage to 0 (new keg)
-      await storage.updateTap(targetTapId, {
-        currentVolumeUsedMl: 0
-      });
-
       // Broadcast update via WebSocket
       await broadcastUpdate('keg_change', kegChangeEvent);
       
-      console.log(`Keg change event created: Tap ${targetTapId} at ${toSaoPauloTime(changeDate)}`);
+      console.log(`Keg change event created: Tap ${targetTapId} with ${capacity}L capacity at ${toSaoPauloTime(changeDate)}`);
       
       res.json({ success: true, event: kegChangeEvent });
     } catch (error) {
