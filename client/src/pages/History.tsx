@@ -152,19 +152,24 @@ function HistoryTimeline() {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
       setSortColumn(column);
-      setSortDirection("asc");
+      // Para data, padrão é desc (mais recente primeiro), para outras colunas é asc
+      setSortDirection(column === "datetime" ? "desc" : "asc");
     }
   };
 
   const sortedEvents = [...filteredEvents].sort((a, b) => {
-    let aValue = a[sortColumn];
-    let bValue = b[sortColumn];
+    let aValue: any = a[sortColumn];
+    let bValue: any = b[sortColumn];
 
     // Handle datetime sorting specially
     if (sortColumn === "datetime") {
       aValue = new Date(a.datetime).getTime();
       bValue = new Date(b.datetime).getTime();
     }
+
+    // Convert undefined to empty string for comparison
+    aValue = aValue ?? "";
+    bValue = bValue ?? "";
 
     if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
     if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
@@ -177,10 +182,10 @@ function HistoryTimeline() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Timeline de Eventos
+            Histórico de atividades
           </CardTitle>
           <CardDescription>
-            Histórico cronológico de consumo de chopes e trocas de barril
+            Registro cronológico de consumo de chopes e trocas de barril
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -232,7 +237,7 @@ function HistoryTimeline() {
                         className="h-9 w-full px-3 py-1 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                       >
                         <option value="">Todas as torneiras</option>
-                        {taps && (taps as any[]).map((tap: any) => (
+                        {taps && Array.isArray(taps) && taps.map((tap: any) => (
                           <option key={tap.id} value={tap.name}>
                             {tap.name}
                           </option>

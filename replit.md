@@ -209,6 +209,8 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Uso dos componentes Table do sistema com estilo padronizado
 - ✓ Movimentação dos filtros para logo acima da tabela
 - ✓ Badges coloridos para identificação de tipos de evento (Consumo/Troca)
+- ✓ Alteração do título para "Histórico de atividades"
+- ✓ Ordenação padrão por data com eventos mais recentes primeiro
 
 ## User Preferences
 
