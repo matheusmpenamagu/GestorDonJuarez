@@ -173,6 +173,11 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Nova fórmula de cálculo: "última troca - consumos posteriores"
 - ✓ Interface para registro manual de trocas com seleção de capacidade
 - ✓ Correção de exibição de capacidade total nos cards do dashboard
+- ✓ Reorganização do menu lateral: remoção de submenus específicos (Julho 1, 2025)
+- ✓ Transformação de "Histórico" em "Consumo de chopes" com interface de abas
+- ✓ Integração de Torneiras, Pontos de venda, Estilos de chopes e Dispositivos como abas
+- ✓ Simplificação da navegação lateral para melhor organização
+- ✓ Importação completa de dados históricos de CO2 (87 registros 2023-2025)
 
 ## User Preferences
 
