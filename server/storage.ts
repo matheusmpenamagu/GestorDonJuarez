@@ -8,6 +8,7 @@ import {
   kegChangeEvents,
   roles,
   employees,
+  units,
   type User,
   type UpsertUser,
   type PointOfSale,
@@ -26,6 +27,8 @@ import {
   type InsertRole,
   type Employee,
   type InsertEmployee,
+  type Unit,
+  type InsertUnit,
   type TapWithRelations,
   type PourEventWithRelations,
   type EmployeeWithRelations,
@@ -99,6 +102,13 @@ export interface IStorage {
   createEmployee(employee: InsertEmployee): Promise<Employee>;
   updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee>;
   deleteEmployee(id: number): Promise<void>;
+  
+  // Units operations
+  getUnits(): Promise<Unit[]>;
+  getUnit(id: number): Promise<Unit | undefined>;
+  createUnit(unit: InsertUnit): Promise<Unit>;
+  updateUnit(id: number, unit: Partial<InsertUnit>): Promise<Unit>;
+  deleteUnit(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -725,6 +735,37 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEmployee(id: number): Promise<void> {
     await db.delete(employees).where(eq(employees.id, id));
+  }
+
+  // Units operations
+  async getUnits(): Promise<Unit[]> {
+    return await db.select().from(units).orderBy(units.name);
+  }
+
+  async getUnit(id: number): Promise<Unit | undefined> {
+    const [unit] = await db.select().from(units).where(eq(units.id, id));
+    return unit;
+  }
+
+  async createUnit(unitData: InsertUnit): Promise<Unit> {
+    const [unit] = await db
+      .insert(units)
+      .values(unitData)
+      .returning();
+    return unit;
+  }
+
+  async updateUnit(id: number, unitData: Partial<InsertUnit>): Promise<Unit> {
+    const [unit] = await db
+      .update(units)
+      .set({ ...unitData, updatedAt: new Date() })
+      .where(eq(units.id, id))
+      .returning();
+    return unit;
+  }
+
+  async deleteUnit(id: number): Promise<void> {
+    await db.delete(units).where(eq(units.id, id));
   }
 }
 
