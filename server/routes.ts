@@ -661,7 +661,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/employees', demoAuth, async (req, res) => {
     try {
       const { insertEmployeeSchema } = await import("@shared/schema");
+      const { generateRandomAvatar } = await import("./avatarUtils");
+      
       const employeeData = insertEmployeeSchema.parse(req.body);
+      
+      // Generate random avatar if not provided
+      if (!employeeData.avatar) {
+        employeeData.avatar = generateRandomAvatar();
+      }
+      
       const employee = await storage.createEmployee(employeeData);
       res.status(201).json(employee);
     } catch (error) {

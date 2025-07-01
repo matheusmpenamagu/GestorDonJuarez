@@ -123,6 +123,7 @@ export const employees = pgTable("employees", {
   lastName: varchar("last_name", { length: 100 }).notNull(),
   roleId: integer("role_id").references(() => roles.id),
   employmentType: varchar("employment_type", { length: 50 }).notNull().default("Funcionário"),
+  avatar: varchar("avatar", { length: 10 }).notNull().default("😊"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
