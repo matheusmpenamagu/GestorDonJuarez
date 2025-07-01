@@ -48,7 +48,7 @@ export default function RolesManagement() {
 
   const createMutation = useMutation({
     mutationFn: async (data: RoleFormData) => {
-      await apiRequest('/api/roles', 'POST', data);
+      await apiRequest('POST', '/api/roles', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/roles"] });
@@ -70,7 +70,7 @@ export default function RolesManagement() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: RoleFormData }) => {
-      await apiRequest(`/api/roles/${id}`, 'PUT', data);
+      await apiRequest('PUT', `/api/roles/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/roles"] });
@@ -92,7 +92,7 @@ export default function RolesManagement() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest(`/api/roles/${id}`, 'DELETE');
+      await apiRequest('DELETE', `/api/roles/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/roles"] });
