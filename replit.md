@@ -188,8 +188,9 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Layout reorganizado com cards aninhados e design visual aprimorado
 - ✓ Atividade em tempo real integrada ao box "Consumo de chopes"
 - ✓ Layout em duas colunas: 4 cards de métricas (metade esquerda) e atividade em tempo real (metade direita)
-- ✓ Limitação para exibir apenas os últimos 5 registros de consumo
-- ✓ Design compacto com informações essenciais em formato card horizontal
+- ✓ Limitação para exibir apenas os últimos 3 registros de consumo
+- ✓ Remoção do card wrapper da atividade em tempo real para layout mais limpo
+- ✓ Design compacto com informações essenciais em formato horizontal
 
 ## User Preferences
 

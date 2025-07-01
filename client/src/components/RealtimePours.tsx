@@ -74,56 +74,54 @@ export function RealtimePours() {
     );
   }
 
-  // Limit to last 5 records for compact display
-  const displayPours = safePours.slice(0, 5);
+  // Limit to last 3 records for compact display
+  const displayPours = safePours.slice(0, 3);
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center justify-between">
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
           Atividade em Tempo Real
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-xs text-muted-foreground">Últimos 5 registros</span>
-          </div>
-        </CardTitle>
-      </CardHeader>
+        </h3>
+        <div className="flex items-center space-x-2">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          <span className="text-xs text-muted-foreground">Últimos 3 registros</span>
+        </div>
+      </div>
       
-      <CardContent className="pt-0">
-        {displayPours.length === 0 ? (
-          <div className="text-center text-muted-foreground py-4">
-            Nenhuma atividade recente
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {displayPours.map((pour) => (
-              <div key={pour.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 border border-dashed">
-                <div className="flex items-center space-x-3">
-                  <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">{pour.tap.id}</span>
-                  </div>
-                  <div className="text-sm">
-                    <div className="font-medium text-foreground">
-                      {pour.tapName || pour.tap.name || `Torneira ${pour.tap.id}`}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {pour.posName || pour.tap.pointOfSale?.name || "N/A"} • {pour.beerStyleName || pour.tap.currentBeerStyle?.name || "N/A"}
-                    </div>
-                  </div>
+      {displayPours.length === 0 ? (
+        <div className="text-center text-muted-foreground py-8 bg-muted/20 rounded-lg">
+          Nenhuma atividade recente
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {displayPours.map((pour) => (
+            <div key={pour.id} className="flex items-center justify-between py-3 px-4 rounded-lg hover:bg-muted/50 border border-dashed">
+              <div className="flex items-center space-x-3">
+                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">{pour.tap.id}</span>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-foreground">
-                    {pour.pourVolumeMl}ml
+                <div className="text-sm">
+                  <div className="font-medium text-foreground">
+                    {pour.tapName || pour.tap.name || `Torneira ${pour.tap.id}`}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {formatDateTime(pour.datetime).split(' ')[1]}
+                    {pour.posName || pour.tap.pointOfSale?.name || "N/A"} • {pour.beerStyleName || pour.tap.currentBeerStyle?.name || "N/A"}
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              <div className="text-right">
+                <div className="text-sm font-medium text-foreground">
+                  {pour.pourVolumeMl}ml
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {formatDateTime(pour.datetime).split(' ')[1]}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
