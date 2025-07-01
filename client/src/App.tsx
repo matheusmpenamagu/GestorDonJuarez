@@ -13,6 +13,8 @@ import TapsManagement from "@/pages/TapsManagement";
 import POSManagement from "@/pages/POSManagement";
 import BeerStylesManagement from "@/pages/BeerStylesManagement";
 import DevicesManagement from "@/pages/DevicesManagement";
+import EmployeesManagement from "@/pages/EmployeesManagement";
+import RolesManagement from "@/pages/RolesManagement";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -68,6 +70,16 @@ function Router() {
           <Route path="/dispositivos">
             <Layout>
               <DevicesManagement />
+            </Layout>
+          </Route>
+          <Route path="/colaboradores">
+            <Layout>
+              <EmployeesManagement />
+            </Layout>
+          </Route>
+          <Route path="/cargos">
+            <Layout>
+              <RolesManagement />
             </Layout>
           </Route>
         </>
