@@ -241,6 +241,11 @@ export default function Co2Management() {
               <div className="text-sm text-muted-foreground mb-2">
                 CO2 por litro de chope
               </div>
+              {stats.kgPerLiterPrevious30Days > 0 && (
+                <div className="text-xs text-muted-foreground mb-1">
+                  Período anterior: {stats.kgPerLiterPrevious30Days.toFixed(3)} kg/L
+                </div>
+              )}
               {stats.efficiencyChange !== 0 && (
                 <div className="flex items-center">
                   {stats.efficiencyChange > 0 ? (
@@ -248,8 +253,11 @@ export default function Co2Management() {
                   ) : (
                     <TrendingDown className="h-4 w-4 text-green-500 mr-1" />
                   )}
-                  <span className="text-xs text-muted-foreground">
-                    {formatPercentage(stats.efficiencyChange).value} vs anterior
+                  <Badge variant={stats.efficiencyChange > 0 ? "destructive" : "secondary"} className="text-xs">
+                    {formatPercentage(stats.efficiencyChange).value}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground ml-2">
+                    vs período anterior
                   </span>
                 </div>
               )}
