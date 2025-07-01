@@ -223,6 +223,10 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Correção do erro de tela branca na edição de estilos
 - ✓ Barras de progresso do monitoramento agora usam a cor EBC do estilo da cerveja
 - ✓ Cores autênticas de cerveja baseadas na Convenção Europeia de Cervejaria
+- ✓ Implementação de cores EBC nos números das torneiras (Julho 1, 2025)
+- ✓ Círculos dos números das torneiras usam cor EBC do estilo da cerveja
+- ✓ Aplicado tanto no monitoramento de torneiras quanto na atividade em tempo real
+- ✓ Atualização dos tipos TypeScript para incluir ebcColor nos eventos
 
 ## User Preferences
 

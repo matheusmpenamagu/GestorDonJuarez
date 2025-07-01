@@ -91,6 +91,7 @@ export const pourEvents = pgTable("pour_events", {
   tapName: varchar("tap_name"), // Nome da torneira no momento do webhook
   posName: varchar("pos_name"), // Nome do ponto de venda no momento do webhook
   beerStyleName: varchar("beer_style_name"), // Nome do estilo de chope no momento do webhook
+  beerStyleEbcColor: integer("beer_style_ebc_color"), // Cor EBC do estilo no momento do webhook
   deviceCode: varchar("device_code"), // Código do dispositivo no momento do webhook
   createdAt: timestamp("created_at").defaultNow(),
 });

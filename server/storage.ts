@@ -508,7 +508,10 @@ export class DatabaseStorage implements IStorage {
         id: pourEvent.tapId,
         name: pourEvent.tapName || `Torneira ${pourEvent.tapId}`,
         pointOfSale: pourEvent.posName ? { name: pourEvent.posName } : undefined,
-        currentBeerStyle: pourEvent.beerStyleName ? { name: pourEvent.beerStyleName } : undefined,
+        currentBeerStyle: pourEvent.beerStyleName ? { 
+          name: pourEvent.beerStyleName,
+          ebcColor: pourEvent.beerStyleEbcColor 
+        } : undefined,
       },
     } as PourEventWithRelations));
   }
