@@ -10,6 +10,7 @@ import {
   Smartphone,
   Users,
   UserCog,
+  Building2,
   ChevronDown,
   ChevronRight
 } from "lucide-react";
@@ -36,13 +37,21 @@ const menuItems = [
       { href: "/cargos", icon: UserCog, label: "Cargos" },
     ],
   },
+  {
+    title: "Empresa",
+    icon: Building2,
+    items: [
+      { href: "/unidades", icon: Building2, label: "Unidades" },
+    ],
+  },
 ];
 
 export function Sidebar() {
   const [location] = useLocation();
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
     "Chopes": false,
-    "Pessoas": false
+    "Pessoas": false,
+    "Empresa": false
   });
 
   const toggleSection = (sectionTitle: string) => {

@@ -702,7 +702,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Units management routes
+  app.get('/api/units', demoAuth, async (req, res) => {
+    try {
+      const units = await storage.getUnits();
+      res.json(units);
+    } catch (error) {
+      console.error("Error fetching units:", error);
+      res.status(500).json({ message: "Error fetching units" });
+    }
+  });
 
+  app.post('/api/units', demoAuth, async (req, res) => {
+    try {
+      const unitData = insertUnitSchema.parse(req.body);
+      const unit = await storage.createUnit(unitData);
+      res.json(unit);
+    } catch (error) {
+      console.error("Error creating unit:", error);
+      res.status(500).json({ message: "Error creating unit" });
+    }
+  });
+
+  app.put('/api/units/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const unitData = insertUnitSchema.partial().parse(req.body);
+      const unit = await storage.updateUnit(id, unitData);
+      res.json(unit);
+    } catch (error) {
+      console.error("Error updating unit:", error);
+      res.status(500).json({ message: "Error updating unit" });
+    }
+  });
+
+  app.delete('/api/units/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteUnit(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting unit:", error);
+      res.status(500).json({ message: "Error deleting unit" });
+    }
+  });
 
   const httpServer = createServer(app);
   
