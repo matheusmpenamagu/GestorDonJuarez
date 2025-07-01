@@ -389,6 +389,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get combined timeline of pour events and keg changes
+  app.get('/api/timeline', demoAuth, async (req, res) => {
+    try {
+      const { startDate, endDate, tapId } = req.query;
+      
+      let start: Date | undefined;
+      let end: Date | undefined;
+      let tapFilter: number | undefined;
+
+      if (startDate) {
+        start = fromSaoPauloTime(startDate as string);
+      }
+      if (endDate) {
+        end = fromSaoPauloTime(endDate as string);
+      }
+      if (tapId) {
+        tapFilter = parseInt(tapId as string);
+      }
+
+      // Get pour events
+      const pourEvents = await storage.getPourEvents(start, end, tapFilter);
+      
+      // Get keg change events
+      const kegChangeEvents = await storage.getKegChangeEvents(start, end, tapFilter);
+      
+      // Convert pour events to timeline format
+      const timelinePourEvents = pourEvents.map(event => ({
+        id: event.id,
+        type: 'pour',
+        datetime: toSaoPauloTime(event.datetime),
+        tapName: event.tap?.name || 'Torneira desconhecida',
+        posName: event.tap?.pointOfSale?.name || 'Local desconhecido',
+        beerStyleName: event.tap?.currentBeerStyle?.name,
+        totalVolumeMl: event.totalVolumeMl,
+        deviceCode: null, // Pour events don't have direct device access
+      }));
+
+      // Convert keg change events to timeline format
+      const timelineKegEvents = kegChangeEvents.map(event => ({
+        id: event.id,
+        type: 'keg_change',
+        datetime: toSaoPauloTime(event.datetime),
+        tapName: event.tap?.name || 'Torneira desconhecida',
+        posName: event.tap?.pointOfSale?.name || 'Local desconhecido',
+        beerStyleName: null, // Keg changes don't have beer style info
+        totalVolumeMl: null,
+        deviceCode: null, // Keg change events don't have direct device access
+      }));
+
+      // Combine and sort events by datetime (newest first)
+      const allEvents = [...timelinePourEvents, ...timelineKegEvents];
+      allEvents.sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
+      
+      res.json(allEvents);
+    } catch (error) {
+      console.error("Error fetching timeline:", error);
+      res.status(500).json({ message: "Error fetching timeline" });
+    }
+  });
+
   // Management API endpoints (protected)
   
   // Taps management

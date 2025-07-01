@@ -331,13 +331,6 @@ function HistoryTimeline() {
 export default function History() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Consumo de chopes</h1>
-        <p className="text-muted-foreground">
-          Gestão completa do sistema de chopes
-        </p>
-      </div>
-
       <Tabs defaultValue="historico" className="w-full">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="historico" className="flex items-center gap-2">
@@ -363,22 +356,52 @@ export default function History() {
         </TabsList>
 
         <TabsContent value="historico" className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold">Consumo de chopes</h1>
+            <p className="text-muted-foreground">
+              Timeline de consumo e trocas de barril
+            </p>
+          </div>
           <HistoryTimeline />
         </TabsContent>
 
         <TabsContent value="torneiras" className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold">Gestão de Torneiras</h1>
+            <p className="text-muted-foreground">
+              Configuração e monitoramento das torneiras de chope
+            </p>
+          </div>
           <TapsManagement />
         </TabsContent>
 
         <TabsContent value="pontos-venda" className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold">Pontos de Venda</h1>
+            <p className="text-muted-foreground">
+              Gerenciamento dos locais de venda e instalação
+            </p>
+          </div>
           <POSManagement />
         </TabsContent>
 
         <TabsContent value="estilos" className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold">Estilos de Chopes</h1>
+            <p className="text-muted-foreground">
+              Cadastro e gestão dos tipos de cerveja disponíveis
+            </p>
+          </div>
           <BeerStylesManagement />
         </TabsContent>
 
         <TabsContent value="dispositivos" className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold">Dispositivos ESP32</h1>
+            <p className="text-muted-foreground">
+              Controle dos sensores e dispositivos de monitoramento
+            </p>
+          </div>
           <DevicesManagement />
         </TabsContent>
       </Tabs>
