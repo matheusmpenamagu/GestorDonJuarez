@@ -157,7 +157,7 @@ export default function Co2Management() {
     }).format(numValue);
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | Date) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 

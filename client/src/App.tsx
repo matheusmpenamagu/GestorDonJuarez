@@ -89,6 +89,11 @@ function Router() {
               <UnitsManagement />
             </Layout>
           </Route>
+          <Route path="/co2">
+            <Layout>
+              <Co2Management />
+            </Layout>
+          </Route>
         </>
       )}
       <Route component={NotFound} />
