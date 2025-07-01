@@ -232,6 +232,9 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Algoritmo de verificação de duplicatas para evitar cadastros redundantes
 - ✓ Botão "Importar Cardápio" na interface de gestão de estilos
 - ✓ Contadores de importação: estilos novos vs já existentes
+- ✓ Limpeza de estilos duplicados e migração de referências (Julho 1, 2025)
+- ✓ Base de dados limpa apenas com estilos autênticos do cardápio Don Juarez
+- ✓ Atualização automática de torneiras para usar estilos corretos
 
 ## User Preferences
 
