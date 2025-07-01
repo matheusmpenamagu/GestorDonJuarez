@@ -112,9 +112,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Real-time Pour Activity */}
-      <RealtimePours />
-
       {/* Consumo de Chopes Box */}
       <Card>
         <CardHeader>
@@ -124,32 +121,40 @@ export default function Dashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {statsCards.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <Card key={index} className="border-dashed">
-                  <CardContent className="p-4">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <Icon className={`h-5 w-5 ${stat.color}`} />
+          {/* Top Row: Metrics and Real-time Activity */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Half: Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {statsCards.map((stat, index) => {
+                const Icon = stat.icon;
+                return (
+                  <Card key={index} className="border-dashed">
+                    <CardContent className="p-4">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                          <Icon className={`h-5 w-5 ${stat.color}`} />
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-xs font-medium text-muted-foreground">
+                            {stat.title}
+                          </p>
+                          <p className="text-lg font-bold text-foreground">
+                            {typeof stat.value === "number"
+                              ? stat.value.toLocaleString("pt-BR")
+                              : stat.value}
+                          </p>
+                        </div>
                       </div>
-                      <div className="ml-3">
-                        <p className="text-xs font-medium text-muted-foreground">
-                          {stat.title}
-                        </p>
-                        <p className="text-lg font-bold text-foreground">
-                          {typeof stat.value === "number"
-                            ? stat.value.toLocaleString("pt-BR")
-                            : stat.value}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* Right Half: Real-time Activity */}
+            <div>
+              <RealtimePours />
+            </div>
           </div>
 
           {/* Taps Grid */}

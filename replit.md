@@ -186,7 +186,8 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Box "Consumo de chopes" com 4 cards de estatísticas e monitoramento de torneiras
 - ✓ Box "CO2" com 2 cards de estatísticas: total de recargas e eficiência por litro
 - ✓ Layout reorganizado com cards aninhados e design visual aprimorado
-- ✓ Atividade em tempo real movida para o topo com layout compacto
+- ✓ Atividade em tempo real integrada ao box "Consumo de chopes"
+- ✓ Layout em duas colunas: 4 cards de métricas (metade esquerda) e atividade em tempo real (metade direita)
 - ✓ Limitação para exibir apenas os últimos 5 registros de consumo
 - ✓ Design compacto com informações essenciais em formato card horizontal
 
