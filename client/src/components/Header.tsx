@@ -11,7 +11,7 @@ export function Header() {
 
   const handleLogout = () => {
     localStorage.removeItem('beerAuth');
-    window.location.href = "/";
+    window.location.href = "/api/logout";
   };
 
   return (
@@ -37,12 +37,12 @@ export function Header() {
             {/* User menu */}
             <div className="flex items-center space-x-2">
               <span className="text-sm text-foreground">
-                {user?.name || user?.email || 'Operador'}
+                {(user as any)?.firstName || (user as any)?.email || 'Operador'}
               </span>
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.profileImageUrl || undefined} />
+                <AvatarImage src={(user as any)?.profileImageUrl || undefined} />
                 <AvatarFallback>
-                  {user?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                  {(user as any)?.firstName?.charAt(0) || (user as any)?.email?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
               <Button 

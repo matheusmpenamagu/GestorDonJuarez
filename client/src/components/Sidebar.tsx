@@ -44,9 +44,9 @@ export function Sidebar() {
               
               return (
                 <Link key={item.href} href={item.href}>
-                  <a
+                  <div
                     className={cn(
-                      "group flex items-center px-6 py-3 text-sm font-medium transition-colors",
+                      "group flex items-center px-6 py-3 text-sm font-medium transition-colors cursor-pointer",
                       isActive
                         ? "text-primary bg-primary/10 border-r-2 border-primary"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -54,7 +54,7 @@ export function Sidebar() {
                   >
                     <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
                     {item.label}
-                  </a>
+                  </div>
                 </Link>
               );
             })}
