@@ -32,13 +32,33 @@ export default function History() {
 
   // Get pour events
   const { data: pourEvents = [], isLoading: isLoadingPours } = useQuery({
-    queryKey: ["/api/pour-events", startDate, endDate, selectedTap],
+    queryKey: ["/api/history/pours", startDate, endDate, selectedTap],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+      if (selectedTap) params.append('tap_id', selectedTap);
+      
+      const response = await fetch(`/api/history/pours?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch pour events');
+      return response.json();
+    },
     enabled: true,
   });
 
   // Get keg change events
   const { data: kegChangeEvents = [], isLoading: isLoadingKegs } = useQuery({
-    queryKey: ["/api/keg-changes", startDate, endDate, selectedTap],
+    queryKey: ["/api/history/keg-changes", startDate, endDate, selectedTap],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+      if (selectedTap) params.append('tap_id', selectedTap);
+      
+      const response = await fetch(`/api/history/keg-changes?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch keg change events');
+      return response.json();
+    },
     enabled: true,
   });
 
