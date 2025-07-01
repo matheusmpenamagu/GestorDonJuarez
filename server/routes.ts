@@ -142,10 +142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Only create event if there's actual volume reported (> 0)
       if (pourVolumeMl > 0) {
-        // Get current total consumed volume for this tap and capture snapshot data
-        const currentTap = await storage.getTap(targetTapId);
-        const currentTotalConsumed = currentTap?.currentVolumeUsedMl || 0;
-        const newTotalConsumed = currentTotalConsumed + pourVolumeMl;
+        // Get current tap information for snapshot data
         
         // Validate and create the pour event data (snapshot information will be captured in storage)
         const pourEventData = insertPourEventSchema.parse({
@@ -157,12 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const pourEvent = await storage.createPourEvent(pourEventData);
 
-        // Update tap's current volume used (cumulative)
-        await storage.updateTap(targetTapId, {
-          currentVolumeUsedMl: newTotalConsumed
-        });
-
-        console.log(`Pour event created: Tap ${targetTapId}, ${pourVolumeMl}ml consumed at ${toSaoPauloTime(pourDate)} (Total: ${newTotalConsumed}ml)`);
+        console.log(`Pour event created: Tap ${targetTapId}, ${pourVolumeMl}ml consumed at ${toSaoPauloTime(pourDate)}`);
         
         // Send response first, then broadcast update
         res.json({ success: true, event: pourEvent, pourVolumeMl });

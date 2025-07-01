@@ -485,16 +485,6 @@ export class DatabaseStorage implements IStorage {
   // Keg Change Events operations
   async createKegChangeEvent(event: InsertKegChangeEvent): Promise<KegChangeEvent> {
     const [created] = await db.insert(kegChangeEvents).values(event).returning();
-    
-    // Reset tap's current volume used to 0
-    await db
-      .update(taps)
-      .set({ 
-        currentVolumeUsedMl: 0,
-        updatedAt: new Date(),
-      })
-      .where(eq(taps.id, event.tapId));
-
     return created;
   }
 
@@ -560,22 +550,20 @@ export class DatabaseStorage implements IStorage {
       .from(pourEvents)
       .where(gte(pourEvents.datetime, weekAgo));
 
-    // Low kegs (less than 10% capacity)
-    const [lowKegsResult] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(taps)
-      .where(
-        and(
-          eq(taps.isActive, true),
-          sql`(${taps.kegCapacityMl} - ${taps.currentVolumeUsedMl}) < (${taps.kegCapacityMl} * 0.1)`
-        )
-      );
+    // For now, we'll calculate low kegs by checking each tap individually
+    // This could be optimized later with a more complex SQL query
+    const activeTaps = await this.getTaps();
+    const lowKegs = activeTaps.filter(tap => {
+      // Consider low if less than 10% of capacity remains
+      const totalCapacity = tap.currentVolumeAvailableMl + (30 * 1000 - tap.currentVolumeAvailableMl); // Assume 30L default
+      return tap.currentVolumeAvailableMl < (totalCapacity * 0.1);
+    }).length;
 
     return {
       activeTaps: activeTapsResult.count || 0,
       todayVolumeLiters: Math.round((todayVolumeResult.total || 0) / 1000 * 10) / 10,
       weekVolumeLiters: Math.round((weekVolumeResult.total || 0) / 1000 * 10) / 10,
-      lowKegs: lowKegsResult.count || 0,
+      lowKegs: lowKegs,
     };
   }
 
