@@ -579,6 +579,8 @@ export class DatabaseStorage implements IStorage {
         firstName: employees.firstName,
         lastName: employees.lastName,
         roleId: employees.roleId,
+        employmentType: employees.employmentType,
+        avatar: employees.avatar,
         isActive: employees.isActive,
         createdAt: employees.createdAt,
         updatedAt: employees.updatedAt,

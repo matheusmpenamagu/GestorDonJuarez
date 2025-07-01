@@ -1,6 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Beer } from "lucide-react";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -39,12 +38,9 @@ export function Header() {
               <span className="text-sm text-foreground">
                 {(user as any)?.firstName || (user as any)?.email || 'Operador'}
               </span>
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={(user as any)?.profileImageUrl || undefined} />
-                <AvatarFallback>
-                  {(user as any)?.firstName?.charAt(0) || (user as any)?.email?.charAt(0) || 'U'}
-                </AvatarFallback>
-              </Avatar>
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm">
+                {(user as any)?.avatar || "😊"}
+              </div>
               <Button 
                 variant="ghost" 
                 size="sm" 

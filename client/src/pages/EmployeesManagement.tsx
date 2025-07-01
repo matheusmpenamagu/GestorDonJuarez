@@ -298,7 +298,9 @@ export default function EmployeesManagement() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-lg">
+                      {employee.avatar || "😊"}
+                    </div>
                     {employee.firstName} {employee.lastName}
                   </div>
                   <div className="flex gap-1">
