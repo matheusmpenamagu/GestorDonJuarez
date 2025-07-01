@@ -219,6 +219,10 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Palette de 10 cores EBC: de Palha (EBC 2) a Preto (EBC 80)
 - ✓ Exibição visual das cores nos cards dos estilos com amostras de cores reais
 - ✓ Formulário atualizado com seletor de cores EBC e descrições explicativas
+- ✓ Integração das cores EBC nas barras de status das torneiras (Julho 1, 2025)
+- ✓ Correção do erro de tela branca na edição de estilos
+- ✓ Barras de progresso do monitoramento agora usam a cor EBC do estilo da cerveja
+- ✓ Cores autênticas de cerveja baseadas na Convenção Europeia de Cervejaria
 
 ## User Preferences
 

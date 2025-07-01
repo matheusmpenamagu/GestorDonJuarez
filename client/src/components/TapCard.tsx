@@ -4,6 +4,31 @@ import { Progress } from "@/components/ui/progress";
 import { TapWithRelations } from "@shared/schema";
 import { AlertTriangle } from "lucide-react";
 
+// EBC Color Scale mapping (same as BeerStylesManagement)
+const ebcColors = [
+  { value: 2, name: "Palha", color: "#FFE699" },
+  { value: 4, name: "Amarelo claro", color: "#FFD700" },
+  { value: 6, name: "Dourado", color: "#DAA520" },
+  { value: 8, name: "Âmbar claro", color: "#CD853F" },
+  { value: 12, name: "Âmbar", color: "#B8860B" },
+  { value: 16, name: "Cobre", color: "#B87333" },
+  { value: 20, name: "Marrom claro", color: "#8B4513" },
+  { value: 30, name: "Marrom", color: "#654321" },
+  { value: 40, name: "Marrom escuro", color: "#3C2415" },
+  { value: 80, name: "Preto", color: "#1C1C1C" },
+];
+
+const getEbcColor = (ebcValue: number | null | undefined) => {
+  if (!ebcValue) return "#22c55e"; // green-500 default
+  
+  const colorRange = ebcColors.find((color, index) => {
+    const nextColor = ebcColors[index + 1];
+    return ebcValue <= color.value || !nextColor;
+  });
+  
+  return colorRange?.color || "#22c55e";
+};
+
 interface TapCardProps {
   tap: TapWithRelations;
 }
@@ -16,6 +41,10 @@ export function TapCard({ tap }: TapCardProps) {
   const isLow = volumePercentage < 10;
   const availableLiters = Math.round(tap.currentVolumeAvailableMl / 1000 * 10) / 10;
   const totalLiters = Math.round((tap.kegCapacityMl || 0) / 1000);
+  
+  // Get EBC color for the progress bar
+  const ebcColor = getEbcColor(tap.currentBeerStyle?.ebcColor);
+  const progressBarColor = isLow ? "#ef4444" : ebcColor; // red-500 if low, EBC color otherwise
 
   const formatLastPour = (lastPour?: { datetime: string; pourVolumeMl: number }) => {
     if (!lastPour) return "Nenhum registro";
@@ -64,10 +93,19 @@ export function TapCard({ tap }: TapCardProps) {
               {availableLiters}L / {totalLiters}L
             </span>
           </div>
-          <Progress 
-            value={volumePercentage} 
-            className={`h-1.5 ${isLow ? '[&>div]:bg-red-500' : '[&>div]:bg-green-500'}`}
-          />
+          <div className="relative">
+            <Progress 
+              value={volumePercentage} 
+              className="h-1.5"
+            />
+            <div 
+              className="absolute top-0 left-0 h-full rounded-full transition-all duration-300"
+              style={{
+                width: `${volumePercentage}%`,
+                backgroundColor: progressBarColor,
+              }}
+            />
+          </div>
           {isLow && (
             <div className="flex items-center text-red-600 mt-1">
               <AlertTriangle className="h-3 w-3 mr-1" />
