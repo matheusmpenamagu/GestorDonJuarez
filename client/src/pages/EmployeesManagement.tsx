@@ -18,6 +18,7 @@ interface EmployeeFormData {
   firstName: string;
   lastName: string;
   roleId: number | null;
+  employmentType: "Sócio" | "Funcionário" | "Freelancer";
   isActive: boolean;
 }
 

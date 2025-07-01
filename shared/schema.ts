@@ -122,6 +122,7 @@ export const employees = pgTable("employees", {
   firstName: varchar("first_name", { length: 100 }).notNull(),
   lastName: varchar("last_name", { length: 100 }).notNull(),
   roleId: integer("role_id").references(() => roles.id),
+  employmentType: varchar("employment_type", { length: 50 }).notNull().default("Funcionário"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -241,6 +242,8 @@ export const insertEmployeeSchema = createInsertSchema(employees).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  employmentType: z.enum(["Sócio", "Funcionário", "Freelancer"]),
 });
 
 // Types
