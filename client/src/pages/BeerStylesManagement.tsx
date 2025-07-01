@@ -54,6 +54,55 @@ const getEbcColorName = (ebcValue: number | null) => {
   return colorRange?.name || "Personalizado";
 };
 
+// Dados dos estilos do cardápio Don Juarez
+const donJuarezStyles = [
+  {
+    name: "Pilsen",
+    description: "É o queridinho da galera! Levinho, refrescante e com coloração dourada. IBU: 9 / ABV: 4%.",
+    ebcColor: 6 // Dourado
+  },
+  {
+    name: "Red Ale",
+    description: "Com coloração cobre avermelhada, o nosso red tem aromas e sabores que remetem a caramelo e toffee. IBU: 23 / ABV: 5%.",
+    ebcColor: 16 // Cobre
+  },
+  {
+    name: "APA",
+    description: "American Pale Ale com aromas e sabores que remetem a laranja. IBU: 35 / ABV: 5%.",
+    ebcColor: 12 // Âmbar
+  },
+  {
+    name: "IPA",
+    description: "India Pale Ale com amargor um pouco acentuado, com leve sabor de maracujá e espuma consistente. IBU: 54 / ABV: 6%.",
+    ebcColor: 12 // Âmbar
+  },
+  {
+    name: "Session IPA",
+    description: "Chope suave, com uma generosa carga de lúpulos que traz sabores e aromas de frutas cítricas. IBU: 30 / ABV 5%.",
+    ebcColor: 8 // Âmbar claro
+  },
+  {
+    name: "Double IPA",
+    description: "Chope com muita potência de sabor e aroma. Bem frutado e de cor âmbar. IBU: 65 / ABV: 9%.",
+    ebcColor: 16 // Cobre
+  },
+  {
+    name: "Stout",
+    description: "Chope escuro, com aromas e sabores de café e chocolate amargo. IBU: 33 / ABV: 5%.",
+    ebcColor: 40 // Marrom escuro
+  },
+  {
+    name: "Blonde Ale Maracujá",
+    description: "Cerveja leve, clara, de baixo teor alcoólico e amargor moderado, com adição de maracujá, que predomina no aroma e sabor, trazendo leve acidez. Contém trigo. IBU: 28 / ABV 4,1%",
+    ebcColor: 4 // Amarelo claro
+  },
+  {
+    name: "Fruit Beer",
+    description: "Cerveja levemente ácida, com adição grande de frutas vermelhas e baixo amargor. 5,4% ABV / IBU 21",
+    ebcColor: 20 // Marrom claro (frutas vermelhas)
+  }
+];
+
 export default function BeerStylesManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingStyle, setEditingStyle] = useState<any>(null);
@@ -173,6 +222,27 @@ export default function BeerStylesManagement() {
     }
   };
 
+  const importDonJuarezStyles = async () => {
+    if (confirm("Deseja importar todos os estilos do cardápio Don Juarez? Isso pode sobrescrever estilos existentes com os mesmos nomes.")) {
+      try {
+        for (const style of donJuarezStyles) {
+          await apiRequest("POST", "/api/beer-styles", style);
+        }
+        queryClient.invalidateQueries({ queryKey: ["/api/beer-styles"] });
+        toast({
+          title: "Sucesso",
+          description: `${donJuarezStyles.length} estilos do cardápio importados com sucesso`,
+        });
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao importar estilos do cardápio",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const getTapsUsingStyle = (styleId: number) => {
     if (!taps || !Array.isArray(taps)) return 0;
     return taps.filter((tap: any) => tap.currentBeerStyleId === styleId && tap.isActive).length;
@@ -188,13 +258,18 @@ export default function BeerStylesManagement() {
           </p>
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Estilo
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={importDonJuarezStyles}>
+            <Beer className="mr-2 h-4 w-4" />
+            Importar Cardápio
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm}>
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Estilo
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
@@ -275,6 +350,7 @@ export default function BeerStylesManagement() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {isLoading ? (
