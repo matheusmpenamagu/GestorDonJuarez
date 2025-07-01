@@ -274,52 +274,76 @@ function HistoryTimeline() {
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-24">Tipo</TableHead>
-                    <TableHead>Data/Hora</TableHead>
-                    <TableHead>Torneira</TableHead>
-                    <TableHead>Local</TableHead>
-                    <TableHead>Estilo</TableHead>
-                    <TableHead>Volume</TableHead>
-                    <TableHead>Dispositivo</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredEvents.map((event: TimelineEvent) => {
-                    const { date, time } = formatEventDateTime(event.datetime);
-                    return (
-                      <TableRow key={`${event.type}-${event.id}`}>
-                        <TableCell>
-                          <div className={`flex items-center gap-2 ${getEventColor(event.type)}`}>
-                            {getEventIcon(event.type)}
-                            <Badge variant={event.type === "pour" ? "default" : "secondary"}>
-                              {event.type === "pour" ? "Consumo" : "Troca"}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{date}</span>
-                            <span className="text-sm text-muted-foreground">{time}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-medium">{event.tapName}</TableCell>
-                        <TableCell>{event.posName}</TableCell>
-                        <TableCell>{event.beerStyleName || "-"}</TableCell>
-                        <TableCell>
-                          {event.totalVolumeMl ? `${(event.totalVolumeMl / 1000).toFixed(2)}L` : "-"}
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-mono text-sm">{event.deviceCode || "-"}</span>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+            <div className="space-y-3">
+              {/* Cabeçalho da tabela */}
+              <div className="flex items-center p-3 bg-gray-50 border rounded-lg font-medium text-sm text-gray-700">
+                <div className="w-10 mr-4"></div> {/* Espaço para o ícone */}
+                <div className="flex-1 min-w-0 mr-4">Tipo</div>
+                <div className="flex-1 min-w-0 mr-4">Data/Hora</div>
+                <div className="flex-1 min-w-0 mr-4">Torneira</div>
+                <div className="flex-1 min-w-0 mr-4">Local</div>
+                <div className="flex-1 min-w-0 mr-4">Estilo</div>
+                <div className="flex-1 min-w-0 mr-4">Volume</div>
+                <div className="flex-1 min-w-0">Dispositivo</div>
+              </div>
+              
+              {filteredEvents.map((event: TimelineEvent) => {
+                const { date, time } = formatEventDateTime(event.datetime);
+                return (
+                  <div key={`${event.type}-${event.id}`} className="flex items-center p-4 bg-white border rounded-lg shadow-sm">
+                    {/* Ícone do tipo de evento */}
+                    <div className={`flex items-center justify-center w-10 h-10 rounded-full mr-4 ${
+                      event.type === 'pour' 
+                        ? 'bg-orange-100 text-orange-600' 
+                        : 'bg-green-100 text-green-600'
+                    }`}>
+                      {getEventIcon(event.type)}
+                    </div>
+                    
+                    {/* Tipo */}
+                    <div className="flex-1 min-w-0 mr-4">
+                      <div className="text-sm font-medium text-gray-900">
+                        {event.type === "pour" ? "Consumo" : "Troca"}
+                      </div>
+                    </div>
+                    
+                    {/* Data/Hora */}
+                    <div className="flex-1 min-w-0 mr-4">
+                      <div className="text-sm font-medium text-gray-900">{date}</div>
+                      <div className="text-sm text-gray-500">{time}</div>
+                    </div>
+                    
+                    {/* Torneira */}
+                    <div className="flex-1 min-w-0 mr-4">
+                      <div className="text-sm font-medium text-gray-900">{event.tapName}</div>
+                    </div>
+                    
+                    {/* Local */}
+                    <div className="flex-1 min-w-0 mr-4">
+                      <div className="text-sm text-gray-900">{event.posName}</div>
+                    </div>
+                    
+                    {/* Estilo */}
+                    <div className="flex-1 min-w-0 mr-4">
+                      <div className="text-sm text-gray-900">{event.beerStyleName || "-"}</div>
+                    </div>
+                    
+                    {/* Volume */}
+                    <div className="flex-1 min-w-0 mr-4">
+                      <div className="text-sm font-medium text-gray-900">
+                        {event.totalVolumeMl ? `${event.totalVolumeMl} ml` : "-"}
+                      </div>
+                    </div>
+                    
+                    {/* Dispositivo */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-mono text-gray-900">
+                        {event.deviceCode || "-"}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -356,21 +380,12 @@ export default function History() {
         </TabsList>
 
         <TabsContent value="historico" className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold">Consumo de chopes</h1>
-            <p className="text-muted-foreground">
-              Timeline de consumo e trocas de barril
-            </p>
-          </div>
           <HistoryTimeline />
         </TabsContent>
 
         <TabsContent value="torneiras" className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold">Gestão de Torneiras</h1>
-            <p className="text-muted-foreground">
-              Configuração e monitoramento das torneiras de chope
-            </p>
           </div>
           <TapsManagement />
         </TabsContent>
@@ -378,9 +393,6 @@ export default function History() {
         <TabsContent value="pontos-venda" className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold">Pontos de Venda</h1>
-            <p className="text-muted-foreground">
-              Gerenciamento dos locais de venda e instalação
-            </p>
           </div>
           <POSManagement />
         </TabsContent>
@@ -388,9 +400,6 @@ export default function History() {
         <TabsContent value="estilos" className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold">Estilos de Chopes</h1>
-            <p className="text-muted-foreground">
-              Cadastro e gestão dos tipos de cerveja disponíveis
-            </p>
           </div>
           <BeerStylesManagement />
         </TabsContent>
@@ -398,9 +407,6 @@ export default function History() {
         <TabsContent value="dispositivos" className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold">Dispositivos ESP32</h1>
-            <p className="text-muted-foreground">
-              Controle dos sensores e dispositivos de monitoramento
-            </p>
           </div>
           <DevicesManagement />
         </TabsContent>
