@@ -440,7 +440,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Combine and sort events by datetime (newest first)
       const allEvents = [...timelinePourEvents, ...timelineKegEvents];
-      allEvents.sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
+      allEvents.sort((a, b) => {
+        const dateA = new Date(a.datetime).getTime();
+        const dateB = new Date(b.datetime).getTime();
+        return dateB - dateA; // Most recent first
+      });
       
       res.json(allEvents);
     } catch (error) {
