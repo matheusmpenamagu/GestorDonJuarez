@@ -227,6 +227,11 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Círculos dos números das torneiras usam cor EBC do estilo da cerveja
 - ✓ Aplicado tanto no monitoramento de torneiras quanto na atividade em tempo real
 - ✓ Atualização dos tipos TypeScript para incluir ebcColor nos eventos
+- ✓ Sistema completo de importação do cardápio Don Juarez (Julho 1, 2025)
+- ✓ 9 estilos autênticos do menu com descrições, IBU, ABV e cores EBC
+- ✓ Algoritmo de verificação de duplicatas para evitar cadastros redundantes
+- ✓ Botão "Importar Cardápio" na interface de gestão de estilos
+- ✓ Contadores de importação: estilos novos vs já existentes
 
 ## User Preferences
 

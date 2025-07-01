@@ -222,16 +222,38 @@ export default function BeerStylesManagement() {
   };
 
   const importDonJuarezStyles = async () => {
-    if (confirm("Deseja importar todos os estilos do cardápio Don Juarez? Isso pode sobrescrever estilos existentes com os mesmos nomes.")) {
+    if (confirm("Deseja importar os estilos do cardápio Don Juarez? Estilos já existentes serão ignorados.")) {
       try {
+        const existingStyles = Array.isArray(beerStyles) ? beerStyles : [];
+        const existingNames = existingStyles.map((style: any) => style.name.toLowerCase());
+        
+        let importedCount = 0;
+        let skippedCount = 0;
+        
         for (const style of donJuarezStyles) {
-          await apiRequest("POST", "/api/beer-styles", style);
+          const styleName = style.name.toLowerCase();
+          
+          if (!existingNames.includes(styleName)) {
+            await apiRequest("POST", "/api/beer-styles", style);
+            importedCount++;
+          } else {
+            skippedCount++;
+          }
         }
+        
         queryClient.invalidateQueries({ queryKey: ["/api/beer-styles"] });
-        toast({
-          title: "Sucesso",
-          description: `${donJuarezStyles.length} estilos do cardápio importados com sucesso`,
-        });
+        
+        if (importedCount > 0) {
+          toast({
+            title: "Sucesso",
+            description: `${importedCount} estilos importados. ${skippedCount} já existiam e foram ignorados.`,
+          });
+        } else {
+          toast({
+            title: "Informação",
+            description: "Todos os estilos do cardápio já estão cadastrados.",
+          });
+        }
       } catch (error) {
         toast({
           title: "Erro",
