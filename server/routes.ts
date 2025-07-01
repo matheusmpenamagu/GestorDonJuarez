@@ -696,6 +696,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ LOGIN BACKGROUND IMAGE ROUTES ============
+
+  // Serve login background image
+  app.get('/api/login-background', (req, res) => {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const imagePath = path.join(process.cwd(), 'uploads', 'login-background.jpg');
+      
+      if (fs.existsSync(imagePath)) {
+        res.sendFile(imagePath);
+      } else {
+        // Return a default gradient if no image is uploaded
+        res.status(404).json({ message: 'No background image found' });
+      }
+    } catch (error) {
+      console.error("Error serving background image:", error);
+      res.status(500).json({ message: "Error serving background image" });
+    }
+  });
+
+  // Upload login background image
+  app.post('/api/upload/login-background', demoAuth, (req, res) => {
+    try {
+      const multer = require('multer');
+      const path = require('path');
+      const fs = require('fs');
+      
+      // Create uploads directory if it doesn't exist
+      const uploadsDir = path.join(process.cwd(), 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      
+      const storage = multer.diskStorage({
+        destination: (req: any, file: any, cb: any) => {
+          cb(null, uploadsDir);
+        },
+        filename: (req: any, file: any, cb: any) => {
+          cb(null, 'login-background.jpg');
+        }
+      });
+      
+      const upload = multer({ 
+        storage,
+        limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+        fileFilter: (req: any, file: any, cb: any) => {
+          if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+          } else {
+            cb(new Error('Only image files are allowed'));
+          }
+        }
+      }).single('image');
+      
+      upload(req, res, (err: any) => {
+        if (err) {
+          console.error("Upload error:", err);
+          return res.status(400).json({ message: err.message });
+        }
+        res.json({ success: true, message: 'Background image uploaded successfully' });
+      });
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      res.status(500).json({ message: "Error uploading image" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket for real-time updates

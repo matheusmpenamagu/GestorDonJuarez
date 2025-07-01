@@ -67,14 +67,24 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary to-blue-700 p-4">
-      <Card className="w-full max-w-md">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4 relative bg-gradient-to-br from-primary to-blue-700"
+      style={{
+        backgroundImage: 'url(/api/login-background)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* Overlay escuro para melhor legibilidade */}
+      <div className="absolute inset-0 bg-black/30"></div>
+      <Card className="w-full max-w-md relative z-10 backdrop-blur-sm bg-white/95 dark:bg-gray-900/95">
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4">
             <Beer className="h-8 w-8 text-white" />
           </div>
-          <CardTitle className="text-2xl">Controle de Chopes</CardTitle>
-          <p className="text-muted-foreground">Sistema de Monitoramento de Torneiras</p>
+          <CardTitle className="text-2xl font-bold text-foreground">Gestor Don Juarez</CardTitle>
+          <p className="text-muted-foreground">Sistema de Gestão Operacional</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
