@@ -204,6 +204,11 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Filtros tornados mais discretos com design sutil (Julho 1, 2025)
 - ✓ Substituição do card destacado por bordas tracejadas e cores esmaecidas
 - ✓ Ícones e textos em tom de cinza para menor destaque visual
+- ✓ Conversão da timeline para tabela dinâmica ordenável (Julho 1, 2025)
+- ✓ Implementação de colunas clicáveis para ordenação (Data/Hora, Torneira, Local)
+- ✓ Uso dos componentes Table do sistema com estilo padronizado
+- ✓ Movimentação dos filtros para logo acima da tabela
+- ✓ Badges coloridos para identificação de tipos de evento (Consumo/Troca)
 
 ## User Preferences
 
