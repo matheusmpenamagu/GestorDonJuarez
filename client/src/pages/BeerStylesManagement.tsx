@@ -142,6 +142,7 @@ export default function BeerStylesManagement() {
     setFormData({
       name: "",
       description: "",
+      ebcColor: null,
     });
     setEditingStyle(null);
   };
@@ -161,6 +162,7 @@ export default function BeerStylesManagement() {
     setFormData({
       name: style.name || "",
       description: style.description || "",
+      ebcColor: style.ebcColor || null,
     });
     setIsDialogOpen(true);
   };
@@ -172,12 +174,8 @@ export default function BeerStylesManagement() {
   };
 
   const getTapsUsingStyle = (styleId: number) => {
-    if (!taps) return 0;
+    if (!taps || !Array.isArray(taps)) return 0;
     return taps.filter((tap: any) => tap.currentBeerStyleId === styleId && tap.isActive).length;
-  };
-
-  const getColorClass = (index: number) => {
-    return colorClasses[index % colorClasses.length];
   };
 
   return (
@@ -225,6 +223,40 @@ export default function BeerStylesManagement() {
                   rows={3}
                 />
               </div>
+
+              <div>
+                <Label htmlFor="ebcColor">Cor EBC (European Brewery Convention)</Label>
+                <Select 
+                  value={formData.ebcColor?.toString() || ""} 
+                  onValueChange={(value) => setFormData({ 
+                    ...formData, 
+                    ebcColor: value ? parseInt(value) : null 
+                  })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a cor do estilo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Não definido</SelectItem>
+                    {ebcColors.map((color) => (
+                      <SelectItem key={color.value} value={color.value.toString()}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-4 h-4 rounded border"
+                            style={{ backgroundColor: color.color }}
+                          />
+                          <span>{color.name} (EBC {color.value})</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formData.ebcColor && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {ebcColors.find(c => c.value === formData.ebcColor)?.description}
+                  </p>
+                )}
+              </div>
               
               <div className="flex gap-2">
                 <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
@@ -243,7 +275,7 @@ export default function BeerStylesManagement() {
         <div className="text-center py-8 text-muted-foreground">
           Carregando estilos de cerveja...
         </div>
-      ) : !beerStyles || beerStyles.length === 0 ? (
+      ) : !beerStyles || !Array.isArray(beerStyles) || beerStyles.length === 0 ? (
         <Card>
           <CardContent className="p-6 text-center text-muted-foreground">
             Nenhum estilo de cerveja configurado
@@ -251,13 +283,16 @@ export default function BeerStylesManagement() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {beerStyles.map((style: any, index: number) => (
+          {Array.isArray(beerStyles) && beerStyles.map((style: any) => (
             <Card key={style.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getColorClass(index)}`}>
-                      <Beer className="h-5 w-5 text-white" />
+                    <div 
+                      className="w-10 h-10 rounded-full flex items-center justify-center border" 
+                      style={getEbcColorStyle(style.ebcColor)}
+                    >
+                      <Beer className="h-5 w-5" style={{ color: style.ebcColor && style.ebcColor > 20 ? 'white' : 'black' }} />
                     </div>
                     <div>
                       <CardTitle className="text-lg">{style.name}</CardTitle>
@@ -290,6 +325,20 @@ export default function BeerStylesManagement() {
                 {style.description && (
                   <p className="text-sm text-muted-foreground mb-4">{style.description}</p>
                 )}
+                
+                {style.ebcColor && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <Palette className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      Cor: {getEbcColorName(style.ebcColor)} (EBC {style.ebcColor})
+                    </span>
+                    <div 
+                      className="w-4 h-4 rounded border" 
+                      style={getEbcColorStyle(style.ebcColor)}
+                    />
+                  </div>
+                )}
+                
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Em uso:</span>
                   <span className="font-medium text-green-600">
