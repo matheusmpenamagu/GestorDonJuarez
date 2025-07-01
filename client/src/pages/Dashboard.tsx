@@ -5,12 +5,7 @@ import { TapCard } from "@/components/TapCard";
 import { RealtimePours } from "@/components/RealtimePours";
 import { TapWithRelations } from "@shared/schema";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { 
-  Beer, 
-  TrendingUp, 
-  BarChart3, 
-  AlertTriangle 
-} from "lucide-react";
+import { Beer, TrendingUp, BarChart3, AlertTriangle } from "lucide-react";
 
 interface DashboardStats {
   activeTaps: number;
@@ -22,7 +17,7 @@ interface DashboardStats {
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [taps, setTaps] = useState<TapWithRelations[]>([]);
-  const { lastMessage } = useWebSocket('/');
+  const { lastMessage } = useWebSocket("/");
 
   // Initial data queries
   const { data: initialStats } = useQuery({
@@ -37,16 +32,16 @@ export default function Dashboard() {
   useEffect(() => {
     if (lastMessage) {
       switch (lastMessage.type) {
-        case 'initial_data':
+        case "initial_data":
           if (lastMessage.data.stats) setStats(lastMessage.data.stats);
           if (lastMessage.data.taps && Array.isArray(lastMessage.data.taps)) {
             setTaps(lastMessage.data.taps);
           }
           break;
-        case 'stats_updated':
+        case "stats_updated":
           if (lastMessage.data) setStats(lastMessage.data);
           break;
-        case 'taps_updated':
+        case "taps_updated":
           if (lastMessage.data && Array.isArray(lastMessage.data)) {
             setTaps(lastMessage.data);
           }
@@ -96,7 +91,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="space-y-8">
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statsCards.map((stat, index) => {
@@ -113,7 +108,9 @@ export default function Dashboard() {
                       {stat.title}
                     </p>
                     <p className="text-2xl font-bold text-foreground">
-                      {typeof stat.value === 'number' ? stat.value.toLocaleString('pt-BR') : stat.value}
+                      {typeof stat.value === "number"
+                        ? stat.value.toLocaleString("pt-BR")
+                        : stat.value}
                     </p>
                   </div>
                 </div>

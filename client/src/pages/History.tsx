@@ -3,14 +3,20 @@ import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Filter, Beer, RefreshCw, Clock } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 
 interface TimelineEvent {
   id: number;
-  type: 'pour' | 'keg_change';
+  type: "pour" | "keg_change";
   datetime: string;
   tapName: string;
   posName: string;
@@ -26,45 +32,49 @@ export default function History() {
 
   // Get pour events
   const { data: pourEvents = [], isLoading: isLoadingPours } = useQuery({
-    queryKey: ['/api/pour-events', startDate, endDate, selectedTap],
+    queryKey: ["/api/pour-events", startDate, endDate, selectedTap],
     enabled: true,
   });
 
   // Get keg change events
   const { data: kegChangeEvents = [], isLoading: isLoadingKegs } = useQuery({
-    queryKey: ['/api/keg-changes', startDate, endDate, selectedTap],
+    queryKey: ["/api/keg-changes", startDate, endDate, selectedTap],
     enabled: true,
   });
 
   // Get taps for filter
   const { data: taps = [] } = useQuery({
-    queryKey: ['/api/taps'],
+    queryKey: ["/api/taps"],
   });
 
   // Combine and sort events
   const timelineEvents: TimelineEvent[] = [
     ...(Array.isArray(pourEvents) ? pourEvents : []).map((event: any) => ({
       ...event,
-      type: 'pour' as const
+      type: "pour" as const,
     })),
-    ...(Array.isArray(kegChangeEvents) ? kegChangeEvents : []).map((event: any) => ({
-      ...event,
-      type: 'keg_change' as const
-    }))
-  ].sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
+    ...(Array.isArray(kegChangeEvents) ? kegChangeEvents : []).map(
+      (event: any) => ({
+        ...event,
+        type: "keg_change" as const,
+      }),
+    ),
+  ].sort(
+    (a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime(),
+  );
 
   const isLoading = isLoadingPours || isLoadingKegs;
 
   const getEventIcon = (type: string) => {
-    return type === 'pour' ? Beer : RefreshCw;
+    return type === "pour" ? Beer : RefreshCw;
   };
 
   const getEventBgColor = (type: string) => {
-    return type === 'pour' ? 'bg-primary' : 'bg-green-600';
+    return type === "pour" ? "bg-primary" : "bg-green-600";
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Histórico</h1>
         <p className="text-muted-foreground">
@@ -139,25 +149,32 @@ export default function History() {
             </div>
           ) : timelineEvents.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">Nenhum evento encontrado para os filtros selecionados</p>
+              <p className="text-muted-foreground">
+                Nenhum evento encontrado para os filtros selecionados
+              </p>
             </div>
           ) : (
             <div className="relative">
               {/* Timeline line */}
               <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border"></div>
-              
+
               <div className="space-y-6">
                 {timelineEvents.map((event, index) => {
                   const Icon = getEventIcon(event.type);
                   const eventBgColor = getEventBgColor(event.type);
-                  
+
                   return (
-                    <div key={`${event.type}-${event.id}`} className="relative flex items-start gap-4">
+                    <div
+                      key={`${event.type}-${event.id}`}
+                      className="relative flex items-start gap-4"
+                    >
                       {/* Timeline dot */}
-                      <div className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-full ${eventBgColor} text-white`}>
+                      <div
+                        className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-full ${eventBgColor} text-white`}
+                      >
                         <Icon className="h-5 w-5" />
                       </div>
-                      
+
                       {/* Event content */}
                       <div className="flex-1 min-w-0">
                         <div className="bg-card border rounded-lg p-4 shadow-sm">
@@ -165,52 +182,71 @@ export default function History() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
                                 <h3 className="font-semibold text-sm">
-                                  {event.type === 'pour' ? 'Consumo de Chope' : 'Troca de Barril'}
+                                  {event.type === "pour"
+                                    ? "Consumo de Chope"
+                                    : "Troca de Barril"}
                                 </h3>
                                 <Badge variant="outline" className="text-xs">
                                   {event.tapName}
                                 </Badge>
                               </div>
-                              
+
                               <div className="space-y-1 text-sm text-muted-foreground">
                                 <p className="flex items-center gap-2">
                                   <span className="font-medium">Local:</span>
                                   {event.posName}
                                 </p>
-                                
+
                                 {event.beerStyleName && (
                                   <p className="flex items-center gap-2">
                                     <span className="font-medium">Estilo:</span>
                                     {event.beerStyleName}
                                   </p>
                                 )}
-                                
-                                {event.type === 'pour' && event.totalVolumeMl && (
-                                  <p className="flex items-center gap-2">
-                                    <span className="font-medium">Volume:</span>
-                                    <span className="font-mono text-foreground">
-                                      {event.totalVolumeMl.toLocaleString()} ml
-                                    </span>
-                                  </p>
-                                )}
-                                
+
+                                {event.type === "pour" &&
+                                  event.totalVolumeMl && (
+                                    <p className="flex items-center gap-2">
+                                      <span className="font-medium">
+                                        Volume:
+                                      </span>
+                                      <span className="font-mono text-foreground">
+                                        {event.totalVolumeMl.toLocaleString()}{" "}
+                                        ml
+                                      </span>
+                                    </p>
+                                  )}
+
                                 {event.deviceCode && (
                                   <p className="flex items-center gap-2">
-                                    <span className="font-medium">Dispositivo:</span>
-                                    <Badge variant="secondary" className="text-xs">
+                                    <span className="font-medium">
+                                      Dispositivo:
+                                    </span>
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-xs"
+                                    >
                                       {event.deviceCode}
                                     </Badge>
                                   </p>
                                 )}
                               </div>
                             </div>
-                            
+
                             <div className="text-right">
                               <p className="text-sm font-medium">
-                                {format(parseISO(event.datetime.replace(' ', 'T')), 'dd/MM/yyyy', { locale: ptBR })}
+                                {format(
+                                  parseISO(event.datetime.replace(" ", "T")),
+                                  "dd/MM/yyyy",
+                                  { locale: ptBR },
+                                )}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {format(parseISO(event.datetime.replace(' ', 'T')), 'HH:mm:ss', { locale: ptBR })}
+                                {format(
+                                  parseISO(event.datetime.replace(" ", "T")),
+                                  "HH:mm:ss",
+                                  { locale: ptBR },
+                                )}
                               </p>
                             </div>
                           </div>

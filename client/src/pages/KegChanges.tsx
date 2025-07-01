@@ -9,14 +9,14 @@ export default function KegChanges() {
 
   const formatDateTime = (datetime: string) => {
     const date = new Date(datetime);
-    return date.toLocaleString("pt-BR", { 
+    return date.toLocaleString("pt-BR", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
-      hour: "2-digit", 
+      hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
-      timeZone: "America/Sao_Paulo"
+      timeZone: "America/Sao_Paulo",
     });
   };
 
@@ -26,9 +26,11 @@ export default function KegChanges() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Histórico de Trocas de Barril</h2>
+        <h2 className="text-2xl font-bold text-foreground">
+          Histórico de Trocas de Barril
+        </h2>
         <p className="text-muted-foreground mt-1">
           Acompanhe todas as trocas de barril realizadas
         </p>
@@ -52,11 +54,21 @@ export default function KegChanges() {
               <table className="min-w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Data/Hora</th>
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Torneira</th>
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Ponto de Venda</th>
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Volume Anterior</th>
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Status</th>
+                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">
+                      Data/Hora
+                    </th>
+                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">
+                      Torneira
+                    </th>
+                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">
+                      Ponto de Venda
+                    </th>
+                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">
+                      Volume Anterior
+                    </th>
+                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">
+                      Status
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -84,7 +96,10 @@ export default function KegChanges() {
                         {formatVolume(change.previousVolumeMl)}
                       </td>
                       <td className="py-4">
-                        <Badge variant="secondary" className="bg-green-100 text-green-800">
+                        <Badge
+                          variant="secondary"
+                          className="bg-green-100 text-green-800"
+                        >
                           Concluída
                         </Badge>
                       </td>

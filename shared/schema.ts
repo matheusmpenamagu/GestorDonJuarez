@@ -105,6 +105,28 @@ export const kegChangeEvents = pgTable("keg_change_events", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Employee management tables
+export const roles = pgTable("roles", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  permissions: text("permissions").array().notNull().default([]), // Array of permission slugs
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const employees = pgTable("employees", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  password: varchar("password", { length: 255 }).notNull(),
+  firstName: varchar("first_name", { length: 100 }).notNull(),
+  lastName: varchar("last_name", { length: 100 }).notNull(),
+  roleId: integer("role_id").references(() => roles.id),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   // Add user-specific relations if needed
@@ -153,6 +175,17 @@ export const kegChangeEventsRelations = relations(kegChangeEvents, ({ one }) => 
   }),
 }));
 
+export const rolesRelations = relations(roles, ({ many }) => ({
+  employees: many(employees),
+}));
+
+export const employeesRelations = relations(employees, ({ one }) => ({
+  role: one(roles, {
+    fields: [employees.roleId],
+    references: [roles.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   id: true,
@@ -198,6 +231,18 @@ export const insertKegChangeEventSchema = createInsertSchema(kegChangeEvents).om
   createdAt: true,
 });
 
+export const insertRoleSchema = createInsertSchema(roles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertEmployeeSchema = createInsertSchema(employees).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -213,6 +258,10 @@ export type PourEvent = typeof pourEvents.$inferSelect;
 export type InsertPourEvent = z.infer<typeof insertPourEventSchema>;
 export type KegChangeEvent = typeof kegChangeEvents.$inferSelect;
 export type InsertKegChangeEvent = z.infer<typeof insertKegChangeEventSchema>;
+export type Role = typeof roles.$inferSelect;
+export type InsertRole = z.infer<typeof insertRoleSchema>;
+export type Employee = typeof employees.$inferSelect;
+export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 
 // Extended types for API responses
 export type TapWithRelations = Tap & {
@@ -230,4 +279,8 @@ export type PourEventWithRelations = PourEvent & {
     pointOfSale?: { name: string };
     currentBeerStyle?: { name: string };
   };
+};
+
+export type EmployeeWithRelations = Employee & {
+  role?: Role;
 };

@@ -5,11 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Plus, Store, MoreVertical, Edit, Trash2 } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface POSFormData {
   name: string;
@@ -58,7 +69,13 @@ export default function POSManagement() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<POSFormData> }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: Partial<POSFormData>;
+    }) => {
       await apiRequest("PUT", `/api/points-of-sale/${id}`, data);
     },
     onSuccess: () => {
@@ -109,7 +126,7 @@ export default function POSManagement() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (editingPOS) {
       updateMutation.mutate({ id: editingPOS.id, data: formData });
     } else {
@@ -134,19 +151,22 @@ export default function POSManagement() {
 
   const getActiveTapsCount = (posId: number) => {
     if (!taps) return 0;
-    return taps.filter((tap: any) => tap.posId === posId && tap.isActive).length;
+    return taps.filter((tap: any) => tap.posId === posId && tap.isActive)
+      .length;
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Pontos de Venda</h2>
+          <h2 className="text-2xl font-bold text-foreground">
+            Pontos de Venda
+          </h2>
           <p className="text-muted-foreground mt-1">
             Gerencie os pontos de venda do estabelecimento
           </p>
         </div>
-        
+
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
@@ -166,28 +186,41 @@ export default function POSManagement() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="Ex: Balcão Principal"
                   required
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="address">Endereço</Label>
                 <Textarea
                   id="address"
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, address: e.target.value })
+                  }
                   placeholder="Ex: Rua das Cervejas, 123 - Centro"
                   rows={3}
                 />
               </div>
-              
+
               <div className="flex gap-2">
-                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                <Button
+                  type="submit"
+                  disabled={
+                    createMutation.isPending || updateMutation.isPending
+                  }
+                >
                   {editingPOS ? "Atualizar" : "Criar"}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
                   Cancelar
                 </Button>
               </div>
@@ -218,7 +251,9 @@ export default function POSManagement() {
                     </div>
                     <div>
                       <CardTitle className="text-lg">{pos.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground">ID: {pos.id}</p>
+                      <p className="text-sm text-muted-foreground">
+                        ID: {pos.id}
+                      </p>
                     </div>
                   </div>
                   <DropdownMenu>
@@ -232,7 +267,7 @@ export default function POSManagement() {
                         <Edit className="mr-2 h-4 w-4" />
                         Editar
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={() => handleDelete(pos.id)}
                         className="text-red-600"
                       >
@@ -245,11 +280,15 @@ export default function POSManagement() {
               </CardHeader>
               <CardContent>
                 {pos.address && (
-                  <p className="text-sm text-muted-foreground mb-4">{pos.address}</p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {pos.address}
+                  </p>
                 )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Torneiras:</span>
-                  <span className="font-medium">{getActiveTapsCount(pos.id)} ativas</span>
+                  <span className="font-medium">
+                    {getActiveTapsCount(pos.id)} ativas
+                  </span>
                 </div>
               </CardContent>
             </Card>

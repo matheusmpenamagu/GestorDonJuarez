@@ -4,9 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Plus, Edit, Trash2 } from "lucide-react";
@@ -65,9 +77,10 @@ export default function TapsManagement() {
     onError: (error) => {
       let errorMessage = "Erro ao criar torneira";
       if (error.message.includes("Device is already assigned")) {
-        errorMessage = "Este dispositivo já está sendo usado por outra torneira";
+        errorMessage =
+          "Este dispositivo já está sendo usado por outra torneira";
       }
-      
+
       toast({
         title: "Erro",
         description: errorMessage,
@@ -77,7 +90,13 @@ export default function TapsManagement() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<TapFormData> }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: Partial<TapFormData>;
+    }) => {
       await apiRequest("PUT", `/api/taps/${id}`, data);
     },
     onSuccess: () => {
@@ -92,9 +111,10 @@ export default function TapsManagement() {
     onError: (error) => {
       let errorMessage = "Erro ao atualizar torneira";
       if (error.message.includes("Device is already assigned")) {
-        errorMessage = "Este dispositivo já está sendo usado por outra torneira";
+        errorMessage =
+          "Este dispositivo já está sendo usado por outra torneira";
       }
-      
+
       toast({
         title: "Erro",
         description: errorMessage,
@@ -136,7 +156,7 @@ export default function TapsManagement() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (editingTap) {
       updateMutation.mutate({ id: editingTap.id, data: formData });
     } else {
@@ -163,15 +183,17 @@ export default function TapsManagement() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Gerenciar Torneiras</h2>
+          <h2 className="text-2xl font-bold text-foreground">
+            Gerenciar Torneiras
+          </h2>
           <p className="text-muted-foreground mt-1">
             Configure e monitore as torneiras do sistema
           </p>
         </div>
-        
+
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
@@ -191,17 +213,24 @@ export default function TapsManagement() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="Ex: Torneira 1"
                   required
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="pos">Ponto de Venda</Label>
-                <Select 
-                  value={formData.posId?.toString() || ""} 
-                  onValueChange={(value) => setFormData({ ...formData, posId: value ? parseInt(value) : null })}
+                <Select
+                  value={formData.posId?.toString() || ""}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      posId: value ? parseInt(value) : null,
+                    })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um ponto de venda" />
@@ -215,12 +244,17 @@ export default function TapsManagement() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label htmlFor="beerStyle">Estilo de Cerveja</Label>
-                <Select 
-                  value={formData.currentBeerStyleId?.toString() || ""} 
-                  onValueChange={(value) => setFormData({ ...formData, currentBeerStyleId: value ? parseInt(value) : null })}
+                <Select
+                  value={formData.currentBeerStyleId?.toString() || ""}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      currentBeerStyleId: value ? parseInt(value) : null,
+                    })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um estilo de cerveja" />
@@ -237,54 +271,77 @@ export default function TapsManagement() {
 
               <div>
                 <Label htmlFor="device">Dispositivo ESP32</Label>
-                <Select 
-                  value={formData.deviceId?.toString() || "0"} 
-                  onValueChange={(value) => setFormData({ ...formData, deviceId: value === "0" ? null : parseInt(value) })}
+                <Select
+                  value={formData.deviceId?.toString() || "0"}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      deviceId: value === "0" ? null : parseInt(value),
+                    })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um dispositivo (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="0">Nenhum dispositivo</SelectItem>
-                    {devices?.filter((device: any) => device.isActive).map((device: any) => {
-                      // Check if device is already assigned to another tap
-                      const isAssigned = taps?.some((tap: any) => 
-                        tap.deviceId === device.id && tap.id !== editingTap?.id
-                      );
-                      
-                      return (
-                        <SelectItem 
-                          key={device.id} 
-                          value={device.id.toString()}
-                          disabled={isAssigned}
-                        >
-                          {device.code} - {device.name}
-                          {isAssigned && " (Em uso)"}
-                        </SelectItem>
-                      );
-                    })}
+                    {devices
+                      ?.filter((device: any) => device.isActive)
+                      .map((device: any) => {
+                        // Check if device is already assigned to another tap
+                        const isAssigned = taps?.some(
+                          (tap: any) =>
+                            tap.deviceId === device.id &&
+                            tap.id !== editingTap?.id,
+                        );
+
+                        return (
+                          <SelectItem
+                            key={device.id}
+                            value={device.id.toString()}
+                            disabled={isAssigned}
+                          >
+                            {device.code} - {device.name}
+                            {isAssigned && " (Em uso)"}
+                          </SelectItem>
+                        );
+                      })}
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label htmlFor="capacity">Capacidade do Barril (ml)</Label>
                 <Input
                   id="capacity"
                   type="number"
                   value={formData.kegCapacityMl}
-                  onChange={(e) => setFormData({ ...formData, kegCapacityMl: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      kegCapacityMl: parseInt(e.target.value),
+                    })
+                  }
                   min="1000"
                   step="1000"
                   required
                 />
               </div>
-              
+
               <div className="flex gap-2">
-                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                <Button
+                  type="submit"
+                  disabled={
+                    createMutation.isPending || updateMutation.isPending
+                  }
+                >
                   {editingTap ? "Atualizar" : "Criar"}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
                   Cancelar
                 </Button>
               </div>
@@ -308,20 +365,38 @@ export default function TapsManagement() {
               <table className="min-w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">ID</th>
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Nome</th>
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Ponto de Venda</th>
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Estilo</th>
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Dispositivo</th>
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Status</th>
-                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">Ações</th>
+                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">
+                      ID
+                    </th>
+                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">
+                      Nome
+                    </th>
+                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">
+                      Ponto de Venda
+                    </th>
+                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">
+                      Estilo
+                    </th>
+                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">
+                      Dispositivo
+                    </th>
+                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">
+                      Status
+                    </th>
+                    <th className="text-left py-3 text-sm font-medium text-muted-foreground">
+                      Ações
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {taps.map((tap: any) => (
                     <tr key={tap.id} className="hover:bg-muted/50">
-                      <td className="py-4 text-sm font-medium text-foreground">{tap.id}</td>
-                      <td className="py-4 text-sm text-foreground">{tap.name}</td>
+                      <td className="py-4 text-sm font-medium text-foreground">
+                        {tap.id}
+                      </td>
+                      <td className="py-4 text-sm text-foreground">
+                        {tap.name}
+                      </td>
                       <td className="py-4 text-sm text-muted-foreground">
                         {tap.pointOfSale?.name || "N/A"}
                       </td>
@@ -331,11 +406,17 @@ export default function TapsManagement() {
                       <td className="py-4 text-sm text-muted-foreground">
                         {tap.device ? (
                           <div className="flex flex-col">
-                            <span className="font-medium">{tap.device.code}</span>
-                            <span className="text-xs text-muted-foreground">{tap.device.name}</span>
+                            <span className="font-medium">
+                              {tap.device.code}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {tap.device.name}
+                            </span>
                           </div>
                         ) : (
-                          <span className="text-muted-foreground">Sem dispositivo</span>
+                          <span className="text-muted-foreground">
+                            Sem dispositivo
+                          </span>
                         )}
                       </td>
                       <td className="py-4">
@@ -345,15 +426,15 @@ export default function TapsManagement() {
                       </td>
                       <td className="py-4">
                         <div className="flex space-x-2">
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleEdit(tap)}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleDelete(tap.id)}
                             className="text-red-600 hover:text-red-700"
