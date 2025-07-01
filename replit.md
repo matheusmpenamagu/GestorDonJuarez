@@ -213,6 +213,12 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Ordenação padrão por data com eventos mais recentes primeiro
 - ✓ Correção de headers duplicados nas abas de gestão (Julho 1, 2025)
 - ✓ Remoção de títulos redundantes nas abas Torneiras, Pontos de venda, Estilos e Dispositivos
+- ✓ Implementação de sistema de cores EBC para estilos de cerveja (Julho 1, 2025)
+- ✓ Adição de campo ebcColor na tabela beer_styles do banco de dados
+- ✓ Interface de seleção de cores baseada na Escala EBC (European Brewery Convention)
+- ✓ Palette de 10 cores EBC: de Palha (EBC 2) a Preto (EBC 80)
+- ✓ Exibição visual das cores nos cards dos estilos com amostras de cores reais
+- ✓ Formulário atualizado com seletor de cores EBC e descrições explicativas
 
 ## User Preferences
 
