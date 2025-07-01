@@ -162,6 +162,11 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Filtros por data e torneira mantidos na nova interface
 - ✓ Remoção da funcionalidade de exportação CSV da tela de histórico
 - ✓ Design visual aprimorado com ícones distintos para cada tipo de evento
+- ✓ Implementação do módulo "Pessoas" com gestão de colaboradores e cargos
+- ✓ Sistema de permissões baseado nos submenus do sistema
+- ✓ Criação de tabelas de banco: roles, employees com relações
+- ✓ APIs REST completas para CRUD de funcionários e cargos
+- ✓ Interface de gerenciamento com formulários e validações
 
 ## User Preferences
 

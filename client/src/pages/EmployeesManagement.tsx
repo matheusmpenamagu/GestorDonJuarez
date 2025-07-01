@@ -57,9 +57,10 @@ export default function EmployeesManagement() {
       resetForm();
     },
     onError: (error) => {
+      console.error("Error creating employee:", error);
       toast({
         title: "Erro",
-        description: "Erro ao criar colaborador",
+        description: error.message || "Erro ao criar colaborador",
         variant: "destructive",
       });
     },
@@ -78,9 +79,10 @@ export default function EmployeesManagement() {
       resetForm();
     },
     onError: (error) => {
+      console.error("Error updating employee:", error);
       toast({
         title: "Erro",
-        description: "Erro ao atualizar colaborador",
+        description: error.message || "Erro ao atualizar colaborador",
         variant: "destructive",
       });
     },
@@ -98,9 +100,10 @@ export default function EmployeesManagement() {
       });
     },
     onError: (error) => {
+      console.error("Error deleting employee:", error);
       toast({
         title: "Erro",
-        description: "Erro ao remover colaborador",
+        description: error.message || "Erro ao remover colaborador",
         variant: "destructive",
       });
     },
