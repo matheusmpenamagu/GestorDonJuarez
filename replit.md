@@ -182,6 +182,10 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Algoritmo de cálculo de eficiência CO2/litro com comparação de períodos
 - ✓ Filtro para contabilizar CO2 apenas das unidades Grão Pará e Beer Truck
 - ✓ API /api/co2-stats com métricas dos últimos 30 dias vs período anterior
+- ✓ Reestruturação do dashboard com dois boxes principais (Julho 1, 2025)
+- ✓ Box "Consumo de chopes" com 4 cards de estatísticas e monitoramento de torneiras
+- ✓ Box "CO2" com 2 cards de estatísticas: total de recargas e eficiência por litro
+- ✓ Layout reorganizado com cards aninhados e design visual aprimorado
 
 ## User Preferences
 
