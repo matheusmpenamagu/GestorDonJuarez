@@ -17,6 +17,7 @@ interface EmployeeFormData {
   password: string;
   firstName: string;
   lastName: string;
+  whatsapp: string;
   roleId: number | null;
   employmentType: "Sócio" | "Funcionário" | "Freelancer";
   isActive: boolean;
@@ -30,6 +31,7 @@ export default function EmployeesManagement() {
     password: "",
     firstName: "",
     lastName: "",
+    whatsapp: "",
     roleId: null,
     employmentType: "Funcionário",
     isActive: true,
