@@ -235,6 +235,8 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Limpeza de estilos duplicados e migração de referências (Julho 1, 2025)
 - ✓ Base de dados limpa apenas com estilos autênticos do cardápio Don Juarez
 - ✓ Atualização automática de torneiras para usar estilos corretos
+- ✓ Remoção do campo "Capacidade do barril" do formulário de torneiras (Julho 1, 2025)
+- ✓ Simplificação da interface com capacidade gerenciada via eventos de troca
 
 ## User Preferences
 

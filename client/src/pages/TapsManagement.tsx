@@ -28,7 +28,6 @@ interface TapFormData {
   posId: number | null;
   currentBeerStyleId: number | null;
   deviceId: number | null;
-  kegCapacityMl: number;
 }
 
 export default function TapsManagement() {
@@ -39,7 +38,6 @@ export default function TapsManagement() {
     posId: null,
     currentBeerStyleId: null,
     deviceId: null,
-    kegCapacityMl: 30000,
   });
 
   const { toast } = useToast();
@@ -149,7 +147,6 @@ export default function TapsManagement() {
       posId: null,
       currentBeerStyleId: null,
       deviceId: null,
-      kegCapacityMl: 30000,
     });
     setEditingTap(null);
   };
@@ -171,7 +168,6 @@ export default function TapsManagement() {
       posId: tap.posId || null,
       currentBeerStyleId: tap.currentBeerStyleId || null,
       deviceId: tap.deviceId || null,
-      kegCapacityMl: tap.kegCapacityMl || 30000,
     });
     setIsDialogOpen(true);
   };
@@ -308,24 +304,6 @@ export default function TapsManagement() {
                       })}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="capacity">Capacidade do Barril (ml)</Label>
-                <Input
-                  id="capacity"
-                  type="number"
-                  value={formData.kegCapacityMl}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      kegCapacityMl: parseInt(e.target.value),
-                    })
-                  }
-                  min="1000"
-                  step="1000"
-                  required
-                />
               </div>
 
               <div className="flex gap-2">
