@@ -71,7 +71,7 @@ export function Sidebar() {
           return (
             <div key={index}>
               <div 
-                className="px-6 mb-2 cursor-pointer flex items-center justify-between group"
+                className="px-6 mb-2 cursor-pointer flex items-center justify-between group pt-[10px] pb-[10px]"
                 onClick={() => toggleSection(section.title)}
               >
                 <div className="flex items-center gap-2">
@@ -82,7 +82,6 @@ export function Sidebar() {
                 </div>
                 <ChevronIcon className="h-3 w-3 text-muted-foreground group-hover:text-foreground transition-colors" />
               </div>
-              
               {isExpanded && (
                 <div className="mb-6">
                   {section.items.map((item) => {
