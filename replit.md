@@ -211,6 +211,8 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Badges coloridos para identificação de tipos de evento (Consumo/Troca)
 - ✓ Alteração do título para "Histórico de atividades"
 - ✓ Ordenação padrão por data com eventos mais recentes primeiro
+- ✓ Correção de headers duplicados nas abas de gestão (Julho 1, 2025)
+- ✓ Remoção de títulos redundantes nas abas Torneiras, Pontos de venda, Estilos e Dispositivos
 
 ## User Preferences
 

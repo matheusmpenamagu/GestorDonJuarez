@@ -396,30 +396,18 @@ export default function History() {
         </TabsContent>
 
         <TabsContent value="torneiras" className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold">Gestão de Torneiras</h1>
-          </div>
           <TapsManagement />
         </TabsContent>
 
         <TabsContent value="pontos-venda" className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold">Pontos de Venda</h1>
-          </div>
           <POSManagement />
         </TabsContent>
 
         <TabsContent value="estilos" className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold">Estilos de Chopes</h1>
-          </div>
           <BeerStylesManagement />
         </TabsContent>
 
         <TabsContent value="dispositivos" className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold">Dispositivos ESP32</h1>
-          </div>
           <DevicesManagement />
         </TabsContent>
       </Tabs>
