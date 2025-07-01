@@ -167,6 +167,12 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Criação de tabelas de banco: roles, employees com relações
 - ✓ APIs REST completas para CRUD de funcionários e cargos
 - ✓ Interface de gerenciamento com formulários e validações
+- ✓ Reestruturação completa da lógica de capacidade de barris (Julho 1, 2025)
+- ✓ Migração de capacidade das torneiras para eventos de troca
+- ✓ Implementação de capacidades específicas por barril (30L/50L)
+- ✓ Nova fórmula de cálculo: "última troca - consumos posteriores"
+- ✓ Interface para registro manual de trocas com seleção de capacidade
+- ✓ Correção de exibição de capacidade total nos cards do dashboard
 
 ## User Preferences
 
