@@ -15,7 +15,6 @@ import BeerStylesManagement from "@/pages/BeerStylesManagement";
 import DevicesManagement from "@/pages/DevicesManagement";
 import EmployeesManagement from "@/pages/EmployeesManagement";
 import RolesManagement from "@/pages/RolesManagement";
-import SettingsManagement from "@/pages/SettingsManagement";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -81,11 +80,6 @@ function Router() {
           <Route path="/cargos">
             <Layout>
               <RolesManagement />
-            </Layout>
-          </Route>
-          <Route path="/configuracoes">
-            <Layout>
-              <SettingsManagement />
             </Layout>
           </Route>
         </>

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Beer, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import backgroundImage from "@assets/fundo-login-min_1751337057493.jpg";
 
 export default function Landing() {
   const [email, setEmail] = useState("");
@@ -68,16 +69,16 @@ export default function Landing() {
 
   return (
     <div 
-      className="min-h-screen flex items-center justify-center p-4 relative bg-gradient-to-br from-primary to-blue-700"
+      className="min-h-screen flex items-center justify-center p-4 relative"
       style={{
-        backgroundImage: 'url(/api/login-background)',
+        backgroundImage: `url(${backgroundImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}
     >
       {/* Overlay escuro para melhor legibilidade */}
-      <div className="absolute inset-0 bg-black/30"></div>
+      <div className="absolute inset-0 bg-black/50"></div>
       <Card className="w-full max-w-md relative z-10 backdrop-blur-sm bg-white/95 dark:bg-gray-900/95">
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4">
