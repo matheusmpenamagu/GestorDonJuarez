@@ -307,20 +307,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       let device;
+      const deviceIdStr = device_id.toString();
       
       // Try to find device by code (string) or by ID (numeric)
       if (typeof device_id === 'string' && isNaN(Number(device_id))) {
-        // Look for device by code first
-        device = await storage.getDeviceByCode(device_id);
+        // Look for device by exact code first
+        device = await storage.getDeviceByCode(deviceIdStr);
+        
+        // If not found and device_id is longer than 5 chars, try truncated version
+        if (!device && deviceIdStr.length > 5) {
+          const truncatedCode = deviceIdStr.slice(0, 5).toUpperCase();
+          device = await storage.getDeviceByCode(truncatedCode);
+        }
       } else {
         // Look for device by ID
         device = await storage.getDevice(Number(device_id));
       }
       
       if (!device) {
-        return res.status(404).json({ 
-          message: `Device not found with ID/code: ${device_id}` 
-        });
+        // Create new device with default name if not found
+        console.log(`Creating new device with code: ${deviceIdStr}`);
+        
+        // Generate a 5-character code for the database
+        let deviceCode = deviceIdStr.slice(0, 5).toUpperCase();
+        if (deviceCode.length < 5) {
+          // Pad with zeros if too short
+          deviceCode = deviceCode.padEnd(5, '0');
+        }
+        
+        // Check if this code already exists, if so, add a suffix
+        let finalCode = deviceCode;
+        let suffix = 1;
+        while (await storage.getDeviceByCode(finalCode)) {
+          finalCode = deviceCode.slice(0, 4) + suffix.toString();
+          suffix++;
+          if (suffix > 9) break; // Limit attempts
+        }
+        
+        const newDeviceData = {
+          code: finalCode,
+          name: "ESP8266",
+          description: "",
+          isActive: true
+        };
+        
+        device = await storage.createDevice(newDeviceData);
+        console.log(`New device created: ${device.code} (ID: ${device.id})`);
       }
 
       // Update device heartbeat timestamp

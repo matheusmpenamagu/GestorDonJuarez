@@ -4,6 +4,12 @@
  * 
  * All webhooks now require authentication token for security.
  * Use the webhook_token secret value in the x-webhook-token header.
+ * 
+ * DEVICE AUTO-REGISTRATION:
+ * - Unknown devices are automatically registered when sending heartbeat
+ * - Device name defaults to "ESP8266"
+ * - For device_ids > 5 chars: uses first 5 chars as device code
+ * - For device_ids ≤ 5 chars: uses exact value as device code
  */
 
 #include <WiFi.h>

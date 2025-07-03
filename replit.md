@@ -276,6 +276,12 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - ✓ Validação obrigatória nos endpoints: /api/webhooks/pour, /api/webhooks/keg-change, /api/webhooks/heartbeat
 - ✓ Mensagens de erro específicas: token ausente vs token inválido
 - ✓ Sistema robusto de proteção contra acesso não autorizado
+- ✓ Auto-registro de dispositivos desconhecidos no webhook de heartbeat (Julho 3, 2025)
+- ✓ Dispositivos novos automaticamente criados com nome "ESP8266" e status ativo
+- ✓ Lógica inteligente de mapeamento: device_ids longos (>5 chars) usam primeiros 5 caracteres como código
+- ✓ Mapeamento direto para device_ids de 5 caracteres ou menos
+- ✓ Sistema previne duplicatas e gerencia conflitos de códigos automaticamente
+- ✓ Documentação completa atualizada no esp32-webhook-examples.cpp
 
 ## User Preferences
 

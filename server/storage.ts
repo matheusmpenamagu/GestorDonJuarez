@@ -224,6 +224,8 @@ export class DatabaseStorage implements IStorage {
     return device;
   }
 
+
+
   async createDevice(device: InsertDevice): Promise<Device> {
     const [created] = await db
       .insert(devices)
