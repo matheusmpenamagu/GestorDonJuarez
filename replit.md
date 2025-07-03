@@ -107,8 +107,28 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 ### Hardware Integration
 - Compatible with ESP32 microcontrollers
 - YF-S401 flow sensors for beer measurement
-- Webhook-based data transmission
+- Webhook-based data transmission with security token validation
 - Supports multiple taps with unique identifiers
+
+#### ESP32 Configuration Guide
+**Required Headers for All Webhooks:**
+```cpp
+http.addHeader("Content-Type", "application/json");
+http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
+```
+
+**Webhook URLs (Production):**
+- Pour events: `https://gestor.donjuarez.com.br/api/webhooks/pour`
+- Keg changes: `https://gestor.donjuarez.com.br/api/webhooks/keg-change`
+- Heartbeat: `https://gestor.donjuarez.com.br/api/webhooks/heartbeat`
+
+**Webhook URLs (Development):**
+- Replace domain with: `https://ea3123c5-9f03-4f32-844a-fe4c8cdd0203-00-1inaocwyrymso.worf.replit.dev`
+
+**Security Requirements:**
+- All webhooks require valid token in header
+- Token validation prevents unauthorized access
+- 401 Unauthorized returned for missing/invalid tokens
 
 ## Deployment Strategy
 
@@ -250,6 +270,12 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Verificação de dispositivos online nos últimos 2 minutos
 - ✓ Indicadores aplicados tanto no dashboard quanto na gestão de dispositivos
 - ✓ Sistema automatizado de atualização de timestamp de último heartbeat
+- ✓ Implementação de validação de token de segurança para webhooks (Julho 3, 2025)
+- ✓ Middleware de autenticação com token de 12 caracteres em todos os webhooks
+- ✓ Headers aceitos: x-webhook-token ou webhook-token para compatibilidade
+- ✓ Validação obrigatória nos endpoints: /api/webhooks/pour, /api/webhooks/keg-change, /api/webhooks/heartbeat
+- ✓ Mensagens de erro específicas: token ausente vs token inválido
+- ✓ Sistema robusto de proteção contra acesso não autorizado
 
 ## User Preferences
 

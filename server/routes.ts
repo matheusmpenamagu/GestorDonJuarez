@@ -27,6 +27,43 @@ const demoAuth = (req: any, res: any, next: any) => {
   next();
 };
 
+// Webhook token validation middleware
+const validateWebhookToken = (req: any, res: any, next: any) => {
+  try {
+    const providedToken = req.headers['x-webhook-token'] || req.headers['webhook-token'];
+    const expectedToken = process.env.webhook_token;
+
+    if (!expectedToken) {
+      console.error('Webhook token not configured in environment');
+      return res.status(500).json({ 
+        message: "Server configuration error" 
+      });
+    }
+
+    if (!providedToken) {
+      console.error('Missing webhook token in request headers');
+      return res.status(401).json({ 
+        message: "Unauthorized: Missing webhook token" 
+      });
+    }
+
+    if (providedToken !== expectedToken) {
+      console.error('Invalid webhook token provided');
+      return res.status(401).json({ 
+        message: "Unauthorized: Invalid webhook token" 
+      });
+    }
+
+    // Token is valid, proceed to webhook handler
+    next();
+  } catch (error) {
+    console.error('Error validating webhook token:', error);
+    return res.status(500).json({ 
+      message: "Error validating token" 
+    });
+  }
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Demo auth route for localStorage-based authentication
   app.get('/api/auth/user', (req, res) => {
@@ -56,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Flow meter webhook - receives pour data from ESP32
-  app.post('/api/webhooks/pour', async (req, res) => {
+  app.post('/api/webhooks/pour', validateWebhookToken, async (req, res) => {
     // Set CORS headers for ESP32 compatibility
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'POST');
@@ -185,7 +222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Keg change webhook - receives barrel change notifications from ESP32
-  app.post('/api/webhooks/keg-change', async (req, res) => {
+  app.post('/api/webhooks/keg-change', validateWebhookToken, async (req, res) => {
     try {
       // Support both device_id (ESP32) and tap_id (direct) formats
       const { device_id, tap_id, datetime } = req.body;
@@ -259,7 +296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Device heartbeat webhook - receives device status updates from ESP32
-  app.post('/api/webhooks/heartbeat', async (req, res) => {
+  app.post('/api/webhooks/heartbeat', validateWebhookToken, async (req, res) => {
     try {
       const { device_id } = req.body;
 
