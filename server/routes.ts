@@ -258,6 +258,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Device heartbeat webhook - receives device status updates from ESP32
+  app.post('/api/webhooks/heartbeat', async (req, res) => {
+    try {
+      const { device_id } = req.body;
+
+      if (!device_id) {
+        return res.status(400).json({ 
+          message: "Missing required field: device_id" 
+        });
+      }
+
+      let device;
+      
+      // Try to find device by code (string) or by ID (numeric)
+      if (typeof device_id === 'string' && isNaN(Number(device_id))) {
+        // Look for device by code first
+        device = await storage.getDeviceByCode(device_id);
+      } else {
+        // Look for device by ID
+        device = await storage.getDevice(Number(device_id));
+      }
+      
+      if (!device) {
+        return res.status(404).json({ 
+          message: `Device not found with ID/code: ${device_id}` 
+        });
+      }
+
+      // Update device heartbeat timestamp
+      await storage.updateDeviceHeartbeat(device.id);
+      
+      console.log(`Heartbeat received from device ${device.code} (ID: ${device.id})`);
+      
+      res.json({ success: true, message: "Heartbeat received" });
+      
+    } catch (error) {
+      console.error("Error processing heartbeat webhook:", error);
+      res.status(500).json({ message: "Error processing heartbeat" });
+    }
+  });
+
   // Dashboard API endpoints (protected)
   
   // Get dashboard statistics

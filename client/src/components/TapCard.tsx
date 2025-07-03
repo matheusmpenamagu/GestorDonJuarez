@@ -33,6 +33,17 @@ interface TapCardProps {
   tap: TapWithRelations;
 }
 
+// Helper function to check if device is online (heartbeat within last 2 minutes)
+function isDeviceOnline(lastHeartbeat: string | null): boolean {
+  if (!lastHeartbeat) return false;
+  
+  const heartbeatTime = new Date(lastHeartbeat).getTime();
+  const now = new Date().getTime();
+  const twoMinutesMs = 2 * 60 * 1000;
+  
+  return (now - heartbeatTime) <= twoMinutesMs;
+}
+
 export function TapCard({ tap }: TapCardProps) {
   const volumePercentage = tap.kegCapacityMl 
     ? Math.round((tap.currentVolumeAvailableMl / tap.kegCapacityMl) * 100)
@@ -78,7 +89,21 @@ export function TapCard({ tap }: TapCardProps) {
               </p>
             </div>
           </div>
-          <div className={`w-2.5 h-2.5 rounded-full ${isLow ? 'bg-red-500' : 'bg-green-500'} ${!isLow ? 'animate-pulse' : ''}`} />
+          <div className="flex items-center space-x-1">
+            {/* Device status indicator */}
+            <div 
+              className={`w-2.5 h-2.5 rounded-full ${
+                isDeviceOnline(tap.device?.lastHeartbeat?.toString() || null) 
+                  ? 'bg-green-500 animate-pulse' 
+                  : 'bg-red-500'
+              }`} 
+              title={`Dispositivo ${isDeviceOnline(tap.device?.lastHeartbeat?.toString() || null) ? 'online' : 'offline'}`}
+            />
+            {/* Low volume warning */}
+            {isLow && (
+              <AlertTriangle className="w-3 h-3 text-red-500" />
+            )}
+          </div>
         </div>
         
         {/* Beer Info - Compact */}

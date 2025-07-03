@@ -243,6 +243,13 @@ Sistema de gestão operacional completo para a Don Juarez, uma empresa brasileir
 - ✓ Criação automática de 9 novos cargos específicos da empresa
 - ✓ Interface atualizada para exibir WhatsApp nos cards dos colaboradores
 - ✓ Formulário de colaboradores expandido com campo de telefone
+- ✓ Sistema de heartbeat para dispositivos ESP32 implementado (Julho 1, 2025)
+- ✓ Campo lastHeartbeat adicionado à tabela de dispositivos no banco
+- ✓ Webhook /api/webhooks/heartbeat para receber status dos dispositivos
+- ✓ Indicadores visuais de status online/offline (círculo verde pulsante/vermelho)
+- ✓ Verificação de dispositivos online nos últimos 2 minutos
+- ✓ Indicadores aplicados tanto no dashboard quanto na gestão de dispositivos
+- ✓ Sistema automatizado de atualização de timestamp de último heartbeat
 
 ## User Preferences
 

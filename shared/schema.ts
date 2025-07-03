@@ -64,6 +64,7 @@ export const devices = pgTable("devices", {
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   isActive: boolean("is_active").default(true),
+  lastHeartbeat: timestamp("last_heartbeat"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

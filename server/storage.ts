@@ -67,6 +67,7 @@ export interface IStorage {
   createDevice(device: InsertDevice): Promise<Device>;
   updateDevice(id: number, device: Partial<InsertDevice>): Promise<Device>;
   deleteDevice(id: number): Promise<void>;
+  updateDeviceHeartbeat(deviceId: number): Promise<void>;
   
   // Taps operations
   getTaps(): Promise<TapWithRelations[]>;
@@ -242,6 +243,13 @@ export class DatabaseStorage implements IStorage {
 
   async deleteDevice(id: number): Promise<void> {
     await db.delete(devices).where(eq(devices.id, id));
+  }
+
+  async updateDeviceHeartbeat(deviceId: number): Promise<void> {
+    await db
+      .update(devices)
+      .set({ lastHeartbeat: new Date() })
+      .where(eq(devices.id, deviceId));
   }
   
   // Taps operations

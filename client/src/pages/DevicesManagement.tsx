@@ -20,6 +20,7 @@ interface Device {
   name: string;
   description?: string;
   isActive: boolean;
+  lastHeartbeat?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -29,6 +30,17 @@ interface DeviceFormData {
   name: string;
   description: string;
   isActive: boolean;
+}
+
+// Helper function to check if device is online (heartbeat within last 2 minutes)
+function isDeviceOnline(lastHeartbeat: string | null): boolean {
+  if (!lastHeartbeat) return false;
+  
+  const heartbeatTime = new Date(lastHeartbeat).getTime();
+  const now = new Date().getTime();
+  const twoMinutesMs = 2 * 60 * 1000;
+  
+  return (now - heartbeatTime) <= twoMinutesMs;
 }
 
 export default function DevicesManagement() {
@@ -212,6 +224,15 @@ export default function DevicesManagement() {
               <div className="flex items-center space-x-2">
                 <Smartphone className="h-4 w-4 text-primary" />
                 <CardTitle className="text-sm font-medium">{device.code}</CardTitle>
+                {/* Device heartbeat status indicator */}
+                <div 
+                  className={`w-2.5 h-2.5 rounded-full ${
+                    isDeviceOnline(device.lastHeartbeat || null) 
+                      ? 'bg-green-500 animate-pulse' 
+                      : 'bg-red-500'
+                  }`} 
+                  title={`Dispositivo ${isDeviceOnline(device.lastHeartbeat || null) ? 'online' : 'offline'}`}
+                />
               </div>
               <Badge variant={device.isActive ? "default" : "secondary"}>
                 {device.isActive ? "Ativo" : "Inativo"}
