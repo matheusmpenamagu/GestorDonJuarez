@@ -415,20 +415,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Helper function to send WhatsApp message via Evolution API
   async function sendWhatsAppMessage(remoteJid: string, text: string): Promise<boolean> {
     try {
+      const body = {
+        number: remoteJid,
+        text: text
+      };
+      
+      console.log('Sending WhatsApp message:', {
+        url: 'https://wpp.donjuarez.com.br/message/sendText/dj-ponto',
+        headers: { 'X-API-Key': process.env.evoGlobalApikey?.substring(0, 10) + '...' },
+        body: body
+      });
+
       const response = await fetch('https://wpp.donjuarez.com.br/message/sendText/dj-ponto', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'api_key': process.env.evoGlobalApikey!,
+          'X-API-Key': process.env.evoGlobalApikey!,
         },
-        body: JSON.stringify({
-          number: remoteJid,
-          text: text
-        })
+        body: JSON.stringify(body)
+      });
+
+      const responseText = await response.text();
+      console.log('Evolution API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: responseText
       });
 
       if (!response.ok) {
-        console.error('Failed to send WhatsApp message:', response.status, response.statusText);
+        console.error('Failed to send WhatsApp message:', response.status, response.statusText, responseText);
         return false;
       }
 

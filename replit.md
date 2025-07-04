@@ -187,9 +187,11 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - ✓ Integração com Evolution API para envio automático de mensagens implementada (Julho 4, 2025)
 - ✓ Função sendWhatsAppMessage() criada para envio via POST para wpp.donjuarez.com.br
 - ✓ Todas as respostas do webhook convertidas para envio automático de WhatsApp
-- ✓ Headers corretos: api_key com evoGlobalApikey, Content-Type application/json
-- ✓ Body formatado: { "number": "remoteJid", "text": "mensagem" }
-- ❌ Pendente: verificação da chave API (retornando 401 Unauthorized)
+- ✓ Headers testados: api_key, Authorization Bearer, apikey, X-API-Key
+- ✓ Body formatado corretamente: { "number": "remoteJid", "text": "mensagem" }
+- ✅ Logs detalhados implementados para debug da requisição
+- ❌ Pendente: chave API atual (429683C4C9...) retorna 401 Unauthorized
+- ❌ Necessário: validar credenciais Evolution API no servidor wpp.donjuarez.com.br
 - ✓ Seletor de emoji no cadastro de colaboradores implementado (Julho 4, 2025)
 - ✓ 19 opções de emojis predefinidos com descrições (😊 Sorridente, 👨‍💼 Executivo, etc.)
 - ✓ Campo "Emoji do Colaborador" adicionado ao formulário de funcionários
