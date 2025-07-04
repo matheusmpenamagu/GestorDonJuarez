@@ -221,93 +221,6 @@ export const co2RefillsRelations = relations(co2Refills, ({ one }) => ({
   }),
 }));
 
-// Checklists tables
-export const checklistTemplates = pgTable("checklist_templates", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  isActive: boolean("is_active").default(true),
-  createdById: varchar("created_by_id").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const checklistItems = pgTable("checklist_items", {
-  id: serial("id").primaryKey(),
-  templateId: integer("template_id").references(() => checklistTemplates.id, { onDelete: 'cascade' }),
-  title: varchar("title", { length: 255 }).notNull(),
-  description: text("description"),
-  isRequired: boolean("is_required").default(true),
-  order: integer("order").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const checklistInstances = pgTable("checklist_instances", {
-  id: serial("id").primaryKey(),
-  templateId: integer("template_id").references(() => checklistTemplates.id),
-  employeeId: integer("employee_id").references(() => employees.id),
-  unitId: integer("unit_id").references(() => units.id),
-  status: varchar("status", { length: 50 }).default("pending"), // pending, in_progress, completed
-  startedAt: timestamp("started_at"),
-  completedAt: timestamp("completed_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const checklistResponses = pgTable("checklist_responses", {
-  id: serial("id").primaryKey(),
-  instanceId: integer("instance_id").references(() => checklistInstances.id, { onDelete: 'cascade' }),
-  itemId: integer("item_id").references(() => checklistItems.id),
-  isCompleted: boolean("is_completed").default(false),
-  notes: text("notes"),
-  completedAt: timestamp("completed_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// Checklist relations
-export const checklistTemplatesRelations = relations(checklistTemplates, ({ one, many }) => ({
-  createdBy: one(users, {
-    fields: [checklistTemplates.createdById],
-    references: [users.id],
-  }),
-  items: many(checklistItems),
-  instances: many(checklistInstances),
-}));
-
-export const checklistItemsRelations = relations(checklistItems, ({ one, many }) => ({
-  template: one(checklistTemplates, {
-    fields: [checklistItems.templateId],
-    references: [checklistTemplates.id],
-  }),
-  responses: many(checklistResponses),
-}));
-
-export const checklistInstancesRelations = relations(checklistInstances, ({ one, many }) => ({
-  template: one(checklistTemplates, {
-    fields: [checklistInstances.templateId],
-    references: [checklistTemplates.id],
-  }),
-  employee: one(employees, {
-    fields: [checklistInstances.employeeId],
-    references: [employees.id],
-  }),
-  unit: one(units, {
-    fields: [checklistInstances.unitId],
-    references: [units.id],
-  }),
-  responses: many(checklistResponses),
-}));
-
-export const checklistResponsesRelations = relations(checklistResponses, ({ one }) => ({
-  instance: one(checklistInstances, {
-    fields: [checklistResponses.instanceId],
-    references: [checklistInstances.id],
-  }),
-  item: one(checklistItems, {
-    fields: [checklistResponses.itemId],
-    references: [checklistItems.id],
-  }),
-}));
-
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   id: true,
@@ -384,28 +297,6 @@ export const insertCo2RefillSchema = createInsertSchema(co2Refills).omit({
   valuePaid: z.number().min(0),
 });
 
-// Checklist schemas
-export const insertChecklistTemplateSchema = createInsertSchema(checklistTemplates).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertChecklistItemSchema = createInsertSchema(checklistItems).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertChecklistInstanceSchema = createInsertSchema(checklistInstances).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertChecklistResponseSchema = createInsertSchema(checklistResponses).omit({
-  id: true,
-  createdAt: true,
-});
-
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -429,14 +320,6 @@ export type Unit = typeof units.$inferSelect;
 export type InsertUnit = z.infer<typeof insertUnitSchema>;
 export type Co2Refill = typeof co2Refills.$inferSelect;
 export type InsertCo2Refill = z.infer<typeof insertCo2RefillSchema>;
-export type ChecklistTemplate = typeof checklistTemplates.$inferSelect;
-export type InsertChecklistTemplate = z.infer<typeof insertChecklistTemplateSchema>;
-export type ChecklistItem = typeof checklistItems.$inferSelect;
-export type InsertChecklistItem = z.infer<typeof insertChecklistItemSchema>;
-export type ChecklistInstance = typeof checklistInstances.$inferSelect;
-export type InsertChecklistInstance = z.infer<typeof insertChecklistInstanceSchema>;
-export type ChecklistResponse = typeof checklistResponses.$inferSelect;
-export type InsertChecklistResponse = z.infer<typeof insertChecklistResponseSchema>;
 
 // Extended types for API responses
 export type Co2RefillWithRelations = Co2Refill & {
@@ -462,28 +345,4 @@ export type PourEventWithRelations = PourEvent & {
 
 export type EmployeeWithRelations = Employee & {
   role?: Role;
-};
-
-export type ChecklistTemplateWithRelations = ChecklistTemplate & {
-  createdBy?: User;
-  items?: ChecklistItem[];
-  _count?: {
-    items: number;
-    instances: number;
-  };
-};
-
-export type ChecklistInstanceWithRelations = ChecklistInstance & {
-  template?: ChecklistTemplate;
-  employee?: Employee;
-  unit?: Unit;
-  responses?: ChecklistResponse[];
-  _count?: {
-    responses: number;
-    completedResponses: number;
-  };
-};
-
-export type ChecklistItemWithResponses = ChecklistItem & {
-  response?: ChecklistResponse;
 };
