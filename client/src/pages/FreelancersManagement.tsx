@@ -560,11 +560,11 @@ export default function FreelancersManagement() {
                       <div className="flex items-center justify-between text-xs">
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3 text-orange-600" />
-                          <span className="font-medium text-orange-600">{formatHours(freelancer.totalHours)}</span>
+                          <span className="font-medium text-gray-900">{formatHours(freelancer.totalHours)}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3 text-blue-600" />
-                          <span className="font-medium text-blue-600">{freelancer.totalDays} dias</span>
+                          <Calendar className="h-3 w-3 text-orange-600" />
+                          <span className="font-medium text-gray-900">{freelancer.totalDays} dias</span>
                         </div>
                       </div>
                     </div>

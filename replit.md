@@ -166,6 +166,10 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Padronização de cores nos ícones dos cards (Julho 4, 2025)
+- ✓ Ícones Clock e Calendar em laranja (text-orange-600)
+- ✓ Texto das métricas em cor padrão do projeto (text-gray-900)
+- ✓ Consistência visual com o tema laranja da aplicação
 - ✓ Ícones para horas e dias nos cards de freelancers (Julho 4, 2025)
 - ✓ Clock icon (🕐) para horas e Calendar icon (📅) para dias
 - ✓ Métricas organizadas em uma única linha com ícones coloridos
