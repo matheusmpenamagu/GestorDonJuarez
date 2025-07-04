@@ -412,6 +412,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to send WhatsApp message via Evolution API
+  async function sendWhatsAppMessage(remoteJid: string, text: string): Promise<boolean> {
+    try {
+      const response = await fetch('https://wpp.donjuarez.com.br/message/sendText/dj-ponto', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api_key': process.env.evoGlobalApikey!,
+        },
+        body: JSON.stringify({
+          number: remoteJid,
+          text: text
+        })
+      });
+
+      if (!response.ok) {
+        console.error('Failed to send WhatsApp message:', response.status, response.statusText);
+        return false;
+      }
+
+      console.log('WhatsApp message sent successfully to:', remoteJid);
+      return true;
+    } catch (error) {
+      console.error('Error sending WhatsApp message:', error);
+      return false;
+    }
+  }
+
   // WhatsApp webhook for freelancer time tracking (Evolution API)
   app.post('/api/webhooks/evolution-whatsapp', async (req, res) => {
     try {
@@ -453,10 +481,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       if (!freelancer || !freelancer.whatsapp) {
-        return res.json({ 
-          message: "Hmmm.. não encontrei um usuário cadastrado neste número de whatsapp.",
-          sendToUser: true
-        });
+        await sendWhatsAppMessage(remoteJid, "Hmmm.. não encontrei um usuário cadastrado neste número de whatsapp.");
+        return res.json({ status: 'error', message: 'User not found' });
       }
 
       // Analyze message content
@@ -482,10 +508,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const selectedUnit = units.find(u => u.id === unitId);
         
         if (!selectedUnit) {
-          return res.json({
-            message: `Unidade não encontrada. Escolha uma das opções:\n\n${units.map(unit => `${unit.id} - ${unit.name}`).join('\n')}`,
-            sendToUser: true
-          });
+          const unitsList = units.map(unit => `${unit.id} - ${unit.name}`).join('\n');
+          await sendWhatsAppMessage(remoteJid, `Unidade não encontrada. Escolha uma das opções:\n\n${unitsList}`);
+          return res.json({ status: 'error', message: 'Unit not found' });
         }
         
         // Register entrada with selected unit
@@ -513,33 +538,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           notes: 'Via WhatsApp - Evolution API',
         });
 
-        return res.json({
-          message: `Ponto de entrada registrado com sucesso! 🎉\n\nUnidade: ${selectedUnit.name}\nHorário: ${toSaoPauloTime(new Date())}\n\nBom trabalho, ${freelancer.firstName}!`,
-          sendToUser: true,
-          success: true,
-          entry: timeEntry
-        });
+        const successMessage = `Ponto de entrada registrado com sucesso! 🎉\n\nUnidade: ${selectedUnit.name}\nHorário: ${toSaoPauloTime(new Date())}\n\nBom trabalho, ${freelancer.firstName}!`;
+        await sendWhatsAppMessage(remoteJid, successMessage);
+        return res.json({ status: 'success', message: 'Entry registered successfully', entry: timeEntry });
       }
 
       if (messageType === 'unknown') {
-        return res.json({
-          message: 'Hmmmm... não consegui entender a mensagem para registrar seu ponto. Envie "Cheguei" para marcar sua entrada ou "Fui" para marcar sua saída.',
-          sendToUser: true
-        });
+        await sendWhatsAppMessage(remoteJid, 'Hmmmm... não consegui entender a mensagem para registrar seu ponto. Envie "Cheguei" para marcar sua entrada ou "Fui" para marcar sua saída.');
+        return res.json({ status: 'error', message: 'Message not recognized' });
       }
 
       // If it's an entrada (check-in), request unit selection
       if (messageType === 'entrada') {
         const units = await storage.getUnits();
         const unitsList = units.map(unit => `${unit.id} - ${unit.name}`).join('\n');
+        const unitSelectionMessage = `Olá ${freelancer.firstName}! 👋\n\nEm qual unidade você está trabalhando hoje?\n\n${unitsList}\n\nResponda apenas com o número da unidade.`;
         
-        return res.json({
-          message: `Olá ${freelancer.firstName}! 👋\n\nEm qual unidade você está trabalhando hoje?\n\n${unitsList}\n\nResponda apenas com o número da unidade.`,
-          sendToUser: true,
-          awaitingUnitResponse: true,
-          employeeId: freelancer.id,
-          messageType: 'entrada'
-        });
+        await sendWhatsAppMessage(remoteJid, unitSelectionMessage);
+        return res.json({ status: 'awaiting_unit', message: 'Unit selection requested', employeeId: freelancer.id });
       }
 
       // If it's a saida (check-out), register immediately
@@ -556,12 +572,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           notes: 'Via WhatsApp - Evolution API',
         });
 
-        return res.json({
-          message: `Ponto de saída registrado com sucesso! 👍\n\nAté mais, ${freelancer.firstName}!`,
-          sendToUser: true,
-          success: true,
-          entry: timeEntry
-        });
+        const exitMessage = `Ponto de saída registrado com sucesso! 👍\n\nAté mais, ${freelancer.firstName}!`;
+        await sendWhatsAppMessage(remoteJid, exitMessage);
+        return res.json({ status: 'success', message: 'Exit registered successfully', entry: timeEntry });
       }
 
       res.json({ message: "Message processed" });
