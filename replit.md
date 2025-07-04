@@ -358,6 +358,12 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - ✓ Mapeamento direto para device_ids de 5 caracteres ou menos
 - ✓ Sistema previne duplicatas e gerencia conflitos de códigos automaticamente
 - ✓ Documentação completa atualizada no esp32-webhook-examples.cpp
+- ✓ Correção crítica da validação de telefones brasileiros no webhook Evolution API (Julho 4, 2025)
+- ✓ Algoritmo robusto para remover código do país +55 de números recebidos
+- ✓ Implementação de comparação pelos últimos 8 dígitos para máxima compatibilidade
+- ✓ Sistema totalmente funcional: webhook 553388286293 reconhece cadastro 33988286293
+- ✓ Logs detalhados para debug de comparação de números de telefone
+- ✓ Teste completo realizado com sucesso usando número 33988286293
 
 ## User Preferences
 

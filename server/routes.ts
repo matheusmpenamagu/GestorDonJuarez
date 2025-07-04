@@ -492,11 +492,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Find employee by phone number (freelancers only)
       const employees = await storage.getEmployees();
-      const freelancer = employees.find(emp => 
-        emp.employmentType === 'Freelancer' && 
-        emp.whatsapp && 
-        emp.whatsapp.replace(/\D/g, '').includes(phoneNumber.slice(-11)) // Last 11 digits (BR format)
-      );
+      
+      // Extract the Brazilian phone number (remove +55 country code if present)
+      let cleanPhoneNumber = phoneNumber;
+      
+      console.log(`Original number: ${phoneNumber} (${phoneNumber.length} digits)`);
+      
+      // Handle Brazilian number formats:
+      // 553388286293 (12 digits) -> 33988286293 (11 digits)
+      // 5533988286293 (13 digits) -> 33988286293 (11 digits)
+      if (phoneNumber.startsWith('55') && phoneNumber.length >= 12) {
+        cleanPhoneNumber = phoneNumber.substring(2); // Always remove '55' prefix
+        console.log(`After removing 55: ${cleanPhoneNumber}`);
+      }
+      
+      console.log(`Looking for phone: ${cleanPhoneNumber} (original: ${phoneNumber})`);
+      
+      const freelancer = employees.find(emp => {
+        if (emp.employmentType !== 'Freelancer' || !emp.whatsapp) return false;
+        
+        const empPhone = emp.whatsapp.replace(/\D/g, ''); // Remove non-digits
+        console.log(`Comparing with employee ${emp.firstName}: ${empPhone}`);
+        
+        // Check if the phones match using the last 8 digits (most unique part)
+        const empPhoneLast8 = empPhone.slice(-8);
+        const cleanPhoneLast8 = cleanPhoneNumber.slice(-8);
+        
+        console.log(`  Comparing last 8 digits: ${empPhoneLast8} vs ${cleanPhoneLast8}`);
+        
+        // Match using various criteria
+        const exactMatch = empPhone === cleanPhoneNumber;
+        const contains = empPhone.includes(cleanPhoneNumber) || cleanPhoneNumber.includes(empPhone);
+        const last8Match = empPhoneLast8 === cleanPhoneLast8;
+        
+        const isMatch = exactMatch || contains || last8Match;
+        console.log(`  Match result: exact=${exactMatch}, contains=${contains}, last8=${last8Match}, final=${isMatch}`);
+        
+        return isMatch;
+      });
 
       if (!freelancer || !freelancer.whatsapp) {
         await sendWhatsAppMessage(remoteJid, "Hmmm.. não encontrei um usuário cadastrado neste número de whatsapp.");
