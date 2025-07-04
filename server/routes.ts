@@ -1191,10 +1191,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new time entry manually
   app.post('/api/freelancer-entries', demoAuth, async (req, res) => {
     try {
+      console.log("=== Creating freelancer entry ===");
+      console.log("Request body:", req.body);
+      
       const entryData = {
+        employeeId: req.body.employeeId ? parseInt(req.body.employeeId) : null,
         freelancerPhone: req.body.freelancerPhone,
         freelancerName: req.body.freelancerName,
-        unitId: req.body.unitId ? parseInt(req.body.unitId) : undefined,
+        unitId: req.body.unitId ? parseInt(req.body.unitId) : null,
         entryType: req.body.entryType,
         timestamp: fromSaoPauloTime(req.body.timestamp),
         message: req.body.message,
@@ -1202,11 +1206,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         notes: req.body.notes,
       };
       
+      console.log("Processed entry data:", entryData);
+      
       const entry = await storage.createFreelancerTimeEntry(entryData);
+      console.log("Entry created successfully:", entry);
       res.json(entry);
     } catch (error) {
       console.error("Error creating freelancer entry:", error);
-      res.status(500).json({ message: "Error creating freelancer entry" });
+      console.error("Error details:", error instanceof Error ? error.message : 'Unknown error');
+      res.status(500).json({ message: "Error creating freelancer entry", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 

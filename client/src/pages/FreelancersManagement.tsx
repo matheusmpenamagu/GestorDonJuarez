@@ -90,7 +90,7 @@ export default function FreelancersManagement() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('/api/freelancer-entries', data),
+    mutationFn: (data: any) => apiRequest('POST', '/api/freelancer-entries', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/freelancer-entries'] });
       queryClient.invalidateQueries({ queryKey: ['/api/freelancer-stats'] });
