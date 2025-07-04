@@ -177,6 +177,44 @@ export default function FreelancersManagement() {
     return phone;
   };
 
+  const formatTimestamp = (timestamp: string | null | undefined) => {
+    try {
+      if (!timestamp) return 'Data inválida';
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) return 'Data inválida';
+      return format(date, "dd/MM/yyyy HH:mm", { locale: ptBR });
+    } catch {
+      return 'Data inválida';
+    }
+  };
+
+  const getDateTimeDefaults = (timestamp: string | null | undefined) => {
+    try {
+      if (!timestamp) {
+        return {
+          date: format(new Date(), 'yyyy-MM-dd'),
+          time: '08:00'
+        };
+      }
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) {
+        return {
+          date: format(new Date(), 'yyyy-MM-dd'),
+          time: '08:00'
+        };
+      }
+      return {
+        date: timestamp.split('T')[0],
+        time: timestamp.split('T')[1].substring(0, 5)
+      };
+    } catch {
+      return {
+        date: format(new Date(), 'yyyy-MM-dd'),
+        time: '08:00'
+      };
+    }
+  };
+
   const formatHours = (totalMinutes: number) => {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
@@ -266,7 +304,7 @@ export default function FreelancersManagement() {
                     id="date"
                     name="date"
                     type="date"
-                    defaultValue={editingEntry ? editingEntry.timestamp.split('T')[0] : format(new Date(), 'yyyy-MM-dd')}
+                    defaultValue={getDateTimeDefaults(editingEntry?.timestamp).date}
                     required
                   />
                 </div>
@@ -276,7 +314,7 @@ export default function FreelancersManagement() {
                     id="time"
                     name="time"
                     type="time"
-                    defaultValue={editingEntry ? editingEntry.timestamp.split('T')[1].substring(0, 5) : '08:00'}
+                    defaultValue={getDateTimeDefaults(editingEntry?.timestamp).time}
                     required
                   />
                 </div>
@@ -455,15 +493,7 @@ export default function FreelancersManagement() {
                   entries?.map((entry: FreelancerTimeEntry) => (
                     <TableRow key={entry.id}>
                       <TableCell>
-                        {(() => {
-                          try {
-                            const date = new Date(entry.timestamp);
-                            if (isNaN(date.getTime())) return 'Data inválida';
-                            return format(date, "dd/MM/yyyy HH:mm", { locale: ptBR });
-                          } catch {
-                            return 'Data inválida';
-                          }
-                        })()}
+                        {formatTimestamp(entry.timestamp)}
                       </TableCell>
                       <TableCell>{entry.freelancerName || 'Não informado'}</TableCell>
                       <TableCell>{formatPhoneNumber(entry.freelancerPhone)}</TableCell>
