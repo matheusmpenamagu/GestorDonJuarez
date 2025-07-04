@@ -17,12 +17,24 @@ import { ptBR } from "date-fns/locale";
 
 interface FreelancerTimeEntry {
   id: number;
-  freelancerPhone: string;
+  employeeId: number | null;
+  freelancerPhone: string | null;
   freelancerName: string | null;
   unitId: number | null;
   entryType: 'entrada' | 'saida';
   timestamp: string;
-  message: string;
+  message: string | null;
+  isManualEntry: boolean | null;
+  notes: string | null;
+  unit?: Unit;
+}
+
+interface FreelancerStats {
+  freelancerPhone: string;
+  freelancerName: string | null;
+  totalHours: number;
+  totalDays: number;
+  entries: FreelancerTimeEntry[];
   isManualEntry: boolean;
   notes: string | null;
   createdAt: string;
@@ -56,13 +68,15 @@ export default function FreelancersManagement() {
   });
 
   // Fetch freelancer statistics
-  const { data: statsData, isLoading: statsLoading } = useQuery({
+  const { data: statsData = [], isLoading: statsLoading } = useQuery<FreelancerStats[]>({
     queryKey: ['/api/freelancer-stats', dateRange.start, dateRange.end],
+    enabled: !!dateRange.start && !!dateRange.end,
   });
 
   // Fetch time entries
-  const { data: entries, isLoading: entriesLoading } = useQuery({
+  const { data: entries = [], isLoading: entriesLoading } = useQuery<FreelancerTimeEntry[]>({
     queryKey: ['/api/freelancer-entries', dateRange.start, dateRange.end],
+    enabled: !!dateRange.start && !!dateRange.end,
   });
 
   // Fetch units
@@ -71,11 +85,7 @@ export default function FreelancersManagement() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('/api/freelancer-entries', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    }),
+    mutationFn: (data: any) => apiRequest('/api/freelancer-entries', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/freelancer-entries'] });
       queryClient.invalidateQueries({ queryKey: ['/api/freelancer-stats'] });
@@ -90,11 +100,7 @@ export default function FreelancersManagement() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => 
-      apiRequest(`/api/freelancer-entries/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      }),
+      apiRequest(`/api/freelancer-entries/${id}`, data, 'PUT'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/freelancer-entries'] });
       queryClient.invalidateQueries({ queryKey: ['/api/freelancer-stats'] });
@@ -108,7 +114,7 @@ export default function FreelancersManagement() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/freelancer-entries/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: number) => apiRequest(`/api/freelancer-entries/${id}`, {}, 'DELETE'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/freelancer-entries'] });
       queryClient.invalidateQueries({ queryKey: ['/api/freelancer-stats'] });
@@ -141,7 +147,8 @@ export default function FreelancersManagement() {
     }
   };
 
-  const formatPhoneNumber = (phone: string) => {
+  const formatPhoneNumber = (phone: string | null) => {
+    if (!phone) return 'Não informado';
     const cleaned = phone.replace(/\D/g, '');
     if (cleaned.length === 11) {
       return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
@@ -159,9 +166,9 @@ export default function FreelancersManagement() {
     return type === 'entrada' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
   };
 
-  const totalFreelancers = statsData?.freelancers?.length || 0;
-  const totalHours = statsData?.freelancers?.reduce((sum: number, f: FreelancerStats) => sum + f.totalHours, 0) || 0;
-  const totalDays = statsData?.freelancers?.reduce((sum: number, f: FreelancerStats) => sum + f.totalDays, 0) || 0;
+  const totalFreelancers = statsData?.length || 0;
+  const totalHours = statsData?.reduce((sum: number, f: FreelancerStats) => sum + f.totalHours, 0) || 0;
+  const totalDays = statsData?.reduce((sum: number, f: FreelancerStats) => sum + f.totalDays, 0) || 0;
 
   return (
     <div className="p-6 space-y-6">
@@ -365,14 +372,14 @@ export default function FreelancersManagement() {
       </div>
 
       {/* Resumo por Freelancer */}
-      {statsData?.freelancers && statsData.freelancers.length > 0 && (
+      {statsData && statsData.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Resumo por Freelancer</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {statsData.freelancers.map((freelancer: FreelancerStats) => (
+              {statsData.map((freelancer: FreelancerStats) => (
                 <div key={freelancer.freelancerPhone} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-3">

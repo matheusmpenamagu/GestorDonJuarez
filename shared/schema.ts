@@ -154,8 +154,9 @@ export const co2Refills = pgTable("co2_refills", {
 // Freelancer time tracking table
 export const freelancerTimeEntries = pgTable("freelancer_time_entries", {
   id: serial("id").primaryKey(),
-  freelancerPhone: varchar("freelancer_phone", { length: 20 }).notNull(),
-  freelancerName: varchar("freelancer_name", { length: 100 }),
+  employeeId: integer("employee_id").references(() => employees.id),
+  freelancerPhone: varchar("freelancer_phone", { length: 20 }), // Mantido para webhook WhatsApp
+  freelancerName: varchar("freelancer_name", { length: 100 }), // Mantido para compatibilidade
   unitId: integer("unit_id").references(() => units.id),
   entryType: varchar("entry_type", { length: 10 }).notNull(), // 'entrada' or 'saida'
   timestamp: timestamp("timestamp").notNull(),
@@ -237,6 +238,10 @@ export const co2RefillsRelations = relations(co2Refills, ({ one }) => ({
 }));
 
 export const freelancerTimeEntriesRelations = relations(freelancerTimeEntries, ({ one }) => ({
+  employee: one(employees, {
+    fields: [freelancerTimeEntries.employeeId],
+    references: [employees.id],
+  }),
   unit: one(units, {
     fields: [freelancerTimeEntries.unitId],
     references: [units.id],
@@ -357,6 +362,7 @@ export type Co2RefillWithRelations = Co2Refill & {
 };
 
 export type FreelancerTimeEntryWithRelations = FreelancerTimeEntry & {
+  employee?: EmployeeWithRelations;
   unit?: Unit;
 };
 export type TapWithRelations = Tap & {

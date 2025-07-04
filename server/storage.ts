@@ -994,28 +994,6 @@ export class DatabaseStorage implements IStorage {
 
   // Freelancer Time Entries operations
   async getFreelancerTimeEntries(startDate?: Date, endDate?: Date, freelancerPhone?: string): Promise<FreelancerTimeEntryWithRelations[]> {
-    let query = db.select({
-      id: freelancerTimeEntries.id,
-      freelancerPhone: freelancerTimeEntries.freelancerPhone,
-      freelancerName: freelancerTimeEntries.freelancerName,
-      unitId: freelancerTimeEntries.unitId,
-      entryType: freelancerTimeEntries.entryType,
-      timestamp: freelancerTimeEntries.timestamp,
-      message: freelancerTimeEntries.message,
-      isManualEntry: freelancerTimeEntries.isManualEntry,
-      notes: freelancerTimeEntries.notes,
-      createdAt: freelancerTimeEntries.createdAt,
-      updatedAt: freelancerTimeEntries.updatedAt,
-      unit: {
-        id: units.id,
-        name: units.name,
-        address: units.address,
-        createdAt: units.createdAt,
-        updatedAt: units.updatedAt,
-      }
-    }).from(freelancerTimeEntries)
-    .leftJoin(units, eq(freelancerTimeEntries.unitId, units.id));
-
     const conditions = [];
     if (startDate) {
       conditions.push(gte(freelancerTimeEntries.timestamp, startDate));
@@ -1027,31 +1005,29 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(freelancerTimeEntries.freelancerPhone, freelancerPhone));
     }
 
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-
-    const result = await query.orderBy(desc(freelancerTimeEntries.timestamp));
+    const result = await db
+      .select()
+      .from(freelancerTimeEntries)
+      .leftJoin(employees, eq(freelancerTimeEntries.employeeId, employees.id))
+      .leftJoin(roles, eq(employees.roleId, roles.id))
+      .leftJoin(units, eq(freelancerTimeEntries.unitId, units.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(freelancerTimeEntries.timestamp));
     
     return result.map(row => ({
-      id: row.id,
-      freelancerPhone: row.freelancerPhone,
-      freelancerName: row.freelancerName,
-      unitId: row.unitId,
-      entryType: row.entryType,
-      timestamp: row.timestamp,
-      message: row.message,
-      isManualEntry: row.isManualEntry,
-      notes: row.notes,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-      unit: row.unit?.id ? row.unit : undefined,
+      ...row.freelancer_time_entries,
+      employee: row.employees ? {
+        ...row.employees,
+        role: row.roles || undefined,
+      } : undefined,
+      unit: row.units || undefined,
     }));
   }
 
   async getFreelancerTimeEntry(id: number): Promise<FreelancerTimeEntryWithRelations | undefined> {
     const [result] = await db.select({
       id: freelancerTimeEntries.id,
+      employeeId: freelancerTimeEntries.employeeId,
       freelancerPhone: freelancerTimeEntries.freelancerPhone,
       freelancerName: freelancerTimeEntries.freelancerName,
       unitId: freelancerTimeEntries.unitId,
@@ -1077,6 +1053,7 @@ export class DatabaseStorage implements IStorage {
 
     return {
       id: result.id,
+      employeeId: result.employeeId,
       freelancerPhone: result.freelancerPhone,
       freelancerName: result.freelancerName,
       unitId: result.unitId,
@@ -1126,10 +1103,11 @@ export class DatabaseStorage implements IStorage {
     const freelancerGroups = new Map<string, FreelancerTimeEntryWithRelations[]>();
     
     for (const entry of entries) {
-      if (!freelancerGroups.has(entry.freelancerPhone)) {
-        freelancerGroups.set(entry.freelancerPhone, []);
+      const phone = entry.freelancerPhone || 'unknown';
+      if (!freelancerGroups.has(phone)) {
+        freelancerGroups.set(phone, []);
       }
-      freelancerGroups.get(entry.freelancerPhone)!.push(entry);
+      freelancerGroups.get(phone)!.push(entry);
     }
 
     const stats: {
@@ -1140,9 +1118,9 @@ export class DatabaseStorage implements IStorage {
       entries: FreelancerTimeEntryWithRelations[];
     }[] = [];
 
-    for (const [phone, freelancerEntries] of freelancerGroups) {
+    freelancerGroups.forEach((freelancerEntries, phone) => {
       // Ordenar por timestamp
-      freelancerEntries.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      freelancerEntries.sort((a: FreelancerTimeEntryWithRelations, b: FreelancerTimeEntryWithRelations) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
       
       let totalHours = 0;
       const workDays = new Set<string>();
@@ -1169,7 +1147,7 @@ export class DatabaseStorage implements IStorage {
         totalDays: workDays.size,
         entries: freelancerEntries,
       });
-    }
+    });
 
     return stats.sort((a, b) => b.totalHours - a.totalHours);
   }
