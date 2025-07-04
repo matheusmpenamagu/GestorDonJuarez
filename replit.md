@@ -166,6 +166,10 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Ícones para horas e dias nos cards de freelancers (Julho 4, 2025)
+- ✓ Clock icon (🕐) para horas e Calendar icon (📅) para dias
+- ✓ Métricas organizadas em uma única linha com ícones coloridos
+- ✓ Layout mais visual e intuitivo para identificação rápida
 - ✓ Emojis dos colaboradores implementados nos cards (Julho 4, 2025)
 - ✓ Substituição do avatar circular pelos emojis personalizados dos funcionários
 - ✓ Função helper para buscar emoji baseado no telefone do freelancer

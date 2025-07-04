@@ -557,14 +557,14 @@ export default function FreelancersManagement() {
                       <div className="text-xs text-gray-600 mb-2">
                         {formatPhoneNumber(freelancer.freelancerPhone)}
                       </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-600">Horas:</span>
-                          <span className="font-medium text-orange-600 text-sm">{formatHours(freelancer.totalHours)}</span>
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-orange-600" />
+                          <span className="font-medium text-orange-600">{formatHours(freelancer.totalHours)}</span>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-600">Dias:</span>
-                          <span className="font-medium text-blue-600 text-sm">{freelancer.totalDays}</span>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3 text-blue-600" />
+                          <span className="font-medium text-blue-600">{freelancer.totalDays} dias</span>
                         </div>
                       </div>
                     </div>
