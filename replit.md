@@ -166,6 +166,10 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Emojis dos colaboradores implementados nos cards (Julho 4, 2025)
+- ✓ Substituição do avatar circular pelos emojis personalizados dos funcionários
+- ✓ Função helper para buscar emoji baseado no telefone do freelancer
+- ✓ Fallback para emoji 👤 quando colaborador não encontrado
 - ✓ Design compacto aplicado aos cards de freelancers (Julho 4, 2025)
 - ✓ Avatar reduzido de 12x12 para 8x8, padding reduzido de 4 para 3
 - ✓ Fontes menores: nome em text-sm, telefone em text-xs, métricas em text-sm

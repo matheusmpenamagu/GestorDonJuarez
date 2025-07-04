@@ -158,6 +158,13 @@ export default function FreelancersManagement() {
     emp.role?.name === 'Freelancer' || emp.employmentType === 'Freelancer'
   );
 
+  // Helper function to get employee avatar by phone
+  const getEmployeeAvatar = (freelancerPhone: string) => {
+    if (!freelancerPhone || !freelancerEmployees) return '👤';
+    const employee = freelancerEmployees.find((emp: any) => emp.whatsapp === freelancerPhone);
+    return employee?.avatar || '👤';
+  };
+
   const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest('POST', '/api/freelancer-entries', data),
     onSuccess: () => {
@@ -540,8 +547,8 @@ export default function FreelancersManagement() {
               {statsData.map((freelancer: FreelancerStats) => (
                 <div key={freelancer.freelancerPhone} className="border rounded-lg p-3 hover:shadow-md transition-shadow">
                   <div className="flex items-start gap-2">
-                    <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <User className="h-4 w-4 text-orange-600" />
+                    <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 text-lg">
+                      {getEmployeeAvatar(freelancer.freelancerPhone)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-gray-900 truncate text-sm mb-1">
