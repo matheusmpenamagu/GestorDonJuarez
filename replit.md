@@ -166,6 +166,10 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Design compacto aplicado aos cards de freelancers (Julho 4, 2025)
+- ✓ Avatar reduzido de 12x12 para 8x8, padding reduzido de 4 para 3
+- ✓ Fontes menores: nome em text-sm, telefone em text-xs, métricas em text-sm
+- ✓ Espaçamentos reduzidos: gap de 4 para 3, space-y de 2 para 1
 - ✓ Layout em colunas para resumo de freelancers implementado (Julho 4, 2025)
 - ✓ Design responsivo: 1 coluna mobile, 2 colunas tablet, 3 colunas desktop
 - ✓ Cards individuais com avatar, nome, telefone e métricas organizadas
