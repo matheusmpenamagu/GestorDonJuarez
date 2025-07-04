@@ -157,7 +157,7 @@ export default function FreelancersManagement() {
 
   // Filter only freelancer employees
   const freelancerEmployees = (allEmployees as any[]).filter((emp: any) => 
-    emp.role?.name === 'Freelancer' || emp.employmentType === 'Freelancer'
+    emp.employmentTypes && emp.employmentTypes.includes('Freelancer')
   );
 
   // Helper function to get employee avatar by phone
