@@ -166,6 +166,11 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Layout em colunas para resumo de freelancers implementado (Julho 4, 2025)
+- ✓ Design responsivo: 1 coluna mobile, 2 colunas tablet, 3 colunas desktop
+- ✓ Cards individuais com avatar, nome, telefone e métricas organizadas
+- ✓ Remoção do ícone de telefone para visual mais limpo
+- ✓ Efeito hover e transições suaves nos cards dos freelancers
 - ✓ Datepicker avançado implementado com períodos predefinidos (Julho 4, 2025)
 - ✓ 4 ranges prontos: Últimos 7 dias, Últimos 30 dias, Este mês, Mês anterior
 - ✓ Seção de período personalizado com campos de data inicial e final

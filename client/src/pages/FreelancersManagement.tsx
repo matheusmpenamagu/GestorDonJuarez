@@ -536,26 +536,30 @@ export default function FreelancersManagement() {
             <CardTitle>Resumo por Freelancer</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {statsData.map((freelancer: FreelancerStats) => (
-                <div key={freelancer.freelancerPhone} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-3">
-                      <Phone className="h-4 w-4 text-gray-500" />
-                      <span className="font-medium">
-                        {freelancer.freelancerName || 'Nome não informado'}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {formatPhoneNumber(freelancer.freelancerPhone)}
-                      </span>
+                <div key={freelancer.freelancerPhone} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="h-6 w-6 text-orange-600" />
                     </div>
-                    <div className="flex items-center space-x-4 text-sm">
-                      <span className="text-gray-600">
-                        {freelancer.totalDays} dias
-                      </span>
-                      <span className="font-medium text-orange-600">
-                        {formatHours(freelancer.totalHours)}
-                      </span>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 truncate mb-1">
+                        {freelancer.freelancerName || 'Nome não informado'}
+                      </h3>
+                      <div className="text-sm text-gray-600 mb-3">
+                        {formatPhoneNumber(freelancer.freelancerPhone)}
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Horas:</span>
+                          <span className="font-semibold text-orange-600">{formatHours(freelancer.totalHours)}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Dias:</span>
+                          <span className="font-semibold text-blue-600">{freelancer.totalDays}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
