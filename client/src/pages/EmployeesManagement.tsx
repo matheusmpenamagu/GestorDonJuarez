@@ -24,6 +24,36 @@ interface EmployeeFormData {
   isActive: boolean;
 }
 
+// Função para formatar WhatsApp com máscara (99) 99999-9999
+const formatWhatsApp = (value: string): string => {
+  // Remove tudo que não for dígito
+  const numbers = value.replace(/\D/g, '');
+  
+  // Aplica a máscara
+  if (numbers.length <= 2) {
+    return `(${numbers}`;
+  } else if (numbers.length <= 7) {
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+  } else {
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+  }
+};
+
+// Função para limpar WhatsApp (apenas dígitos)
+const cleanWhatsApp = (value: string): string => {
+  return value.replace(/\D/g, '');
+};
+
+// Função para exibir WhatsApp formatado na interface
+const displayWhatsApp = (value: string | null): string => {
+  if (!value) return '';
+  const numbers = value.replace(/\D/g, '');
+  if (numbers.length === 11) {
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+  }
+  return value;
+};
+
 export default function EmployeesManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<EmployeeWithRelations | null>(null);
@@ -52,7 +82,9 @@ export default function EmployeesManagement() {
 
   const createMutation = useMutation({
     mutationFn: async (data: EmployeeFormData) => {
-      await apiRequest('POST', '/api/employees', data);
+      // Limpa o WhatsApp antes de enviar
+      const cleanData = { ...data, whatsapp: cleanWhatsApp(data.whatsapp) };
+      await apiRequest('POST', '/api/employees', cleanData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
@@ -74,7 +106,9 @@ export default function EmployeesManagement() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: EmployeeFormData }) => {
-      await apiRequest('PUT', `/api/employees/${id}`, data);
+      // Limpa o WhatsApp antes de enviar
+      const cleanData = { ...data, whatsapp: cleanWhatsApp(data.whatsapp) };
+      await apiRequest('PUT', `/api/employees/${id}`, cleanData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
@@ -147,7 +181,7 @@ export default function EmployeesManagement() {
       password: "", // Não preencher senha na edição
       firstName: employee.firstName || "",
       lastName: employee.lastName || "",
-      whatsapp: employee.whatsapp || "",
+      whatsapp: formatWhatsApp(employee.whatsapp || ""),
       roleId: employee.roleId || null,
       employmentTypes: (employee.employmentTypes || ["Funcionário"]) as ("Sócio" | "Funcionário" | "Freelancer")[],
       avatar: employee.avatar || "😊",
@@ -225,9 +259,13 @@ export default function EmployeesManagement() {
                 <Input
                   id="whatsapp"
                   type="tel"
-                  value={formData.whatsapp}
-                  onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                  placeholder="Ex: 33999123456"
+                  value={formatWhatsApp(formData.whatsapp)}
+                  onChange={(e) => {
+                    const formatted = formatWhatsApp(e.target.value);
+                    setFormData({ ...formData, whatsapp: formatted });
+                  }}
+                  placeholder="(11) 99999-9999"
+                  maxLength={15}
                 />
               </div>
 
@@ -395,7 +433,7 @@ export default function EmployeesManagement() {
                   {employee.whatsapp && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Phone className="h-4 w-4" />
-                      {employee.whatsapp}
+                      {displayWhatsApp(employee.whatsapp)}
                     </div>
                   )}
                   {employee.role && (
