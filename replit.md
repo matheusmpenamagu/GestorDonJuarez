@@ -166,6 +166,11 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Formulário de freelancers completamente reformulado (Julho 4, 2025)
+- ✓ Removido campo "Nome" manual, implementado seletor de funcionários freelancers
+- ✓ Integração com tabela employees para vincular registros via employeeId
+- ✓ Interface mostra "Nome Sobrenome - (XX) XXXXX-XXXX" para seleção
+- ✓ Dados preenchidos automaticamente do colaborador selecionado
 - ✓ Sistema de controle de ponto para freelancers implementado e corrigido (Julho 3, 2025)
 - ✓ Migração de freelancer_time_entries para usar employeeId (vinculação com funcionários)
 - ✓ Correção de estrutura da API freelancer-stats (objeto com freelancers array)

@@ -153,7 +153,7 @@ export default function FreelancersManagement() {
     const data = {
       employeeId: employeeId ? parseInt(employeeId) : null,
       freelancerPhone: selectedEmployee?.whatsapp || null,
-      freelancerName: selectedEmployee?.name || null,
+      freelancerName: selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : null,
       unitId: unitIdValue && unitIdValue !== 'none' ? parseInt(unitIdValue) : null,
       entryType: formData.get('entryType') as string,
       timestamp: `${formData.get('date')}T${formData.get('time')}:00.000Z`,
@@ -221,7 +221,7 @@ export default function FreelancersManagement() {
                   <SelectContent>
                     {freelancerEmployees?.map((employee: any) => (
                       <SelectItem key={employee.id} value={employee.id.toString()}>
-                        {employee.name} - {employee.whatsapp ? formatPhoneNumber(employee.whatsapp) : 'Sem telefone'}
+                        {employee.firstName} {employee.lastName} - {employee.whatsapp ? formatPhoneNumber(employee.whatsapp) : 'Sem telefone'}
                       </SelectItem>
                     ))}
                   </SelectContent>
