@@ -123,10 +123,11 @@ export default function FreelancersManagement() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
+    const unitIdValue = formData.get('unitId') as string;
     const data = {
       freelancerPhone: formData.get('freelancerPhone') as string,
       freelancerName: formData.get('freelancerName') as string,
-      unitId: formData.get('unitId') ? parseInt(formData.get('unitId') as string) : undefined,
+      unitId: unitIdValue && unitIdValue !== 'none' ? parseInt(unitIdValue) : undefined,
       entryType: formData.get('entryType') as string,
       timestamp: `${formData.get('date')}T${formData.get('time')}:00.000Z`,
       message: formData.get('message') as string,
@@ -253,7 +254,7 @@ export default function FreelancersManagement() {
                     id="time"
                     name="time"
                     type="time"
-                    defaultValue={editingEntry ? editingEntry.timestamp.split('T')[1].substring(0, 5) : ''}
+                    defaultValue={editingEntry ? editingEntry.timestamp.split('T')[1].substring(0, 5) : '08:00'}
                     required
                   />
                 </div>
