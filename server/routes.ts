@@ -1221,18 +1221,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update time entry
   app.put('/api/freelancer-entries/:id', demoAuth, async (req, res) => {
     try {
+      console.log("=== Updating freelancer entry ===");
+      console.log("Entry ID:", req.params.id);
+      console.log("Request body:", req.body);
+      
       const id = parseInt(req.params.id);
       const entryData = {
+        employeeId: req.body.employeeId ? parseInt(req.body.employeeId) : null,
         freelancerPhone: req.body.freelancerPhone,
         freelancerName: req.body.freelancerName,
-        unitId: req.body.unitId ? parseInt(req.body.unitId) : undefined,
+        unitId: req.body.unitId ? parseInt(req.body.unitId) : null,
         entryType: req.body.entryType,
         timestamp: req.body.timestamp ? fromSaoPauloTime(req.body.timestamp) : undefined,
         message: req.body.message,
         notes: req.body.notes,
       };
       
+      console.log("Processed update data:", entryData);
+      
       const entry = await storage.updateFreelancerTimeEntry(id, entryData);
+      console.log("Entry updated successfully:", entry);
       res.json(entry);
     } catch (error) {
       console.error("Error updating freelancer entry:", error);
