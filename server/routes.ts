@@ -417,12 +417,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const body = {
         number: remoteJid,
-        text: text
+        text: text,
+        textMessage: {
+          text: text
+        }
       };
       
       console.log('Sending WhatsApp message:', {
         url: 'https://wpp.donjuarez.com.br/message/sendText/dj-ponto',
-        headers: { 'X-API-Key': process.env.evoGlobalApikey?.substring(0, 10) + '...' },
+        headers: { 'apikey': process.env.evoGlobalApikey?.substring(0, 10) + '...' },
         body: body
       });
 
@@ -430,7 +433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': process.env.evoGlobalApikey!,
+          'apikey': process.env.evoGlobalApikey!,
         },
         body: JSON.stringify(body)
       });
