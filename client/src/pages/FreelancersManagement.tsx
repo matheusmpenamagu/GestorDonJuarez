@@ -79,9 +79,16 @@ export default function FreelancersManagement() {
   const statsData = statsResponse?.freelancers || [];
 
   // Fetch time entries
-  const { data: entries = [], isLoading: entriesLoading } = useQuery<FreelancerTimeEntry[]>({
+  const { data: rawEntries = [], isLoading: entriesLoading } = useQuery<FreelancerTimeEntry[]>({
     queryKey: ['/api/freelancer-entries', dateRange.start, dateRange.end],
     enabled: !!dateRange.start && !!dateRange.end,
+  });
+
+  // Ensure entries are sorted by timestamp descending (most recent first)
+  const entries = [...rawEntries].sort((a, b) => {
+    const dateA = new Date(a.timestamp).getTime();
+    const dateB = new Date(b.timestamp).getTime();
+    return dateB - dateA; // Descending order (most recent first)
   });
 
   // Fetch units
