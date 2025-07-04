@@ -455,7 +455,15 @@ export default function FreelancersManagement() {
                   entries?.map((entry: FreelancerTimeEntry) => (
                     <TableRow key={entry.id}>
                       <TableCell>
-                        {format(new Date(entry.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        {(() => {
+                          try {
+                            const date = new Date(entry.timestamp);
+                            if (isNaN(date.getTime())) return 'Data inválida';
+                            return format(date, "dd/MM/yyyy HH:mm", { locale: ptBR });
+                          } catch {
+                            return 'Data inválida';
+                          }
+                        })()}
                       </TableCell>
                       <TableCell>{entry.freelancerName || 'Não informado'}</TableCell>
                       <TableCell>{formatPhoneNumber(entry.freelancerPhone)}</TableCell>
