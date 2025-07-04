@@ -250,13 +250,33 @@ export default function FreelancersManagement() {
           <h1 className="text-2xl font-bold text-gray-900">Freelancers</h1>
           <p className="text-gray-600">Controle de ponto e horas trabalhadas</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingEntry(null)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Registro
-            </Button>
-          </DialogTrigger>
+        
+        <div className="flex items-center gap-4">
+          {/* Filtro de Data */}
+          <div className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-gray-500" />
+            <Input
+              type="date"
+              value={dateRange.start}
+              onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+              className="w-40"
+            />
+            <span className="text-gray-500">até</span>
+            <Input
+              type="date"
+              value={dateRange.end}
+              onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+              className="w-40"
+            />
+          </div>
+          
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setEditingEntry(null)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Registro
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
@@ -365,39 +385,8 @@ export default function FreelancersManagement() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
-
-      {/* Filtros de Data */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Filtro de Período
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="startDate">Data Inicial</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={dateRange.start}
-                onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="endDate">Data Final</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={dateRange.end}
-                onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
