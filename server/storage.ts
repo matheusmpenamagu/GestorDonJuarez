@@ -1125,18 +1125,22 @@ export class DatabaseStorage implements IStorage {
       let totalHours = 0;
       const workDays = new Set<string>();
       
-      // Calcular horas trabalhadas
-      for (let i = 0; i < freelancerEntries.length; i += 2) {
-        const entrada = freelancerEntries[i];
-        const saida = freelancerEntries[i + 1];
-        
-        if (entrada?.entryType === 'entrada' && saida?.entryType === 'saida') {
-          const hoursWorked = (new Date(saida.timestamp).getTime() - new Date(entrada.timestamp).getTime()) / (1000 * 60 * 60);
-          totalHours += hoursWorked;
-          
-          // Adicionar dia de trabalho
-          const workDay = new Date(entrada.timestamp).toDateString();
+      // Calcular horas trabalhadas com lógica melhorada
+      let lastEntrada: FreelancerTimeEntryWithRelations | null = null;
+      
+      for (const entry of freelancerEntries) {
+        if (entry.entryType === 'entrada') {
+          lastEntrada = entry;
+          // Adicionar dia de trabalho quando há uma entrada
+          const workDay = new Date(entry.timestamp).toDateString();
           workDays.add(workDay);
+        } else if (entry.entryType === 'saida' && lastEntrada) {
+          // Calcular horas trabalhadas entre a última entrada e esta saída
+          const hoursWorked = (new Date(entry.timestamp).getTime() - new Date(lastEntrada.timestamp).getTime()) / (1000 * 60 * 60);
+          if (hoursWorked > 0 && hoursWorked <= 24) { // Validar que seja um período razoável
+            totalHours += hoursWorked;
+          }
+          lastEntrada = null; // Reset para próxima entrada
         }
       }
 
