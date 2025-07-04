@@ -242,6 +242,12 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - ✓ Correção de chamadas apiRequest com ordem correta de parâmetros
 - ✓ Tratamento de valores null em formatPhoneNumber e outros campos
 - ✓ Sistema totalmente funcional sem erros JavaScript
+- ✓ Correção crítica de filtragem por data na tela de freelancers (Julho 4, 2025)
+- ✓ Algoritmo de timezone corrigido para trabalhar com UTC-3 (São Paulo)
+- ✓ Endpoints /api/freelancer-entries e /api/freelancer-stats com filtragem funcionando
+- ✓ Conversão adequada de datas: +3h início, +27h fim para cobrir todo o dia alvo
+- ✓ Registros ID 19 e 20 agora visíveis corretamente na interface
+- ✓ Sistema de cache invalidation otimizado para melhor performance
 - ✓ Transformação para gestor operacional completo da Don Juarez
 - ✓ Reorganização do menu lateral em "Chopes" com submenus simplificados
 - ✓ Alteração do título da aplicação para "Gestor Don Juarez"

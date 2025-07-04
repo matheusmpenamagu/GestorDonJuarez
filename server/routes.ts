@@ -18,8 +18,11 @@ function toSaoPauloTime(date: Date): string {
 
 // Helper function to parse dates from São Paulo timezone
 function fromSaoPauloTime(dateString: string): Date {
-  // Assume the incoming date is already in São Paulo timezone
-  return new Date(dateString);
+  // Parse date in YYYY-MM-DD format and set to São Paulo timezone
+  // For start dates, use 00:00:00
+  // For end dates, use 23:59:59
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
 }
 
 // Simple demo auth middleware - allows all requests for demonstration
@@ -1332,10 +1335,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let endDate: Date | undefined;
       
       if (start_date) {
-        startDate = fromSaoPauloTime(start_date as string);
+        // Parse date and add timezone offset for São Paulo (UTC-3)
+        const [year, month, day] = (start_date as string).split('-').map(Number);
+        startDate = new Date(year, month - 1, day, 3, 0, 0, 0); // Add 3 hours to compensate UTC-3
       }
       if (end_date) {
-        endDate = fromSaoPauloTime(end_date as string);
+        // Parse date and add timezone offset for São Paulo (UTC-3)
+        const [year, month, day] = (end_date as string).split('-').map(Number);
+        endDate = new Date(year, month - 1, day + 1, 2, 59, 59, 999); // Next day 02:59:59 to cover all of target day
       }
       
       const entries = await storage.getFreelancerTimeEntries(
@@ -1363,12 +1370,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { start_date, end_date } = req.query;
       
       // Default to last 7 days if no dates provided
-      const endDate = end_date 
-        ? fromSaoPauloTime(end_date as string)
-        : new Date();
-      const startDate = start_date 
-        ? fromSaoPauloTime(start_date as string)
-        : new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+      let endDate: Date;
+      let startDate: Date;
+      
+      if (end_date) {
+        // Parse date and add timezone offset for São Paulo (UTC-3)
+        const [year, month, day] = (end_date as string).split('-').map(Number);
+        endDate = new Date(year, month - 1, day + 1, 2, 59, 59, 999); // Next day 02:59:59 to cover all of target day
+      } else {
+        endDate = new Date();
+      }
+      
+      if (start_date) {
+        // Parse date and add timezone offset for São Paulo (UTC-3)
+        const [year, month, day] = (start_date as string).split('-').map(Number);
+        startDate = new Date(year, month - 1, day, 3, 0, 0, 0); // Add 3 hours to compensate UTC-3
+      } else {
+        startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+      }
       
       const stats = await storage.getFreelancerStats(startDate, endDate);
       
