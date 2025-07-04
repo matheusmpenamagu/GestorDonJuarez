@@ -9,10 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Clock, Calendar, Phone, MapPin, User, Timer } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Plus, Edit, Trash2, Clock, Calendar, Phone, MapPin, User, Timer, CalendarIcon, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { format, subDays } from "date-fns";
+import { format, subDays, startOfMonth, endOfMonth, subMonths, startOfWeek, endOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface FreelancerTimeEntry {
@@ -66,6 +67,57 @@ export default function FreelancersManagement() {
     start: format(subDays(new Date(), 6), 'yyyy-MM-dd'),
     end: format(new Date(), 'yyyy-MM-dd')
   });
+  
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
+  // Predefined date ranges
+  const dateRangePresets = [
+    {
+      label: 'Últimos 7 dias',
+      value: 'last7days',
+      start: subDays(new Date(), 6),
+      end: new Date()
+    },
+    {
+      label: 'Últimos 30 dias',
+      value: 'last30days',
+      start: subDays(new Date(), 29),
+      end: new Date()
+    },
+    {
+      label: 'Este mês',
+      value: 'thisMonth',
+      start: startOfMonth(new Date()),
+      end: endOfMonth(new Date())
+    },
+    {
+      label: 'Mês anterior',
+      value: 'lastMonth',
+      start: startOfMonth(subMonths(new Date(), 1)),
+      end: endOfMonth(subMonths(new Date(), 1))
+    }
+  ];
+
+  const handleDateRangePreset = (preset: typeof dateRangePresets[0]) => {
+    setDateRange({
+      start: format(preset.start, 'yyyy-MM-dd'),
+      end: format(preset.end, 'yyyy-MM-dd')
+    });
+    setIsDatePickerOpen(false);
+  };
+
+  const getCurrentDateRangeLabel = () => {
+    const current = dateRangePresets.find(preset => 
+      format(preset.start, 'yyyy-MM-dd') === dateRange.start &&
+      format(preset.end, 'yyyy-MM-dd') === dateRange.end
+    );
+    
+    if (current) {
+      return current.label;
+    }
+    
+    return `${format(new Date(dateRange.start), 'dd/MM/yyyy')} - ${format(new Date(dateRange.end), 'dd/MM/yyyy')}`;
+  };
 
   // Fetch freelancer statistics
   const { data: statsResponse, isLoading: statsLoading } = useQuery<{
@@ -252,23 +304,73 @@ export default function FreelancersManagement() {
         </div>
         
         <div className="flex items-center gap-4">
-          {/* Filtro de Data */}
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-gray-500" />
-            <Input
-              type="date"
-              value={dateRange.start}
-              onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-              className="w-40"
-            />
-            <span className="text-gray-500">até</span>
-            <Input
-              type="date"
-              value={dateRange.end}
-              onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-              className="w-40"
-            />
-          </div>
+          {/* Advanced Date Picker */}
+          <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-64 justify-start text-left font-normal">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {getCurrentDateRangeLabel()}
+                <ChevronDown className="ml-auto h-4 w-4 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="end">
+              <div className="p-4 space-y-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm text-gray-900">Períodos Predefinidos</h4>
+                  <div className="space-y-1">
+                    {dateRangePresets.map((preset) => {
+                      const isSelected = format(preset.start, 'yyyy-MM-dd') === dateRange.start &&
+                                        format(preset.end, 'yyyy-MM-dd') === dateRange.end;
+                      return (
+                        <Button
+                          key={preset.value}
+                          variant={isSelected ? "default" : "ghost"}
+                          size="sm"
+                          className={`w-full justify-start ${isSelected ? 'bg-orange-500 hover:bg-orange-600' : ''}`}
+                          onClick={() => handleDateRangePreset(preset)}
+                        >
+                          {preset.label}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                <div className="border-t pt-4">
+                  <h4 className="font-medium text-sm text-gray-900 mb-3">Período Personalizado</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="custom-start" className="text-xs text-gray-600">Data Inicial</Label>
+                      <Input
+                        id="custom-start"
+                        type="date"
+                        value={dateRange.start}
+                        onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="custom-end" className="text-xs text-gray-600">Data Final</Label>
+                      <Input
+                        id="custom-end"
+                        type="date"
+                        value={dateRange.end}
+                        onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                        className="mt-1"
+                      />
+                    </div>
+                    <Button 
+                      size="sm" 
+                      className="w-full bg-orange-500 hover:bg-orange-600"
+                      onClick={() => setIsDatePickerOpen(false)}
+                    >
+                      Aplicar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>

@@ -166,6 +166,11 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Datepicker avançado implementado com períodos predefinidos (Julho 4, 2025)
+- ✓ 4 ranges prontos: Últimos 7 dias, Últimos 30 dias, Este mês, Mês anterior
+- ✓ Seção de período personalizado com campos de data inicial e final
+- ✓ Interface elegante com Popover e indicação visual do período selecionado
+- ✓ Botões destacados em laranja para o período atualmente ativo
 - ✓ Sistema de turnos noturnos corrigido com regra das 5h da manhã (Julho 4, 2025)
 - ✓ Implementada lógica robusta de pareamento entrada/saída para registros fora de ordem
 - ✓ Correção de cálculo de horas para trabalhos que passam da meia-noite
