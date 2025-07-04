@@ -1089,6 +1089,8 @@ export class DatabaseStorage implements IStorage {
     await db.delete(freelancerTimeEntries).where(eq(freelancerTimeEntries.id, id));
   }
 
+
+
   async getFreelancerStats(startDate: Date, endDate: Date): Promise<{
     freelancerPhone: string;
     freelancerName: string | null;
@@ -1131,8 +1133,20 @@ export class DatabaseStorage implements IStorage {
       for (const entry of freelancerEntries) {
         if (entry.entryType === 'entrada') {
           lastEntrada = entry;
-          // Adicionar dia de trabalho quando há uma entrada
-          const workDay = new Date(entry.timestamp).toDateString();
+          // Adicionar dia de trabalho quando há uma entrada (considerando regra das 5h)
+          const date = new Date(entry.timestamp);
+          const hour = date.getHours();
+          let workDay: string;
+          
+          // Se for antes das 5h da manhã, considerar como dia anterior
+          if (hour < 5) {
+            const previousDay = new Date(date);
+            previousDay.setDate(date.getDate() - 1);
+            workDay = previousDay.toDateString();
+          } else {
+            workDay = date.toDateString();
+          }
+          
           workDays.add(workDay);
         } else if (entry.entryType === 'saida' && lastEntrada) {
           // Calcular horas trabalhadas entre a última entrada e esta saída
@@ -1140,8 +1154,17 @@ export class DatabaseStorage implements IStorage {
           const entradaTime = new Date(lastEntrada.timestamp).getTime();
           const hoursWorked = (entryTime - entradaTime) / (1000 * 60 * 60);
           
-          if (hoursWorked > 0 && hoursWorked <= 24) { // Validar que seja um período razoável
+          // Validar período razoável (até 24h) e verificar se não é um período negativo 
+          // (quando saída é antes da entrada no mesmo ciclo de trabalho)
+          if (hoursWorked > 0 && hoursWorked <= 24) {
             totalHours += hoursWorked;
+          } else if (hoursWorked < 0) {
+            // Caso especial: saída no dia seguinte até 5h (mesmo dia de trabalho)
+            const nextDayTime = entryTime + (24 * 60 * 60 * 1000); // Adicionar 24h
+            const adjustedHours = (nextDayTime - entradaTime) / (1000 * 60 * 60);
+            if (adjustedHours > 0 && adjustedHours <= 24) {
+              totalHours += adjustedHours;
+            }
           }
           lastEntrada = null; // Reset para próxima entrada
         }
