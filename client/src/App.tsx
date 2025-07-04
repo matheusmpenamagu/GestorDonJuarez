@@ -1,136 +1,112 @@
-import { Switch, Route, Redirect } from "wouter";
-import { lazy, Suspense, useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/useAuth";
+import { Layout } from "@/components/Layout";
+import Landing from "@/pages/Landing";
+import Dashboard from "@/pages/Dashboard";
+import History from "@/pages/History";
+import KegChanges from "@/pages/KegChanges";
+import TapsManagement from "@/pages/TapsManagement";
+import POSManagement from "@/pages/POSManagement";
+import BeerStylesManagement from "@/pages/BeerStylesManagement";
+import DevicesManagement from "@/pages/DevicesManagement";
+import EmployeesManagement from "@/pages/EmployeesManagement";
+import RolesManagement from "@/pages/RolesManagement";
+import UnitsManagement from "@/pages/UnitsManagement";
+import Co2Management from "@/pages/Co2Management";
+import ChecklistDashboard from "@/pages/ChecklistDashboard";
+import ChecklistTemplates from "@/pages/ChecklistTemplates";
+import ChecklistConfiguracoes from "@/pages/ChecklistConfiguracoes";
+import NotFound from "@/pages/not-found";
 
-// Carregamento assíncrono das páginas
-const Login = lazy(() => import("./pages/login"));
-const Dashboard = lazy(() => import("./pages/dashboard"));
-const Checklists = lazy(() => import("./pages/checklists"));
-const CreateChecklist = lazy(() => import("./pages/create-checklist"));
-const Departments = lazy(() => import("./pages/departments"));
-const Collaborators = lazy(() => import("./pages/collaborators"));
-const History = lazy(() => import("./pages/history"));
-const Settings = lazy(() => import("./pages/settings"));
-const NotFound = lazy(() => import("./pages/not-found"));
-const PublicChecklistView = lazy(() => import("./pages/public/checklist-view"));
-
-// Componente de carregamento
-const PageLoader = () => (
-  <div className="flex items-center justify-center h-screen w-full bg-background">
-    <div className="flex flex-col items-center">
-      <Loader2 className="h-12 w-12 animate-spin text-orange-500" />
-      <span className="mt-4 text-xl font-medium">Carregando página...</span>
-    </div>
-  </div>
-);
-
-// Componente para proteger rotas que precisam de autenticação
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const checkAuth = () => {
-      try {
-        const token = localStorage.getItem('authToken');
-        const userData = localStorage.getItem('userData');
-
-        if (token && userData) {
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, []);
+function Router() {
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <PageLoader />;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
   }
 
-  if (!isAuthenticated) {
-    return <Redirect to="/login" />;
-  }
+  return (
+    <Switch>
+      {!isAuthenticated ? (
+        <Route path="/" component={Landing} />
+      ) : (
+        <>
+          <Route path="/">
+            <Layout>
+              <Dashboard />
+            </Layout>
+          </Route>
+          <Route path="/historico">
+            <Layout>
+              <History />
+            </Layout>
+          </Route>
+          <Route path="/trocas-barril">
+            <Layout>
+              <KegChanges />
+            </Layout>
+          </Route>
 
-  return <>{children}</>;
-};
+          <Route path="/colaboradores">
+            <Layout>
+              <EmployeesManagement />
+            </Layout>
+          </Route>
+          <Route path="/cargos">
+            <Layout>
+              <RolesManagement />
+            </Layout>
+          </Route>
+          <Route path="/unidades">
+            <Layout>
+              <UnitsManagement />
+            </Layout>
+          </Route>
+          <Route path="/co2">
+            <Layout>
+              <Co2Management />
+            </Layout>
+          </Route>
+
+          <Route path="/checklists">
+            <Layout>
+              <ChecklistDashboard />
+            </Layout>
+          </Route>
+          <Route path="/checklists/templates">
+            <Layout>
+              <ChecklistTemplates />
+            </Layout>
+          </Route>
+          <Route path="/checklists/configuracoes">
+            <Layout>
+              <ChecklistConfiguracoes />
+            </Layout>
+          </Route>
+        </>
+      )}
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <Suspense fallback={<PageLoader />}>
-          <Switch>
-            {/* Página de login */}
-            <Route path="/login" component={Login} />
-
-            {/* Páginas públicas */}
-            <Route path="/public/checklist/:executionId" component={PublicChecklistView} />
-
-            {/* Redirecionamento da raiz */}
-            <Route path="/">
-              <ProtectedRoute>
-                <Redirect to="/dashboard" />
-              </ProtectedRoute>
-            </Route>
-
-            {/* Páginas protegidas */}
-            <Route path="/dashboard">
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/checklists">
-              <ProtectedRoute>
-                <Checklists />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/checklists/criar">
-              <ProtectedRoute>
-                <CreateChecklist />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/checklists/editar/:id">
-              <ProtectedRoute>
-                <CreateChecklist />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/departments">
-              <ProtectedRoute>
-                <Departments />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/collaborators">
-              <ProtectedRoute>
-                <Collaborators />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/history">
-              <ProtectedRoute>
-                <History />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/settings">
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            </Route>
-
-            {/* Página 404 */}
-            <Route component={NotFound} />
-          </Switch>
-        </Suspense>
+        <Router />
       </TooltipProvider>
     </QueryClientProvider>
   );

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckSquare, FileText, Clock, AlertCircle, Plus, Calendar, Users, BarChart3, Activity } from "lucide-react";
@@ -5,27 +6,51 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
 interface ChecklistStats {
-  totalTemplates: number;
-  activeInstances: number;
-  completedToday: number;
-  pendingTasks: number;
+  activeChecklists: number;
+  checklistsWithPendingTasks: number;
+  pendingTasksLast30Days: number;
+  completedTasksLast30Days: number;
 }
 
-interface RecentActivity {
+interface RecentChecklist {
   id: number;
-  template: string;
-  employee: string;
+  name: string;
   status: string;
-  completedAt: string;
+  startedAt: string;
+  collaboratorName?: string;
+  taskCount: number;
+}
+
+interface UpcomingChecklist {
+  id: number;
+  name: string;
+  nextExecution: string;
+  periodicity: string;
+  collaboratorName?: string;
+}
+
+interface CollaboratorRanking {
+  collaboratorId: number;
+  collaboratorName: string;
+  collaboratorPosition: string;
+  pendingTasks: number;
 }
 
 export default function ChecklistDashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery<ChecklistStats>({
-    queryKey: ["/api/checklist-dashboard-stats"],
+    queryKey: ["/api/dashboard/stats"],
   });
 
-  const { data: recentActivity, isLoading: activityLoading } = useQuery<RecentActivity[]>({
-    queryKey: ["/api/checklist-recent-activity"],
+  const { data: recentChecklists, isLoading: recentLoading } = useQuery<RecentChecklist[]>({
+    queryKey: ["/api/dashboard/recent-checklists"],
+  });
+
+  const { data: upcomingChecklists, isLoading: upcomingLoading } = useQuery<UpcomingChecklist[]>({
+    queryKey: ["/api/dashboard/upcoming-checklists"],
+  });
+
+  const { data: collaboratorsRanking, isLoading: rankingLoading } = useQuery<CollaboratorRanking[]>({
+    queryKey: ["/api/dashboard/collaborators-ranking"],
   });
 
   if (statsLoading) {
@@ -64,234 +89,320 @@ export default function ChecklistDashboard() {
           <h1 className="text-3xl font-bold text-gray-900">ChecklistZap</h1>
           <p className="text-lg text-gray-600">Dashboard de controle e monitoramento</p>
         </div>
-        <div className="flex gap-3">
-          <Link href="/checklists/templates">
-            <Button variant="outline" size="lg" className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Templates
-            </Button>
-          </Link>
-          <Link href="/checklists/templates">
-            <Button size="lg" className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700">
-              <Plus className="h-5 w-5" />
-              Novo Checklist
-            </Button>
-          </Link>
-        </div>
+        <Link href="/checklists/templates">
+          <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
+            <Plus className="h-5 w-5 mr-2" />
+            Novo Checklist
+          </Button>
+        </Link>
       </div>
 
       {/* Stats Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow">
+        <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Templates Ativos</CardTitle>
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <FileText className="h-5 w-5 text-blue-600" />
-            </div>
+            <CardTitle className="text-sm font-medium text-gray-600">Checklists Ativos</CardTitle>
+            <CheckSquare className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-gray-900">{stats?.totalTemplates || 0}</div>
-            <p className="text-sm text-gray-500 mt-1">Modelos criados</p>
+            <div className="text-2xl font-bold text-gray-900">{stats?.activeChecklists || 0}</div>
+            <p className="text-xs text-gray-500">Templates em uso</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-yellow-500 hover:shadow-lg transition-shadow">
+        <Card className="border-l-4 border-l-yellow-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Em Andamento</CardTitle>
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Clock className="h-5 w-5 text-yellow-600" />
-            </div>
+            <CardTitle className="text-sm font-medium text-gray-600">Com Pendências</CardTitle>
+            <AlertCircle className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-gray-900">{stats?.activeInstances || 0}</div>
-            <p className="text-sm text-gray-500 mt-1">Checklists executando</p>
+            <div className="text-2xl font-bold text-gray-900">{stats?.checklistsWithPendingTasks || 0}</div>
+            <p className="text-xs text-gray-500">Checklists com tarefas pendentes</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow">
+        <Card className="border-l-4 border-l-red-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Concluídos Hoje</CardTitle>
-            <div className="p-2 bg-green-100 rounded-lg">
-              <CheckSquare className="h-5 w-5 text-green-600" />
-            </div>
+            <CardTitle className="text-sm font-medium text-gray-600">Tarefas Pendentes (30d)</CardTitle>
+            <Clock className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-gray-900">{stats?.completedToday || 0}</div>
-            <p className="text-sm text-gray-500 mt-1">Finalizados hoje</p>
+            <div className="text-2xl font-bold text-gray-900">{stats?.pendingTasksLast30Days || 0}</div>
+            <p className="text-xs text-gray-500">Últimos 30 dias</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-red-500 hover:shadow-lg transition-shadow">
+        <Card className="border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Pendentes</CardTitle>
-            <div className="p-2 bg-red-100 rounded-lg">
-              <AlertCircle className="h-5 w-5 text-red-600" />
-            </div>
+            <CardTitle className="text-sm font-medium text-gray-600">Tarefas Concluídas (30d)</CardTitle>
+            <CheckSquare className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-gray-900">{stats?.pendingTasks || 0}</div>
-            <p className="text-sm text-gray-500 mt-1">Aguardando execução</p>
+            <div className="text-2xl font-bold text-gray-900">{stats?.completedTasksLast30Days || 0}</div>
+            <p className="text-xs text-gray-500">Últimos 30 dias</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Recent Activity */}
-        <Card className="lg:col-span-2 hover:shadow-lg transition-shadow">
-          <CardHeader className="border-b border-gray-100">
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Activity className="h-6 w-6 text-orange-600" />
-              Atividade Recente
+      {/* Checklists recentes e Próximos checklists */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Checklists recentes
             </CardTitle>
-            <CardDescription className="text-base">Últimas execuções de checklists no sistema</CardDescription>
+            <CardDescription>
+              Últimas execuções realizadas
+            </CardDescription>
           </CardHeader>
-          <CardContent className="p-6">
-            {activityLoading ? (
-              <div className="space-y-4">
+          <CardContent>
+            {recentLoading ? (
+              <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg animate-pulse">
-                    <div className="space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-40"></div>
-                      <div className="h-3 bg-gray-200 rounded w-28"></div>
+                  <div key={i} className="flex items-center space-x-3 animate-pulse">
+                    <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/4 mt-1"></div>
                     </div>
-                    <div className="h-6 bg-gray-200 rounded w-24"></div>
+                    <div className="w-20 h-6 bg-gray-200 rounded"></div>
                   </div>
                 ))}
               </div>
-            ) : (
+            ) : recentChecklists && recentChecklists.length > 0 ? (
               <div className="space-y-4">
-                {recentActivity && recentActivity.length > 0 ? (
-                  recentActivity.map((activity) => (
-                    <div key={activity.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-white rounded-lg border">
-                          <CheckSquare className="h-5 w-5 text-gray-600" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{activity.template}</p>
-                          <p className="text-sm text-gray-500">executado por {activity.employee}</p>
-                        </div>
+                {recentChecklists.slice(0, 5).map((checklist) => (
+                  <div key={checklist.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                        <CheckSquare className="h-5 w-5 text-orange-600" />
                       </div>
-                      <div className="text-right">
-                        <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
-                          activity.status === 'completed' 
-                            ? 'bg-green-100 text-green-800'
-                            : activity.status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {activity.status === 'completed' ? 'Concluído' : 
-                           activity.status === 'pending' ? 'Pendente' : activity.status}
-                        </span>
-                        <p className="text-xs text-gray-500 mt-1">{activity.completedAt}</p>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{checklist.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {checklist.collaboratorName ? `por ${checklist.collaboratorName}` : 'Sem responsável'}
+                        </p>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-12">
-                    <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-lg text-gray-500 mb-2">Nenhuma atividade recente</p>
-                    <p className="text-sm text-gray-400">Crie seu primeiro checklist para começar a monitorar</p>
+                    <div className="text-right">
+                      <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        checklist.status === 'completed' 
+                          ? 'bg-green-100 text-green-800' 
+                          : checklist.status === 'in_progress'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : checklist.status === 'overdue'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {checklist.status === 'completed' ? '✅ Concluído' : 
+                         checklist.status === 'in_progress' ? '⏳ Em andamento' : 
+                         checklist.status === 'overdue' ? '🔴 Atrasado' :
+                         '⏸️ Pendente'}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(checklist.startedAt).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
                   </div>
-                )}
+                ))}
+                <div className="pt-3 border-t">
+                  <Link href="/checklists">
+                    <Button variant="ghost" size="sm" className="w-full">
+                      Ver todos os checklists
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Activity className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">Nenhum checklist executado recentemente</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Execuções aparecerão aqui
+                </p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Quick Actions */}
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="border-b border-gray-100">
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <BarChart3 className="h-6 w-6 text-orange-600" />
-              Ações Rápidas
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Próximos checklists
             </CardTitle>
-            <CardDescription className="text-base">Acesso direto às principais funcionalidades</CardDescription>
+            <CardDescription>
+              Agendados para execução
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 p-6">
-            <Link href="/checklists/templates">
-              <Button variant="outline" size="lg" className="w-full justify-start hover:bg-blue-50 border-blue-200">
-                <FileText className="h-5 w-5 mr-3 text-blue-600" />
-                <div className="text-left">
-                  <p className="font-medium">Criar Template</p>
-                  <p className="text-xs text-gray-500">Novo modelo de checklist</p>
+          <CardContent>
+            {upcomingLoading ? (
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-3 animate-pulse">
+                    <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/4 mt-1"></div>
+                    </div>
+                    <div className="w-20 h-6 bg-gray-200 rounded"></div>
+                  </div>
+                ))}
+              </div>
+            ) : upcomingChecklists && upcomingChecklists.length > 0 ? (
+              <div className="space-y-4">
+                {upcomingChecklists.slice(0, 5).map((checklist) => (
+                  <div key={checklist.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Calendar className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{checklist.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {checklist.collaboratorName ? checklist.collaboratorName : 'Sem responsável'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {checklist.periodicity}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(checklist.nextExecution).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                <div className="pt-3 border-t">
+                  <Link href="/checklists">
+                    <Button variant="ghost" size="sm" className="w-full">
+                      Ver agenda completa
+                    </Button>
+                  </Link>
                 </div>
-              </Button>
-            </Link>
-            
-            <Link href="/checklists">
-              <Button variant="outline" size="lg" className="w-full justify-start hover:bg-green-50 border-green-200">
-                <CheckSquare className="h-5 w-5 mr-3 text-green-600" />
-                <div className="text-left">
-                  <p className="font-medium">Executar Checklist</p>
-                  <p className="text-xs text-gray-500">Iniciar nova execução</p>
-                </div>
-              </Button>
-            </Link>
-            
-            <Link href="/pessoas">
-              <Button variant="outline" size="lg" className="w-full justify-start hover:bg-purple-50 border-purple-200">
-                <Users className="h-5 w-5 mr-3 text-purple-600" />
-                <div className="text-left">
-                  <p className="font-medium">Gerenciar Equipe</p>
-                  <p className="text-xs text-gray-500">Funcionários e permissões</p>
-                </div>
-              </Button>
-            </Link>
-            
-            <Link href="/checklists/configuracoes">
-              <Button variant="outline" size="lg" className="w-full justify-start hover:bg-orange-50 border-orange-200">
-                <Calendar className="h-5 w-5 mr-3 text-orange-600" />
-                <div className="text-left">
-                  <p className="font-medium">Configurações</p>
-                  <p className="text-xs text-gray-500">Ajustes do sistema</p>
-                </div>
-              </Button>
-            </Link>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">Nenhum checklist agendado</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Checklists agendados aparecerão aqui
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Performance Cards */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-orange-600" />
-              Performance Semanal
-            </CardTitle>
-            <CardDescription>Estatísticas dos últimos 7 dias</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8">
-              <div className="text-2xl font-bold text-gray-900 mb-2">85%</div>
-              <p className="text-gray-500">Taxa de conclusão média</p>
-              <div className="mt-4 h-2 bg-gray-200 rounded-full">
-                <div className="h-2 bg-orange-600 rounded-full" style={{ width: '85%' }}></div>
-              </div>
+      {/* Ranking de Colaboradores */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Ranking de tarefas pendentes
+          </CardTitle>
+          <CardDescription>
+            Colaboradores com mais tarefas pendentes
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {rankingLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center space-x-3 animate-pulse">
+                  <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/6 mt-1"></div>
+                  </div>
+                  <div className="w-8 h-6 bg-gray-200 rounded"></div>
+                </div>
+              ))}
             </div>
-          </CardContent>
-        </Card>
+          ) : collaboratorsRanking && collaboratorsRanking.length > 0 ? (
+            <div className="space-y-3">
+              {collaboratorsRanking.map((collaborator, index) => (
+                <div key={collaborator.collaboratorId} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-600 font-semibold text-sm">
+                      #{index + 1}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-sm font-medium">
+                        {collaborator.collaboratorName
+                          ? `${collaborator.collaboratorName.split(' ')[0][0]}${
+                              collaborator.collaboratorName.split(' ')[1]?.[0] || ''
+                            }`
+                          : 'C'}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {collaborator.collaboratorName}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {collaborator.collaboratorPosition}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      {collaborator.pendingTasks} {collaborator.pendingTasks === 1 ? 'tarefa' : 'tarefas'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <CheckSquare className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500">
+                Nenhum colaborador com tarefas pendentes no momento
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-orange-600" />
-              Equipe Ativa
-            </CardTitle>
-            <CardDescription>Funcionários que executaram checklists hoje</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8">
-              <div className="text-2xl font-bold text-gray-900 mb-2">12</div>
-              <p className="text-gray-500">de 26 funcionários</p>
-              <div className="mt-4 h-2 bg-gray-200 rounded-full">
-                <div className="h-2 bg-green-600 rounded-full" style={{ width: '46%' }}></div>
+      {/* Quick Actions */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Link href="/checklists/templates">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="flex items-center p-6">
+              <FileText className="h-8 w-8 text-blue-500 mr-4" />
+              <div>
+                <h3 className="font-semibold text-gray-900">Gerenciar Templates</h3>
+                <p className="text-sm text-gray-600">Criar e editar checklists</p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/colaboradores">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="flex items-center p-6">
+              <Users className="h-8 w-8 text-green-500 mr-4" />
+              <div>
+                <h3 className="font-semibold text-gray-900">Colaboradores</h3>
+                <p className="text-sm text-gray-600">Gerenciar equipe</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/checklists/configuracoes">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="flex items-center p-6">
+              <BarChart3 className="h-8 w-8 text-purple-500 mr-4" />
+              <div>
+                <h3 className="font-semibold text-gray-900">Relatórios</h3>
+                <p className="text-sm text-gray-600">Análises e histórico</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
   );

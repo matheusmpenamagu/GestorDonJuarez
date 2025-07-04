@@ -1259,7 +1259,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Checklist Dashboard Stats
+  // ChecklistZap Dashboard APIs
+  app.get('/api/dashboard/stats', isAuthenticated, async (req, res) => {
+    try {
+      const stats = await storage.getChecklistDashboardStats();
+      
+      // Transform para o formato esperado pelo ChecklistZap
+      const checklistStats = {
+        activeChecklists: stats.totalTemplates || 0,
+        checklistsWithPendingTasks: stats.activeInstances || 0,
+        pendingTasksLast30Days: stats.pendingTasks || 0,
+        completedTasksLast30Days: stats.completedToday || 0
+      };
+      
+      res.json(checklistStats);
+    } catch (error) {
+      console.error("Error fetching checklist dashboard stats:", error);
+      res.status(500).json({ message: "Failed to fetch checklist dashboard stats" });
+    }
+  });
+
+  // Get recent checklists
+  app.get('/api/dashboard/recent-checklists', isAuthenticated, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const instances = await storage.getChecklistInstances({});
+      
+      // Transform para o formato esperado pelo ChecklistDashboard
+      const recentChecklists = instances.slice(0, limit).map(instance => ({
+        id: instance.id,
+        name: instance.template?.name || 'Checklist sem nome',
+        status: instance.status,
+        startedAt: instance.startedAt?.toISOString() || new Date().toISOString(),
+        collaboratorName: instance.assignedEmployee ? 
+          `${instance.assignedEmployee.firstName} ${instance.assignedEmployee.lastName}`.trim() : 
+          undefined,
+        taskCount: instance.template?.items?.length || 0
+      }));
+
+      res.json(recentChecklists);
+    } catch (error) {
+      console.error("Error fetching recent checklists:", error);
+      res.status(500).json({ message: "Failed to fetch recent checklists" });
+    }
+  });
+
+  // Get upcoming checklists
+  app.get('/api/dashboard/upcoming-checklists', isAuthenticated, async (req, res) => {
+    try {
+      const templates = await storage.getChecklistTemplates();
+      
+      // Simular próximos checklists baseado na periodicidade dos templates
+      const upcomingChecklists = templates
+        .filter(template => template.periodicity && template.periodicity !== 'manual')
+        .map(template => {
+          const nextExecution = new Date();
+          switch (template.periodicity) {
+            case 'daily':
+              nextExecution.setDate(nextExecution.getDate() + 1);
+              break;
+            case 'weekly':
+              nextExecution.setDate(nextExecution.getDate() + 7);
+              break;
+            case 'monthly':
+              nextExecution.setMonth(nextExecution.getMonth() + 1);
+              break;
+            default:
+              nextExecution.setDate(nextExecution.getDate() + 1);
+          }
+
+          return {
+            id: template.id,
+            name: template.name,
+            nextExecution: nextExecution.toISOString(),
+            periodicity: template.periodicity === 'daily' ? 'Diário' :
+                        template.periodicity === 'weekly' ? 'Semanal' :
+                        template.periodicity === 'monthly' ? 'Mensal' : 'Manual',
+            collaboratorName: template.assignedEmployee ? 
+              `${template.assignedEmployee.firstName} ${template.assignedEmployee.lastName}`.trim() : 
+              undefined
+          };
+        })
+        .sort((a, b) => new Date(a.nextExecution).getTime() - new Date(b.nextExecution).getTime());
+
+      res.json(upcomingChecklists);
+    } catch (error) {
+      console.error("Error fetching upcoming checklists:", error);
+      res.status(500).json({ message: "Failed to fetch upcoming checklists" });
+    }
+  });
+
+  // Get collaborators ranking
+  app.get('/api/dashboard/collaborators-ranking', isAuthenticated, async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      const instances = await storage.getChecklistInstances({ status: 'pending' });
+      
+      // Contar tarefas pendentes por colaborador
+      const collaboratorTasks = new Map();
+      
+      instances.forEach(instance => {
+        if (instance.assignedEmployeeId) {
+          const count = collaboratorTasks.get(instance.assignedEmployeeId) || 0;
+          collaboratorTasks.set(instance.assignedEmployeeId, count + (instance.template?.items?.length || 1));
+        }
+      });
+
+      // Criar ranking
+      const ranking = employees
+        .filter(employee => collaboratorTasks.has(employee.id))
+        .map(employee => ({
+          collaboratorId: employee.id,
+          collaboratorName: `${employee.firstName} ${employee.lastName}`.trim(),
+          collaboratorPosition: employee.role?.name || 'Cargo não definido',
+          pendingTasks: collaboratorTasks.get(employee.id) || 0
+        }))
+        .sort((a, b) => b.pendingTasks - a.pendingTasks)
+        .slice(0, 5); // Top 5
+
+      res.json(ranking);
+    } catch (error) {
+      console.error("Error fetching collaborators ranking:", error);
+      res.status(500).json({ message: "Failed to fetch collaborators ranking" });
+    }
+  });
+
+  // Legacy APIs (manter compatibilidade)
   app.get('/api/checklist-dashboard-stats', isAuthenticated, async (req, res) => {
     try {
       const stats = await storage.getChecklistDashboardStats();
@@ -1270,7 +1395,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Checklist Recent Activity
   app.get('/api/checklist-recent-activity', isAuthenticated, async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
@@ -1280,7 +1404,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const recentActivity = instances.slice(0, limit).map(instance => ({
         id: instance.id,
         template: instance.template?.name || 'Template não encontrado',
-        employee: instance.employee?.name || 'Funcionário não informado',
+        employee: instance.assignedEmployee ? 
+          `${instance.assignedEmployee.firstName} ${instance.assignedEmployee.lastName}`.trim() : 
+          'Funcionário não informado',
         status: instance.status || 'pending',
         completedAt: instance.completedAt 
           ? toSaoPauloTime(instance.completedAt)
