@@ -221,7 +221,12 @@ export default function FreelancersManagement() {
                   <SelectContent>
                     {freelancerEmployees?.map((employee: any) => (
                       <SelectItem key={employee.id} value={employee.id.toString()}>
-                        {employee.name} {employee.whatsapp ? `- ${formatPhoneNumber(employee.whatsapp)}` : ''}
+                        <div className="flex flex-col">
+                          <span className="font-medium">{employee.name}</span>
+                          {employee.whatsapp && (
+                            <span className="text-sm text-gray-500">{formatPhoneNumber(employee.whatsapp)}</span>
+                          )}
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
