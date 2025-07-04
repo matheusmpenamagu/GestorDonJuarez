@@ -4,6 +4,12 @@ import { setupWebSocket, broadcastUpdate } from "./websocket";
 import { storage } from "./storage";
 // Removed Replit Auth for demo purposes
 import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, insertPointOfSaleSchema, insertBeerStyleSchema, insertDeviceSchema, insertUnitSchema, insertCo2RefillSchema } from "@shared/schema";
+
+// Simple authentication middleware for demo purposes
+const isAuthenticated = (req: any, res: any, next: any) => {
+  // For demo purposes, always allow access
+  next();
+};
 import { z } from "zod";
 import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
@@ -1050,6 +1056,217 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating test pour events:", error);
       res.status(500).json({ message: "Error generating test pour events" });
+    }
+  });
+
+  // Checklist API endpoints
+  
+  // Checklist Templates
+  app.get('/api/checklist-templates', isAuthenticated, async (req, res) => {
+    try {
+      const templates = await storage.getChecklistTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching checklist templates:", error);
+      res.status(500).json({ message: "Error fetching checklist templates" });
+    }
+  });
+
+  app.get('/api/checklist-templates/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const template = await storage.getChecklistTemplate(id);
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching checklist template:", error);
+      res.status(500).json({ message: "Error fetching checklist template" });
+    }
+  });
+
+  app.post('/api/checklist-templates', isAuthenticated, async (req, res) => {
+    try {
+      const templateData = req.body;
+      const template = await storage.createChecklistTemplate(templateData);
+      res.json(template);
+    } catch (error) {
+      console.error("Error creating checklist template:", error);
+      res.status(500).json({ message: "Error creating checklist template" });
+    }
+  });
+
+  app.put('/api/checklist-templates/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const templateData = req.body;
+      const template = await storage.updateChecklistTemplate(id, templateData);
+      res.json(template);
+    } catch (error) {
+      console.error("Error updating checklist template:", error);
+      res.status(500).json({ message: "Error updating checklist template" });
+    }
+  });
+
+  app.delete('/api/checklist-templates/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteChecklistTemplate(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting checklist template:", error);
+      res.status(500).json({ message: "Error deleting checklist template" });
+    }
+  });
+
+  // Checklist Items
+  app.get('/api/checklist-templates/:templateId/items', isAuthenticated, async (req, res) => {
+    try {
+      const templateId = parseInt(req.params.templateId);
+      const items = await storage.getChecklistItems(templateId);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching checklist items:", error);
+      res.status(500).json({ message: "Error fetching checklist items" });
+    }
+  });
+
+  app.post('/api/checklist-items', isAuthenticated, async (req, res) => {
+    try {
+      const itemData = req.body;
+      const item = await storage.createChecklistItem(itemData);
+      res.json(item);
+    } catch (error) {
+      console.error("Error creating checklist item:", error);
+      res.status(500).json({ message: "Error creating checklist item" });
+    }
+  });
+
+  app.put('/api/checklist-items/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const itemData = req.body;
+      const item = await storage.updateChecklistItem(id, itemData);
+      res.json(item);
+    } catch (error) {
+      console.error("Error updating checklist item:", error);
+      res.status(500).json({ message: "Error updating checklist item" });
+    }
+  });
+
+  app.delete('/api/checklist-items/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteChecklistItem(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting checklist item:", error);
+      res.status(500).json({ message: "Error deleting checklist item" });
+    }
+  });
+
+  // Checklist Instances
+  app.get('/api/checklist-instances', isAuthenticated, async (req, res) => {
+    try {
+      const { employeeId, unitId, status, startDate, endDate } = req.query;
+      const filters: any = {};
+      
+      if (employeeId) filters.employeeId = parseInt(employeeId as string);
+      if (unitId) filters.unitId = parseInt(unitId as string);
+      if (status) filters.status = status as string;
+      if (startDate) filters.startDate = new Date(startDate as string);
+      if (endDate) filters.endDate = new Date(endDate as string);
+
+      const instances = await storage.getChecklistInstances(filters);
+      res.json(instances);
+    } catch (error) {
+      console.error("Error fetching checklist instances:", error);
+      res.status(500).json({ message: "Error fetching checklist instances" });
+    }
+  });
+
+  app.get('/api/checklist-instances/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const instance = await storage.getChecklistInstance(id);
+      if (!instance) {
+        return res.status(404).json({ message: "Instance not found" });
+      }
+      res.json(instance);
+    } catch (error) {
+      console.error("Error fetching checklist instance:", error);
+      res.status(500).json({ message: "Error fetching checklist instance" });
+    }
+  });
+
+  app.post('/api/checklist-instances', isAuthenticated, async (req, res) => {
+    try {
+      const instanceData = req.body;
+      const instance = await storage.createChecklistInstance(instanceData);
+      res.json(instance);
+    } catch (error) {
+      console.error("Error creating checklist instance:", error);
+      res.status(500).json({ message: "Error creating checklist instance" });
+    }
+  });
+
+  app.put('/api/checklist-instances/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const instanceData = req.body;
+      const instance = await storage.updateChecklistInstance(id, instanceData);
+      res.json(instance);
+    } catch (error) {
+      console.error("Error updating checklist instance:", error);
+      res.status(500).json({ message: "Error updating checklist instance" });
+    }
+  });
+
+  app.delete('/api/checklist-instances/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteChecklistInstance(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting checklist instance:", error);
+      res.status(500).json({ message: "Error deleting checklist instance" });
+    }
+  });
+
+  // Checklist Responses
+  app.get('/api/checklist-instances/:instanceId/responses', isAuthenticated, async (req, res) => {
+    try {
+      const instanceId = parseInt(req.params.instanceId);
+      const responses = await storage.getChecklistResponses(instanceId);
+      res.json(responses);
+    } catch (error) {
+      console.error("Error fetching checklist responses:", error);
+      res.status(500).json({ message: "Error fetching checklist responses" });
+    }
+  });
+
+  app.put('/api/checklist-instances/:instanceId/responses/:itemId', isAuthenticated, async (req, res) => {
+    try {
+      const instanceId = parseInt(req.params.instanceId);
+      const itemId = parseInt(req.params.itemId);
+      const responseData = req.body;
+      const response = await storage.updateChecklistResponse(instanceId, itemId, responseData);
+      res.json(response);
+    } catch (error) {
+      console.error("Error updating checklist response:", error);
+      res.status(500).json({ message: "Error updating checklist response" });
+    }
+  });
+
+  // Checklist Dashboard Stats
+  app.get('/api/checklist-dashboard-stats', isAuthenticated, async (req, res) => {
+    try {
+      const stats = await storage.getChecklistDashboardStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching checklist dashboard stats:", error);
+      res.status(500).json({ message: "Error fetching checklist dashboard stats" });
     }
   });
 

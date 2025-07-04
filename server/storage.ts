@@ -10,6 +10,10 @@ import {
   employees,
   units,
   co2Refills,
+  checklistTemplates,
+  checklistItems,
+  checklistInstances,
+  checklistResponses,
   type User,
   type UpsertUser,
   type PointOfSale,
@@ -36,6 +40,16 @@ import {
   type TapWithRelations,
   type PourEventWithRelations,
   type EmployeeWithRelations,
+  type ChecklistTemplate,
+  type InsertChecklistTemplate,
+  type ChecklistTemplateWithRelations,
+  type ChecklistItem,
+  type InsertChecklistItem,
+  type ChecklistInstance,
+  type InsertChecklistInstance,
+  type ChecklistInstanceWithRelations,
+  type ChecklistResponse,
+  type InsertChecklistResponse,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte, lt, sql, sum } from "drizzle-orm";
@@ -128,6 +142,40 @@ export interface IStorage {
     kgPerLiterLast30Days: number;
     kgPerLiterPrevious30Days: number;
     efficiencyChange: number;
+  }>;
+
+  // Checklist operations
+  getChecklistTemplates(): Promise<ChecklistTemplateWithRelations[]>;
+  getChecklistTemplate(id: number): Promise<ChecklistTemplateWithRelations | undefined>;
+  createChecklistTemplate(template: InsertChecklistTemplate): Promise<ChecklistTemplate>;
+  updateChecklistTemplate(id: number, template: Partial<InsertChecklistTemplate>): Promise<ChecklistTemplate>;
+  deleteChecklistTemplate(id: number): Promise<void>;
+  
+  getChecklistItems(templateId: number): Promise<ChecklistItem[]>;
+  createChecklistItem(item: InsertChecklistItem): Promise<ChecklistItem>;
+  updateChecklistItem(id: number, item: Partial<InsertChecklistItem>): Promise<ChecklistItem>;
+  deleteChecklistItem(id: number): Promise<void>;
+  
+  getChecklistInstances(filters?: { 
+    employeeId?: number; 
+    unitId?: number; 
+    status?: string; 
+    startDate?: Date; 
+    endDate?: Date; 
+  }): Promise<ChecklistInstanceWithRelations[]>;
+  getChecklistInstance(id: number): Promise<ChecklistInstanceWithRelations | undefined>;
+  createChecklistInstance(instance: InsertChecklistInstance): Promise<ChecklistInstance>;
+  updateChecklistInstance(id: number, instance: Partial<InsertChecklistInstance>): Promise<ChecklistInstance>;
+  deleteChecklistInstance(id: number): Promise<void>;
+  
+  getChecklistResponses(instanceId: number): Promise<ChecklistResponse[]>;
+  updateChecklistResponse(instanceId: number, itemId: number, response: Partial<InsertChecklistResponse>): Promise<ChecklistResponse>;
+  
+  getChecklistDashboardStats(): Promise<{
+    totalTemplates: number;
+    activeInstances: number;
+    completedToday: number;
+    pendingTasks: number;
   }>;
 }
 
@@ -971,6 +1019,271 @@ export class DatabaseStorage implements IStorage {
       kgPerLiterLast30Days,
       kgPerLiterPrevious30Days,
       efficiencyChange
+    };
+  }
+
+  // Checklist operations
+  async getChecklistTemplates(): Promise<ChecklistTemplateWithRelations[]> {
+    const result = await db
+      .select()
+      .from(checklistTemplates)
+      .leftJoin(users, eq(checklistTemplates.createdById, users.id))
+      .where(eq(checklistTemplates.isActive, true))
+      .orderBy(desc(checklistTemplates.createdAt));
+
+    return result.map(row => ({
+      ...row.checklist_templates,
+      createdBy: row.users || undefined,
+    }));
+  }
+
+  async getChecklistTemplate(id: number): Promise<ChecklistTemplateWithRelations | undefined> {
+    const result = await db
+      .select()
+      .from(checklistTemplates)
+      .leftJoin(users, eq(checklistTemplates.createdById, users.id))
+      .where(eq(checklistTemplates.id, id));
+
+    if (result.length === 0) return undefined;
+
+    const row = result[0];
+    return {
+      ...row.checklist_templates,
+      createdBy: row.users || undefined,
+    };
+  }
+
+  async createChecklistTemplate(templateData: InsertChecklistTemplate): Promise<ChecklistTemplate> {
+    const [template] = await db
+      .insert(checklistTemplates)
+      .values(templateData)
+      .returning();
+    return template;
+  }
+
+  async updateChecklistTemplate(id: number, templateData: Partial<InsertChecklistTemplate>): Promise<ChecklistTemplate> {
+    const [template] = await db
+      .update(checklistTemplates)
+      .set({ ...templateData, updatedAt: new Date() })
+      .where(eq(checklistTemplates.id, id))
+      .returning();
+    return template;
+  }
+
+  async deleteChecklistTemplate(id: number): Promise<void> {
+    await db.delete(checklistTemplates).where(eq(checklistTemplates.id, id));
+  }
+
+  async getChecklistItems(templateId: number): Promise<ChecklistItem[]> {
+    return await db
+      .select()
+      .from(checklistItems)
+      .where(eq(checklistItems.templateId, templateId))
+      .orderBy(checklistItems.order);
+  }
+
+  async createChecklistItem(itemData: InsertChecklistItem): Promise<ChecklistItem> {
+    const [item] = await db
+      .insert(checklistItems)
+      .values(itemData)
+      .returning();
+    return item;
+  }
+
+  async updateChecklistItem(id: number, itemData: Partial<InsertChecklistItem>): Promise<ChecklistItem> {
+    const [item] = await db
+      .update(checklistItems)
+      .set(itemData)
+      .where(eq(checklistItems.id, id))
+      .returning();
+    return item;
+  }
+
+  async deleteChecklistItem(id: number): Promise<void> {
+    await db.delete(checklistItems).where(eq(checklistItems.id, id));
+  }
+
+  async getChecklistInstances(filters?: { 
+    employeeId?: number; 
+    unitId?: number; 
+    status?: string; 
+    startDate?: Date; 
+    endDate?: Date; 
+  }): Promise<ChecklistInstanceWithRelations[]> {
+    let query = db
+      .select()
+      .from(checklistInstances)
+      .leftJoin(checklistTemplates, eq(checklistInstances.templateId, checklistTemplates.id))
+      .leftJoin(employees, eq(checklistInstances.employeeId, employees.id))
+      .leftJoin(units, eq(checklistInstances.unitId, units.id));
+
+    const conditions = [];
+    if (filters?.employeeId) {
+      conditions.push(eq(checklistInstances.employeeId, filters.employeeId));
+    }
+    if (filters?.unitId) {
+      conditions.push(eq(checklistInstances.unitId, filters.unitId));
+    }
+    if (filters?.status) {
+      conditions.push(eq(checklistInstances.status, filters.status));
+    }
+    if (filters?.startDate) {
+      conditions.push(gte(checklistInstances.createdAt, filters.startDate));
+    }
+    if (filters?.endDate) {
+      conditions.push(lte(checklistInstances.createdAt, filters.endDate));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const result = await query.orderBy(desc(checklistInstances.createdAt));
+
+    return result.map(row => ({
+      ...row.checklist_instances,
+      template: row.checklist_templates || undefined,
+      employee: row.employees || undefined,
+      unit: row.units || undefined,
+    }));
+  }
+
+  async getChecklistInstance(id: number): Promise<ChecklistInstanceWithRelations | undefined> {
+    const result = await db
+      .select()
+      .from(checklistInstances)
+      .leftJoin(checklistTemplates, eq(checklistInstances.templateId, checklistTemplates.id))
+      .leftJoin(employees, eq(checklistInstances.employeeId, employees.id))
+      .leftJoin(units, eq(checklistInstances.unitId, units.id))
+      .where(eq(checklistInstances.id, id));
+
+    if (result.length === 0) return undefined;
+
+    const row = result[0];
+    return {
+      ...row.checklist_instances,
+      template: row.checklist_templates || undefined,
+      employee: row.employees || undefined,
+      unit: row.units || undefined,
+    };
+  }
+
+  async createChecklistInstance(instanceData: InsertChecklistInstance): Promise<ChecklistInstance> {
+    const [instance] = await db
+      .insert(checklistInstances)
+      .values({
+        ...instanceData,
+        status: "pending",
+      })
+      .returning();
+    return instance;
+  }
+
+  async updateChecklistInstance(id: number, instanceData: Partial<InsertChecklistInstance>): Promise<ChecklistInstance> {
+    const [instance] = await db
+      .update(checklistInstances)
+      .set(instanceData)
+      .where(eq(checklistInstances.id, id))
+      .returning();
+    return instance;
+  }
+
+  async deleteChecklistInstance(id: number): Promise<void> {
+    await db.delete(checklistInstances).where(eq(checklistInstances.id, id));
+  }
+
+  async getChecklistResponses(instanceId: number): Promise<ChecklistResponse[]> {
+    return await db
+      .select()
+      .from(checklistResponses)
+      .where(eq(checklistResponses.instanceId, instanceId));
+  }
+
+  async updateChecklistResponse(instanceId: number, itemId: number, responseData: Partial<InsertChecklistResponse>): Promise<ChecklistResponse> {
+    // Check if response exists
+    const existing = await db
+      .select()
+      .from(checklistResponses)
+      .where(
+        and(
+          eq(checklistResponses.instanceId, instanceId),
+          eq(checklistResponses.itemId, itemId)
+        )
+      );
+
+    if (existing.length > 0) {
+      // Update existing response
+      const [response] = await db
+        .update(checklistResponses)
+        .set(responseData)
+        .where(
+          and(
+            eq(checklistResponses.instanceId, instanceId),
+            eq(checklistResponses.itemId, itemId)
+          )
+        )
+        .returning();
+      return response;
+    } else {
+      // Create new response
+      const [response] = await db
+        .insert(checklistResponses)
+        .values({
+          instanceId,
+          itemId,
+          ...responseData,
+        })
+        .returning();
+      return response;
+    }
+  }
+
+  async getChecklistDashboardStats(): Promise<{
+    totalTemplates: number;
+    activeInstances: number;
+    completedToday: number;
+    pendingTasks: number;
+  }> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const [templatesCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(checklistTemplates)
+      .where(eq(checklistTemplates.isActive, true));
+
+    const [activeInstancesCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(checklistInstances)
+      .where(
+        and(
+          eq(checklistInstances.status, "in_progress"),
+        )
+      );
+
+    const [completedTodayCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(checklistInstances)
+      .where(
+        and(
+          eq(checklistInstances.status, "completed"),
+          gte(checklistInstances.completedAt, today),
+          lt(checklistInstances.completedAt, tomorrow)
+        )
+      );
+
+    const [pendingTasksCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(checklistInstances)
+      .where(eq(checklistInstances.status, "pending"));
+
+    return {
+      totalTemplates: templatesCount.count || 0,
+      activeInstances: activeInstancesCount.count || 0,
+      completedToday: completedTodayCount.count || 0,
+      pendingTasks: pendingTasksCount.count || 0,
     };
   }
 }

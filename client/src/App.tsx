@@ -17,6 +17,9 @@ import EmployeesManagement from "@/pages/EmployeesManagement";
 import RolesManagement from "@/pages/RolesManagement";
 import UnitsManagement from "@/pages/UnitsManagement";
 import Co2Management from "@/pages/Co2Management";
+import ChecklistDashboard from "@/pages/ChecklistDashboard";
+import ChecklistTemplates from "@/pages/ChecklistTemplates";
+import ChecklistConfiguracoes from "@/pages/ChecklistConfiguracoes";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -73,6 +76,22 @@ function Router() {
           <Route path="/co2">
             <Layout>
               <Co2Management />
+            </Layout>
+          </Route>
+
+          <Route path="/checklists">
+            <Layout>
+              <ChecklistDashboard />
+            </Layout>
+          </Route>
+          <Route path="/checklists/templates">
+            <Layout>
+              <ChecklistTemplates />
+            </Layout>
+          </Route>
+          <Route path="/checklists/configuracoes">
+            <Layout>
+              <ChecklistConfiguracoes />
             </Layout>
           </Route>
         </>

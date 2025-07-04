@@ -13,7 +13,10 @@ import {
   Building2,
   ChevronDown,
   ChevronRight,
-  Wind
+  Wind,
+  CheckSquare,
+  FileText,
+  Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +45,15 @@ const menuItems = [
       { href: "/unidades", icon: Building2, label: "Unidades" },
     ],
   },
+  {
+    title: "Checklists",
+    icon: CheckSquare,
+    items: [
+      { href: "/checklists", icon: BarChart3, label: "Dashboard" },
+      { href: "/checklists/templates", icon: FileText, label: "Checklists" },
+      { href: "/checklists/configuracoes", icon: Settings, label: "Configurações" },
+    ],
+  },
 ];
 
 export function Sidebar() {
@@ -49,7 +61,8 @@ export function Sidebar() {
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
     "Chopes": false,
     "Pessoas": false,
-    "Empresa": false
+    "Empresa": false,
+    "Checklists": false
   });
 
   const toggleSection = (sectionTitle: string) => {
