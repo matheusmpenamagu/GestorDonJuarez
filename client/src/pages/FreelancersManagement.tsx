@@ -179,11 +179,19 @@ export default function FreelancersManagement() {
 
   const formatTimestamp = (timestamp: string | null | undefined) => {
     try {
-      if (!timestamp) return 'Data inválida';
+      if (!timestamp) {
+        console.log("Timestamp is null/undefined:", timestamp);
+        return 'Data inválida';
+      }
+      
+      console.log("Formatting timestamp:", timestamp, typeof timestamp);
       const date = new Date(timestamp);
+      console.log("Date object:", date, "isValid:", !isNaN(date.getTime()));
+      
       if (isNaN(date.getTime())) return 'Data inválida';
       return format(date, "dd/MM/yyyy HH:mm", { locale: ptBR });
-    } catch {
+    } catch (error) {
+      console.log("Error formatting timestamp:", error);
       return 'Data inválida';
     }
   };
