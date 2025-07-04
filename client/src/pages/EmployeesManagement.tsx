@@ -20,6 +20,7 @@ interface EmployeeFormData {
   whatsapp: string;
   roleId: number | null;
   employmentType: "Sócio" | "Funcionário" | "Freelancer";
+  avatar: string;
   isActive: boolean;
 }
 
@@ -34,6 +35,7 @@ export default function EmployeesManagement() {
     whatsapp: "",
     roleId: null,
     employmentType: "Funcionário",
+    avatar: "😊",
     isActive: true,
   });
 
@@ -122,6 +124,7 @@ export default function EmployeesManagement() {
       whatsapp: "",
       roleId: null,
       employmentType: "Funcionário",
+      avatar: "😊",
       isActive: true,
     });
     setEditingEmployee(null);
@@ -147,6 +150,7 @@ export default function EmployeesManagement() {
       whatsapp: employee.whatsapp || "",
       roleId: employee.roleId || null,
       employmentType: (employee.employmentType || "Funcionário") as "Sócio" | "Funcionário" | "Freelancer",
+      avatar: employee.avatar || "😊",
       isActive: employee.isActive ?? true,
     });
     setIsDialogOpen(true);
@@ -256,6 +260,39 @@ export default function EmployeesManagement() {
                         {role.name}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="avatar">Emoji do Colaborador</Label>
+                <Select 
+                  value={formData.avatar} 
+                  onValueChange={(value) => setFormData({ ...formData, avatar: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um emoji" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="😊">😊 Sorridente</SelectItem>
+                    <SelectItem value="😎">😎 Legal</SelectItem>
+                    <SelectItem value="🤓">🤓 Nerd</SelectItem>
+                    <SelectItem value="😄">😄 Feliz</SelectItem>
+                    <SelectItem value="🥳">🥳 Festa</SelectItem>
+                    <SelectItem value="🤩">🤩 Estrela</SelectItem>
+                    <SelectItem value="😇">😇 Anjo</SelectItem>
+                    <SelectItem value="🤔">🤔 Pensativo</SelectItem>
+                    <SelectItem value="😉">😉 Piscadinha</SelectItem>
+                    <SelectItem value="🙂">🙂 Simpático</SelectItem>
+                    <SelectItem value="🤗">🤗 Abraço</SelectItem>
+                    <SelectItem value="👨‍💼">👨‍💼 Executivo</SelectItem>
+                    <SelectItem value="👩‍💼">👩‍💼 Executiva</SelectItem>
+                    <SelectItem value="👨‍🍳">👨‍🍳 Chef</SelectItem>
+                    <SelectItem value="👩‍🍳">👩‍🍳 Chef</SelectItem>
+                    <SelectItem value="🧑‍💻">🧑‍💻 Programador</SelectItem>
+                    <SelectItem value="🤵">🤵 Formal</SelectItem>
+                    <SelectItem value="👨‍🏫">👨‍🏫 Professor</SelectItem>
+                    <SelectItem value="👩‍🏫">👩‍🏫 Professora</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

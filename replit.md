@@ -166,6 +166,11 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Seletor de emoji no cadastro de colaboradores implementado (Julho 4, 2025)
+- ✓ 19 opções de emojis predefinidos com descrições (😊 Sorridente, 👨‍💼 Executivo, etc.)
+- ✓ Campo "Emoji do Colaborador" adicionado ao formulário de funcionários
+- ✓ Interface atualizada para incluir campo avatar em todas as operações CRUD
+- ✓ Emojis já funcionando nos cards dos freelancers através do telefone
 - ✓ Padronização de cores nos ícones dos cards (Julho 4, 2025)
 - ✓ Ícones Clock e Calendar em laranja (text-orange-600)
 - ✓ Texto das métricas em cor padrão do projeto (text-gray-900)
