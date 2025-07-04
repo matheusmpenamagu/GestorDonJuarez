@@ -509,7 +509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Looking for phone: ${cleanPhoneNumber} (original: ${phoneNumber})`);
       
       const freelancer = employees.find(emp => {
-        if (emp.employmentType !== 'Freelancer' || !emp.whatsapp) return false;
+        if (!emp.employmentTypes.includes('Freelancer') || !emp.whatsapp) return false;
         
         const empPhone = emp.whatsapp.replace(/\D/g, ''); // Remove non-digits
         console.log(`Comparing with employee ${emp.firstName}: ${empPhone}`);

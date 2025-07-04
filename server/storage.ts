@@ -41,7 +41,7 @@ import {
   type PourEventWithRelations,
   type EmployeeWithRelations,
 } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq, desc, and, gte, lte, lt, sql, sum } from "drizzle-orm";
 
 // Interface for storage operations
@@ -662,110 +662,122 @@ export class DatabaseStorage implements IStorage {
 
   // Employees operations
   async getEmployees(): Promise<EmployeeWithRelations[]> {
-    const result = await db
-      .select({
-        id: employees.id,
-        email: employees.email,
-        password: employees.password,
-        firstName: employees.firstName,
-        lastName: employees.lastName,
-        whatsapp: employees.whatsapp,
-        roleId: employees.roleId,
-        employmentType: employees.employmentType,
-        avatar: employees.avatar,
-        isActive: employees.isActive,
-        createdAt: employees.createdAt,
-        updatedAt: employees.updatedAt,
-        role: {
-          id: roles.id,
-          name: roles.name,
-          description: roles.description,
-          permissions: roles.permissions,
-          createdAt: roles.createdAt,
-          updatedAt: roles.updatedAt,
-        },
-      })
-      .from(employees)
-      .leftJoin(roles, eq(employees.roleId, roles.id))
-      .orderBy(employees.firstName, employees.lastName);
-
-    return result.map(row => ({
-      ...row,
-      role: row.role.id ? row.role : undefined,
+    // Use sql operator from Drizzle ORM for complex queries with arrays
+    const result = await db.execute(sql`
+      SELECT 
+        e.id, e.email, e.password, e.first_name as "firstName", e.last_name as "lastName",
+        e.whatsapp, e.role_id as "roleId", e.employment_types as "employmentTypes", 
+        e.avatar, e.is_active as "isActive", e.created_at as "createdAt", e.updated_at as "updatedAt",
+        r.id as "role_id", r.name as "role_name", r.description as "role_description", 
+        r.permissions as "role_permissions", r.created_at as "role_createdAt", r.updated_at as "role_updatedAt"
+      FROM employees e
+      LEFT JOIN roles r ON e.role_id = r.id
+      ORDER BY e.first_name, e.last_name
+    `);
+    
+    return result.rows.map((row: any) => ({
+      id: row.id,
+      email: row.email,
+      password: row.password,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      whatsapp: row.whatsapp,
+      roleId: row.roleId,
+      employmentTypes: row.employmentTypes || ["Funcionário"],
+      avatar: row.avatar,
+      isActive: row.isActive,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      role: row.role_id ? {
+        id: row.role_id,
+        name: row.role_name,
+        description: row.role_description,
+        permissions: row.role_permissions,
+        createdAt: row.role_createdAt,
+        updatedAt: row.role_updatedAt,
+      } : undefined,
     })) as EmployeeWithRelations[];
   }
 
   async getEmployee(id: number): Promise<EmployeeWithRelations | undefined> {
-    const result = await db
-      .select({
-        id: employees.id,
-        email: employees.email,
-        password: employees.password,
-        firstName: employees.firstName,
-        lastName: employees.lastName,
-        whatsapp: employees.whatsapp,
-        roleId: employees.roleId,
-        employmentType: employees.employmentType,
-        avatar: employees.avatar,
-        isActive: employees.isActive,
-        createdAt: employees.createdAt,
-        updatedAt: employees.updatedAt,
-        role: {
-          id: roles.id,
-          name: roles.name,
-          description: roles.description,
-          permissions: roles.permissions,
-          createdAt: roles.createdAt,
-          updatedAt: roles.updatedAt,
-        },
-      })
-      .from(employees)
-      .leftJoin(roles, eq(employees.roleId, roles.id))
-      .where(eq(employees.id, id));
-
-    if (!result.length) return undefined;
-
-    const row = result[0];
+    const result = await db.execute(sql`
+      SELECT 
+        e.id, e.email, e.password, e.first_name as "firstName", e.last_name as "lastName",
+        e.whatsapp, e.role_id as "roleId", e.employment_types as "employmentTypes", 
+        e.avatar, e.is_active as "isActive", e.created_at as "createdAt", e.updated_at as "updatedAt",
+        r.id as "role_id", r.name as "role_name", r.description as "role_description", 
+        r.permissions as "role_permissions", r.created_at as "role_createdAt", r.updated_at as "role_updatedAt"
+      FROM employees e
+      LEFT JOIN roles r ON e.role_id = r.id
+      WHERE e.id = ${id}
+      LIMIT 1
+    `);
+    
+    if (!result.rows.length) return undefined;
+    
+    const row: any = result.rows[0];
     return {
-      ...row,
-      role: row.role.id ? row.role : undefined,
+      id: row.id,
+      email: row.email,
+      password: row.password,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      whatsapp: row.whatsapp,
+      roleId: row.roleId,
+      employmentTypes: row.employmentTypes || ["Funcionário"],
+      avatar: row.avatar,
+      isActive: row.isActive,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      role: row.role_id ? {
+        id: row.role_id,
+        name: row.role_name,
+        description: row.role_description,
+        permissions: row.role_permissions,
+        createdAt: row.role_createdAt,
+        updatedAt: row.role_updatedAt,
+      } : undefined,
     } as EmployeeWithRelations;
   }
 
   async getEmployeeByEmail(email: string): Promise<EmployeeWithRelations | undefined> {
-    const result = await db
-      .select({
-        id: employees.id,
-        email: employees.email,
-        password: employees.password,
-        firstName: employees.firstName,
-        lastName: employees.lastName,
-        whatsapp: employees.whatsapp,
-        roleId: employees.roleId,
-        employmentType: employees.employmentType,
-        avatar: employees.avatar,
-        isActive: employees.isActive,
-        createdAt: employees.createdAt,
-        updatedAt: employees.updatedAt,
-        role: {
-          id: roles.id,
-          name: roles.name,
-          description: roles.description,
-          permissions: roles.permissions,
-          createdAt: roles.createdAt,
-          updatedAt: roles.updatedAt,
-        },
-      })
-      .from(employees)
-      .leftJoin(roles, eq(employees.roleId, roles.id))
-      .where(eq(employees.email, email));
+    const result = await db.execute(sql`
+      SELECT 
+        e.id, e.email, e.password, e.first_name as "firstName", e.last_name as "lastName",
+        e.whatsapp, e.role_id as "roleId", e.employment_types as "employmentTypes", 
+        e.avatar, e.is_active as "isActive", e.created_at as "createdAt", e.updated_at as "updatedAt",
+        r.id as "role_id", r.name as "role_name", r.description as "role_description", 
+        r.permissions as "role_permissions", r.created_at as "role_createdAt", r.updated_at as "role_updatedAt"
+      FROM employees e
+      LEFT JOIN roles r ON e.role_id = r.id
+      WHERE e.email = ${email}
+      LIMIT 1
+    `);
 
-    if (!result.length) return undefined;
+    if (!result.rows.length) return undefined;
 
-    const row = result[0];
+    const row: any = result.rows[0];
     return {
-      ...row,
-      role: row.role.id ? row.role : undefined,
+      id: row.id,
+      email: row.email,
+      password: row.password,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      whatsapp: row.whatsapp,
+      roleId: row.roleId,
+      employmentTypes: row.employmentTypes || ["Funcionário"],
+      avatar: row.avatar,
+      isActive: row.isActive,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      role: row.role_id ? {
+        id: row.role_id,
+        name: row.role_name,
+        description: row.role_description,
+        permissions: row.role_permissions,
+        createdAt: row.role_createdAt,
+        updatedAt: row.role_updatedAt,
+      } : undefined,
     } as EmployeeWithRelations;
   }
 

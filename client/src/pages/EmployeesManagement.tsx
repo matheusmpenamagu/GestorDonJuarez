@@ -19,7 +19,7 @@ interface EmployeeFormData {
   lastName: string;
   whatsapp: string;
   roleId: number | null;
-  employmentType: "Sócio" | "Funcionário" | "Freelancer";
+  employmentTypes: ("Sócio" | "Funcionário" | "Freelancer")[];
   avatar: string;
   isActive: boolean;
 }
@@ -34,7 +34,7 @@ export default function EmployeesManagement() {
     lastName: "",
     whatsapp: "",
     roleId: null,
-    employmentType: "Funcionário",
+    employmentTypes: ["Funcionário"],
     avatar: "😊",
     isActive: true,
   });
@@ -123,7 +123,7 @@ export default function EmployeesManagement() {
       lastName: "",
       whatsapp: "",
       roleId: null,
-      employmentType: "Funcionário",
+      employmentTypes: ["Funcionário"],
       avatar: "😊",
       isActive: true,
     });
@@ -149,7 +149,7 @@ export default function EmployeesManagement() {
       lastName: employee.lastName || "",
       whatsapp: employee.whatsapp || "",
       roleId: employee.roleId || null,
-      employmentType: (employee.employmentType || "Funcionário") as "Sócio" | "Funcionário" | "Freelancer",
+      employmentTypes: (employee.employmentTypes || ["Funcionário"]) as ("Sócio" | "Funcionário" | "Freelancer")[],
       avatar: employee.avatar || "😊",
       isActive: employee.isActive ?? true,
     });
@@ -298,20 +298,33 @@ export default function EmployeesManagement() {
               </div>
 
               <div>
-                <Label htmlFor="employmentType">Vínculo com a Empresa</Label>
-                <Select 
-                  value={formData.employmentType} 
-                  onValueChange={(value) => setFormData({ ...formData, employmentType: value as "Sócio" | "Funcionário" | "Freelancer" })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o vínculo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Sócio">Sócio</SelectItem>
-                    <SelectItem value="Funcionário">Funcionário</SelectItem>
-                    <SelectItem value="Freelancer">Freelancer</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Vínculo com a Empresa</Label>
+                <div className="space-y-2 mt-2">
+                  {(["Sócio", "Funcionário", "Freelancer"] as const).map((type) => (
+                    <div key={type} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`employment-${type}`}
+                        checked={formData.employmentTypes.includes(type)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData({ 
+                              ...formData, 
+                              employmentTypes: [...formData.employmentTypes, type] 
+                            });
+                          } else {
+                            setFormData({ 
+                              ...formData, 
+                              employmentTypes: formData.employmentTypes.filter(t => t !== type) 
+                            });
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                      <label htmlFor={`employment-${type}`} className="text-sm">{type}</label>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
@@ -390,9 +403,13 @@ export default function EmployeesManagement() {
                       {employee.role.name}
                     </Badge>
                   )}
-                  <Badge variant="outline">
-                    {employee.employmentType || "Funcionário"}
-                  </Badge>
+                  <div className="flex flex-wrap gap-1">
+                    {(employee.employmentTypes || ["Funcionário"]).map((type, index) => (
+                      <Badge key={index} variant="outline">
+                        {type}
+                      </Badge>
+                    ))}
+                  </div>
                   <Badge variant={employee.isActive ? "default" : "destructive"}>
                     {employee.isActive ? "Ativo" : "Inativo"}
                   </Badge>

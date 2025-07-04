@@ -125,7 +125,7 @@ export const employees = pgTable("employees", {
   lastName: varchar("last_name", { length: 100 }).notNull(),
   whatsapp: varchar("whatsapp", { length: 15 }),
   roleId: integer("role_id").references(() => roles.id),
-  employmentType: varchar("employment_type", { length: 50 }).notNull().default("Funcionário"),
+  employmentTypes: text("employment_types").array().notNull().default(["Funcionário"]), // Array of employment types
   avatar: varchar("avatar", { length: 10 }).notNull().default("😊"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -306,7 +306,7 @@ export const insertEmployeeSchema = createInsertSchema(employees).omit({
   createdAt: true,
   updatedAt: true,
 }).extend({
-  employmentType: z.enum(["Sócio", "Funcionário", "Freelancer"]),
+  employmentTypes: z.array(z.enum(["Sócio", "Funcionário", "Freelancer"])).min(1), // Array of employment types
 });
 
 export const insertUnitSchema = createInsertSchema(units).omit({
