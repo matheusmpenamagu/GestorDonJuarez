@@ -68,10 +68,15 @@ export default function FreelancersManagement() {
   });
 
   // Fetch freelancer statistics
-  const { data: statsData = [], isLoading: statsLoading } = useQuery<FreelancerStats[]>({
+  const { data: statsResponse, isLoading: statsLoading } = useQuery<{
+    period: { start: string; end: string };
+    freelancers: FreelancerStats[];
+  }>({
     queryKey: ['/api/freelancer-stats', dateRange.start, dateRange.end],
     enabled: !!dateRange.start && !!dateRange.end,
   });
+  
+  const statsData = statsResponse?.freelancers || [];
 
   // Fetch time entries
   const { data: entries = [], isLoading: entriesLoading } = useQuery<FreelancerTimeEntry[]>({
@@ -80,7 +85,7 @@ export default function FreelancersManagement() {
   });
 
   // Fetch units
-  const { data: units } = useQuery({
+  const { data: units = [] } = useQuery<Unit[]>({
     queryKey: ['/api/units'],
   });
 
@@ -100,7 +105,7 @@ export default function FreelancersManagement() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => 
-      apiRequest(`/api/freelancer-entries/${id}`, data, 'PUT'),
+      apiRequest('PUT', `/api/freelancer-entries/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/freelancer-entries'] });
       queryClient.invalidateQueries({ queryKey: ['/api/freelancer-stats'] });
@@ -114,7 +119,7 @@ export default function FreelancersManagement() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/freelancer-entries/${id}`, {}, 'DELETE'),
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/freelancer-entries/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/freelancer-entries'] });
       queryClient.invalidateQueries({ queryKey: ['/api/freelancer-stats'] });
@@ -222,7 +227,7 @@ export default function FreelancersManagement() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Nenhuma unidade</SelectItem>
-                      {units?.map((unit: Unit) => (
+                      {(units as Unit[])?.map((unit: Unit) => (
                         <SelectItem key={unit.id} value={unit.id.toString()}>
                           {unit.name}
                         </SelectItem>
