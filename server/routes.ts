@@ -83,6 +83,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(200).json({ message: "Test endpoint working", body: req.body });
   });
 
+  // Test endpoint for Evolution API webhook
+  app.post('/api/test/evolution', async (req, res) => {
+    console.log('Test Evolution API webhook called');
+    
+    // Simulate Evolution API webhook format
+    const testMessage = req.body.message || "cheguei";
+    const testPhone = req.body.phone || "5511999999999"; // Default test phone
+    
+    const evolutionPayload = {
+      data: {
+        key: {
+          remoteJid: `${testPhone}@s.whatsapp.net`,
+          id: "test-message-id"
+        },
+        message: {
+          conversation: testMessage
+        }
+      }
+    };
+    
+    console.log('Simulating Evolution webhook with payload:', JSON.stringify(evolutionPayload, null, 2));
+    
+    try {
+      // Call our webhook endpoint internally
+      const response = await fetch(`http://localhost:${process.env.PORT || 5000}/api/webhooks/evolution-whatsapp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(evolutionPayload),
+      });
+      
+      const result = await response.json();
+      res.json({ 
+        message: "Test Evolution webhook processed", 
+        result,
+        status: response.status 
+      });
+    } catch (error) {
+      console.error('Error testing Evolution webhook:', error);
+      res.status(500).json({ message: "Error testing webhook", error: error.message });
+    }
+  });
+
   // Simple health check endpoint for ESP32
   app.get('/api/health', (req, res) => {
     res.status(200).json({ 
@@ -368,74 +412,163 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // WhatsApp webhook for freelancer time tracking (via n8n)
-  app.post('/api/webhooks/whatsapp-timesheet', validateWebhookToken, async (req, res) => {
+  // WhatsApp webhook for freelancer time tracking (Evolution API)
+  app.post('/api/webhooks/evolution-whatsapp', async (req, res) => {
     try {
-      const { phone, message, timestamp, unit_name } = req.body;
+      console.log('Evolution API webhook received:', JSON.stringify(req.body, null, 2));
       
-      if (!phone || !message || !timestamp) {
-        return res.status(400).json({ 
-          message: "Missing required fields: phone, message, timestamp" 
+      // Extract data from Evolution API webhook format
+      const { data } = req.body;
+      if (!data) {
+        return res.status(400).json({ message: "Invalid webhook format" });
+      }
+
+      const { key, message } = data;
+      if (!key || !message) {
+        return res.status(400).json({ message: "Missing key or message data" });
+      }
+
+      const remoteJid = key.remoteJid;
+      const messageText = message.conversation || message.extendedTextMessage?.text || '';
+      
+      if (!remoteJid || !messageText) {
+        return res.status(400).json({ message: "Missing remoteJid or message text" });
+      }
+
+      // Extract phone number from remoteJid (format: 5511999999999@s.whatsapp.net)
+      const phoneMatch = remoteJid.match(/^(\d+)@/);
+      if (!phoneMatch) {
+        return res.status(400).json({ message: "Invalid phone number format in remoteJid" });
+      }
+      
+      const phoneNumber = phoneMatch[1];
+      console.log(`Processing message from phone: ${phoneNumber}, message: "${messageText}"`);
+
+      // Find employee by phone number (freelancers only)
+      const employees = await storage.getEmployees();
+      const freelancer = employees.find(emp => 
+        emp.employmentType === 'Freelancer' && 
+        emp.whatsapp && 
+        emp.whatsapp.replace(/\D/g, '').includes(phoneNumber.slice(-11)) // Last 11 digits (BR format)
+      );
+
+      if (!freelancer || !freelancer.whatsapp) {
+        return res.json({ 
+          message: "Hmmm.. não encontrei um usuário cadastrado neste número de whatsapp.",
+          sendToUser: true
         });
       }
 
-      // Normalize phone number (remove non-digits and ensure format)
-      const normalizedPhone = phone.replace(/\D/g, '');
+      // Analyze message content
+      const normalizedMessage = messageText.toLowerCase().trim();
+      let messageType: 'entrada' | 'saida' | 'unit_response' | 'unknown';
       
-      // Determine entry type based on message
-      let entryType: 'entrada' | 'saida';
-      let parsedMessage = message.toLowerCase().trim();
-      
-      if (parsedMessage.includes('cheguei') || parsedMessage.includes('entrada')) {
-        entryType = 'entrada';
-        parsedMessage = 'Cheguei';
-      } else if (parsedMessage.includes('fui') || parsedMessage.includes('saida') || parsedMessage.includes('saída')) {
-        entryType = 'saida';
-        parsedMessage = 'Fui';
+      // Check if it's a unit selection response (just a number)
+      const unitNumberMatch = messageText.trim().match(/^(\d+)$/);
+      if (unitNumberMatch) {
+        messageType = 'unit_response';
+      } else if (normalizedMessage.includes('cheguei') || normalizedMessage.includes('entrada')) {
+        messageType = 'entrada';
+      } else if (normalizedMessage.includes('fui') || normalizedMessage.includes('saida') || normalizedMessage.includes('saída')) {
+        messageType = 'saida';
       } else {
-        return res.status(400).json({ 
-          message: "Message must contain 'Cheguei' for entry or 'Fui' for exit" 
+        messageType = 'unknown';
+      }
+
+      // Handle unit selection response
+      if (messageType === 'unit_response') {
+        const unitId = parseInt(unitNumberMatch[1]);
+        const units = await storage.getUnits();
+        const selectedUnit = units.find(u => u.id === unitId);
+        
+        if (!selectedUnit) {
+          return res.json({
+            message: `Unidade não encontrada. Escolha uma das opções:\n\n${units.map(unit => `${unit.id} - ${unit.name}`).join('\n')}`,
+            sendToUser: true
+          });
+        }
+        
+        // Register entrada with selected unit
+        console.log('Creating entry with data:', {
+          employeeId: freelancer.id,
+          freelancerPhone: freelancer.whatsapp,
+          freelancerName: `${freelancer.firstName} ${freelancer.lastName || ''}`.trim(),
+          unitId: selectedUnit.id,
+          entryType: 'entrada',
+          message: 'Cheguei',
+          timestamp: new Date(),
+          isManualEntry: false,
+          notes: 'Via WhatsApp - Evolution API',
+        });
+        
+        const timeEntry = await storage.createFreelancerTimeEntry({
+          employeeId: freelancer.id,
+          freelancerPhone: freelancer.whatsapp,
+          freelancerName: `${freelancer.firstName} ${freelancer.lastName || ''}`.trim(),
+          unitId: selectedUnit.id,
+          entryType: 'entrada',
+          message: 'Cheguei',
+          timestamp: new Date(),
+          isManualEntry: false,
+          notes: 'Via WhatsApp - Evolution API',
+        });
+
+        return res.json({
+          message: `Ponto de entrada registrado com sucesso! 🎉\n\nUnidade: ${selectedUnit.name}\nHorário: ${toSaoPauloTime(new Date())}\n\nBom trabalho, ${freelancer.firstName}!`,
+          sendToUser: true,
+          success: true,
+          entry: timeEntry
         });
       }
 
-      // Find unit by name if provided
-      let unitId: number | undefined;
-      if (unit_name) {
-        const units = await storage.getUnits();
-        const unit = units.find(u => u.name.toLowerCase().includes(unit_name.toLowerCase()));
-        unitId = unit?.id;
+      if (messageType === 'unknown') {
+        return res.json({
+          message: 'Hmmmm... não consegui entender a mensagem para registrar seu ponto. Envie "Cheguei" para marcar sua entrada ou "Fui" para marcar sua saída.',
+          sendToUser: true
+        });
       }
 
-      // Get freelancer name from previous entries
-      const previousEntries = await storage.getFreelancerTimeEntries(undefined, undefined, normalizedPhone);
-      const freelancerName = previousEntries[0]?.freelancerName || null;
+      // If it's an entrada (check-in), request unit selection
+      if (messageType === 'entrada') {
+        const units = await storage.getUnits();
+        const unitsList = units.map(unit => `${unit.id} - ${unit.name}`).join('\n');
+        
+        return res.json({
+          message: `Olá ${freelancer.firstName}! 👋\n\nEm qual unidade você está trabalhando hoje?\n\n${unitsList}\n\nResponda apenas com o número da unidade.`,
+          sendToUser: true,
+          awaitingUnitResponse: true,
+          employeeId: freelancer.id,
+          messageType: 'entrada'
+        });
+      }
 
-      // Convert timestamp to proper Date object
-      const entryDate = new Date(timestamp);
-      
-      // Create time entry
-      const timeEntry = await storage.createFreelancerTimeEntry({
-        freelancerPhone: normalizedPhone,
-        freelancerName,
-        unitId,
-        entryType,
-        timestamp: entryDate,
-        message: parsedMessage,
-        isManualEntry: false,
-        notes: `Via WhatsApp - Unidade: ${unit_name || 'Não informada'}`,
-      });
+      // If it's a saida (check-out), register immediately
+      if (messageType === 'saida') {
+        const timeEntry = await storage.createFreelancerTimeEntry({
+          employeeId: freelancer.id,
+          freelancerPhone: freelancer.whatsapp,
+          freelancerName: `${freelancer.firstName} ${freelancer.lastName || ''}`.trim(),
+          unitId: null, // Will be set based on last entry
+          entryType: 'saida',
+          message: 'Fui',
+          timestamp: new Date(),
+          isManualEntry: false,
+          notes: 'Via WhatsApp - Evolution API',
+        });
 
-      console.log(`WhatsApp time entry created: ${normalizedPhone} - ${entryType} at ${entryDate.toISOString()}`);
-      
-      res.json({ 
-        success: true, 
-        entry: timeEntry,
-        message: `Ponto registrado: ${parsedMessage} às ${toSaoPauloTime(entryDate)}`
-      });
+        return res.json({
+          message: `Ponto de saída registrado com sucesso! 👍\n\nAté mais, ${freelancer.firstName}!`,
+          sendToUser: true,
+          success: true,
+          entry: timeEntry
+        });
+      }
+
+      res.json({ message: "Message processed" });
       
     } catch (error) {
-      console.error("Error processing WhatsApp timesheet:", error);
-      res.status(500).json({ message: "Error processing timesheet entry" });
+      console.error("Error processing Evolution API webhook:", error);
+      res.status(500).json({ message: "Error processing WhatsApp message" });
     }
   });
 

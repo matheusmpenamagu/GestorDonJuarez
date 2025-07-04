@@ -125,8 +125,17 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 **Webhook URLs (Development):**
 - Replace domain with: `https://ea3123c5-9f03-4f32-844a-fe4c8cdd0203-00-1inaocwyrymso.worf.replit.dev`
 
+**Evolution API WhatsApp Integration:**
+- Webhook endpoint: `/api/webhooks/evolution-whatsapp`
+- Processes messages from Evolution API for freelancer time tracking
+- Detects "Cheguei" (entrada) and "Fui" (saída) messages
+- Validates freelancer registration via phone number
+- Interactive unit selection for check-in
+- Automatic check-out processing
+- No token validation required for Evolution API webhook
+
 **Security Requirements:**
-- All webhooks require valid token in header
+- ESP32 webhooks require valid token in header
 - Token validation prevents unauthorized access
 - 401 Unauthorized returned for missing/invalid tokens
 
@@ -166,6 +175,15 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Webhook Evolution API totalmente funcional para controle de ponto via WhatsApp (Julho 4, 2025)
+- ✓ Endpoint `/api/webhooks/evolution-whatsapp` processando mensagens corretamente
+- ✓ Detecção automática de "Cheguei" e "Fui" nas mensagens dos freelancers
+- ✓ Validação de freelancers cadastrados via número de telefone brasileiro
+- ✓ Fluxo completo de seleção de unidade para ponto de entrada
+- ✓ Registro automático de ponto de saída sem necessidade de unidade
+- ✓ Mensagens de erro personalizadas: usuário não encontrado, mensagem não reconhecida
+- ✓ Schema corrigido com freelancer_phone como campo obrigatório
+- ✓ Testes completos: entrada, saída, erros e validações funcionando
 - ✓ Seletor de emoji no cadastro de colaboradores implementado (Julho 4, 2025)
 - ✓ 19 opções de emojis predefinidos com descrições (😊 Sorridente, 👨‍💼 Executivo, etc.)
 - ✓ Campo "Emoji do Colaborador" adicionado ao formulário de funcionários

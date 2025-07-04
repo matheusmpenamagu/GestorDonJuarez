@@ -155,7 +155,7 @@ export const co2Refills = pgTable("co2_refills", {
 export const freelancerTimeEntries = pgTable("freelancer_time_entries", {
   id: serial("id").primaryKey(),
   employeeId: integer("employee_id").references(() => employees.id),
-  freelancerPhone: varchar("freelancer_phone", { length: 20 }), // Mantido para webhook WhatsApp
+  freelancerPhone: varchar("freelancer_phone", { length: 20 }).notNull(), // Required field
   freelancerName: varchar("freelancer_name", { length: 100 }), // Mantido para compatibilidade
   unitId: integer("unit_id").references(() => units.id),
   entryType: varchar("entry_type", { length: 10 }).notNull(), // 'entrada' or 'saida'
