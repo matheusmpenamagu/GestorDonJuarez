@@ -89,6 +89,16 @@ export default function FreelancersManagement() {
     queryKey: ['/api/units'],
   });
 
+  // Fetch freelancer employees
+  const { data: allEmployees = [] } = useQuery({
+    queryKey: ['/api/employees'],
+  });
+
+  // Filter only freelancer employees
+  const freelancerEmployees = (allEmployees as any[]).filter((emp: any) => 
+    emp.role?.name === 'Freelancer' || emp.employmentType === 'Freelancer'
+  );
+
   const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest('POST', '/api/freelancer-entries', data),
     onSuccess: () => {
@@ -134,11 +144,17 @@ export default function FreelancersManagement() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
+    const employeeId = formData.get('employeeId') as string;
     const unitIdValue = formData.get('unitId') as string;
+    
+    // Find selected employee to get their details
+    const selectedEmployee = freelancerEmployees.find((emp: any) => emp.id.toString() === employeeId);
+    
     const data = {
-      freelancerPhone: formData.get('freelancerPhone') as string,
-      freelancerName: formData.get('freelancerName') as string,
-      unitId: unitIdValue && unitIdValue !== 'none' ? parseInt(unitIdValue) : undefined,
+      employeeId: employeeId ? parseInt(employeeId) : null,
+      freelancerPhone: selectedEmployee?.whatsapp || null,
+      freelancerName: selectedEmployee?.name || null,
+      unitId: unitIdValue && unitIdValue !== 'none' ? parseInt(unitIdValue) : null,
       entryType: formData.get('entryType') as string,
       timestamp: `${formData.get('date')}T${formData.get('time')}:00.000Z`,
       message: formData.get('message') as string,
@@ -196,26 +212,20 @@ export default function FreelancersManagement() {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="freelancerPhone">Telefone *</Label>
-                  <Input
-                    id="freelancerPhone"
-                    name="freelancerPhone"
-                    placeholder="(11) 99999-9999"
-                    defaultValue={editingEntry?.freelancerPhone || ''}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="freelancerName">Nome</Label>
-                  <Input
-                    id="freelancerName"
-                    name="freelancerName"
-                    placeholder="Nome do freelancer"
-                    defaultValue={editingEntry?.freelancerName || ''}
-                  />
-                </div>
+              <div>
+                <Label htmlFor="employeeId">Freelancer *</Label>
+                <Select name="employeeId" defaultValue={editingEntry?.employeeId?.toString() || ''} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar freelancer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {freelancerEmployees?.map((employee: any) => (
+                      <SelectItem key={employee.id} value={employee.id.toString()}>
+                        {employee.name} {employee.whatsapp ? `- ${formatPhoneNumber(employee.whatsapp)}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
