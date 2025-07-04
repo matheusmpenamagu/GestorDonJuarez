@@ -222,9 +222,9 @@ export default function FreelancersManagement() {
     }
   };
 
-  const formatHours = (totalMinutes: number) => {
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
+  const formatHours = (totalHours: number) => {
+    const hours = Math.floor(totalHours);
+    const minutes = Math.floor((totalHours - hours) * 60);
     return `${hours}h${minutes > 0 ? ` ${minutes}min` : ''}`;
   };
 

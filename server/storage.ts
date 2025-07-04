@@ -1136,7 +1136,10 @@ export class DatabaseStorage implements IStorage {
           workDays.add(workDay);
         } else if (entry.entryType === 'saida' && lastEntrada) {
           // Calcular horas trabalhadas entre a última entrada e esta saída
-          const hoursWorked = (new Date(entry.timestamp).getTime() - new Date(lastEntrada.timestamp).getTime()) / (1000 * 60 * 60);
+          const entryTime = new Date(entry.timestamp).getTime();
+          const entradaTime = new Date(lastEntrada.timestamp).getTime();
+          const hoursWorked = (entryTime - entradaTime) / (1000 * 60 * 60);
+          
           if (hoursWorked > 0 && hoursWorked <= 24) { // Validar que seja um período razoável
             totalHours += hoursWorked;
           }
