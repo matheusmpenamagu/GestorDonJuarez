@@ -126,7 +126,7 @@ export default function FreelancersManagement() {
     period: { start: string; end: string };
     freelancers: FreelancerStats[];
   }>({
-    queryKey: ['/api/freelancer-stats', dateRange.start, dateRange.end],
+    queryKey: [`/api/freelancer-stats?start_date=${dateRange.start}&end_date=${dateRange.end}`],
     enabled: !!dateRange.start && !!dateRange.end,
   });
   
@@ -134,7 +134,7 @@ export default function FreelancersManagement() {
 
   // Fetch time entries
   const { data: rawEntries = [], isLoading: entriesLoading } = useQuery<FreelancerTimeEntry[]>({
-    queryKey: ['/api/freelancer-entries', dateRange.start, dateRange.end],
+    queryKey: [`/api/freelancer-entries?start_date=${dateRange.start}&end_date=${dateRange.end}`],
     enabled: !!dateRange.start && !!dateRange.end,
   });
 
