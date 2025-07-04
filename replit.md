@@ -367,3 +367,4 @@ Theme color: Orange (hsl(20, 90%, 48%))
 Typography: Montserrat font family
 Interface language: Portuguese (Brazil)
 Menu structure: Simplified categorization with expandable modules
+Testing contact: 33988286293 (número principal para testes de webhook WhatsApp)
