@@ -166,6 +166,13 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Sistema de controle de ponto para freelancers implementado e corrigido (Julho 3, 2025)
+- ✓ Migração de freelancer_time_entries para usar employeeId (vinculação com funcionários)
+- ✓ Correção de estrutura da API freelancer-stats (objeto com freelancers array)
+- ✓ Tipificação completa TypeScript para todas as consultas e componentes
+- ✓ Correção de chamadas apiRequest com ordem correta de parâmetros
+- ✓ Tratamento de valores null em formatPhoneNumber e outros campos
+- ✓ Sistema totalmente funcional sem erros JavaScript
 - ✓ Transformação para gestor operacional completo da Don Juarez
 - ✓ Reorganização do menu lateral em "Chopes" com submenus simplificados
 - ✓ Alteração do título da aplicação para "Gestor Don Juarez"
