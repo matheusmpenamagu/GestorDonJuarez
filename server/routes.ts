@@ -1270,6 +1270,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Checklist Recent Activity
+  app.get('/api/checklist-recent-activity', isAuthenticated, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const instances = await storage.getChecklistInstances({});
+      
+      // Transform to recent activity format
+      const recentActivity = instances.slice(0, limit).map(instance => ({
+        id: instance.id,
+        template: instance.template?.name || 'Template não encontrado',
+        employee: instance.employee?.name || 'Funcionário não informado',
+        status: instance.status || 'pending',
+        completedAt: instance.completedAt 
+          ? toSaoPauloTime(instance.completedAt)
+          : instance.createdAt 
+          ? toSaoPauloTime(instance.createdAt)
+          : new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+      }));
+
+      res.json(recentActivity);
+    } catch (error) {
+      console.error("Error fetching checklist recent activity:", error);
+      res.status(500).json({ message: "Failed to fetch checklist recent activity" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket for real-time updates
