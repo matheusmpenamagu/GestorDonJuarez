@@ -368,6 +368,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // WhatsApp webhook for freelancer time tracking (via n8n)
+  app.post('/api/webhooks/whatsapp-timesheet', validateWebhookToken, async (req, res) => {
+    try {
+      const { phone, message, timestamp, unit_name } = req.body;
+      
+      if (!phone || !message || !timestamp) {
+        return res.status(400).json({ 
+          message: "Missing required fields: phone, message, timestamp" 
+        });
+      }
+
+      // Normalize phone number (remove non-digits and ensure format)
+      const normalizedPhone = phone.replace(/\D/g, '');
+      
+      // Determine entry type based on message
+      let entryType: 'entrada' | 'saida';
+      let parsedMessage = message.toLowerCase().trim();
+      
+      if (parsedMessage.includes('cheguei') || parsedMessage.includes('entrada')) {
+        entryType = 'entrada';
+        parsedMessage = 'Cheguei';
+      } else if (parsedMessage.includes('fui') || parsedMessage.includes('saida') || parsedMessage.includes('saída')) {
+        entryType = 'saida';
+        parsedMessage = 'Fui';
+      } else {
+        return res.status(400).json({ 
+          message: "Message must contain 'Cheguei' for entry or 'Fui' for exit" 
+        });
+      }
+
+      // Find unit by name if provided
+      let unitId: number | undefined;
+      if (unit_name) {
+        const units = await storage.getUnits();
+        const unit = units.find(u => u.name.toLowerCase().includes(unit_name.toLowerCase()));
+        unitId = unit?.id;
+      }
+
+      // Get freelancer name from previous entries
+      const previousEntries = await storage.getFreelancerTimeEntries(undefined, undefined, normalizedPhone);
+      const freelancerName = previousEntries[0]?.freelancerName || null;
+
+      // Convert timestamp to proper Date object
+      const entryDate = new Date(timestamp);
+      
+      // Create time entry
+      const timeEntry = await storage.createFreelancerTimeEntry({
+        freelancerPhone: normalizedPhone,
+        freelancerName,
+        unitId,
+        entryType,
+        timestamp: entryDate,
+        message: parsedMessage,
+        isManualEntry: false,
+        notes: `Via WhatsApp - Unidade: ${unit_name || 'Não informada'}`,
+      });
+
+      console.log(`WhatsApp time entry created: ${normalizedPhone} - ${entryType} at ${entryDate.toISOString()}`);
+      
+      res.json({ 
+        success: true, 
+        entry: timeEntry,
+        message: `Ponto registrado: ${parsedMessage} às ${toSaoPauloTime(entryDate)}`
+      });
+      
+    } catch (error) {
+      console.error("Error processing WhatsApp timesheet:", error);
+      res.status(500).json({ message: "Error processing timesheet entry" });
+    }
+  });
+
   // Dashboard API endpoints (protected)
   
   // Get dashboard statistics
@@ -1050,6 +1121,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating test pour events:", error);
       res.status(500).json({ message: "Error generating test pour events" });
+    }
+  });
+
+  // Freelancer Time Tracking API endpoints
+  
+  // Get freelancer time entries with filtering
+  app.get('/api/freelancer-entries', demoAuth, async (req, res) => {
+    try {
+      const { start_date, end_date, freelancer_phone } = req.query;
+      
+      let startDate: Date | undefined;
+      let endDate: Date | undefined;
+      
+      if (start_date) {
+        startDate = fromSaoPauloTime(start_date as string);
+      }
+      if (end_date) {
+        endDate = fromSaoPauloTime(end_date as string);
+      }
+      
+      const entries = await storage.getFreelancerTimeEntries(
+        startDate, 
+        endDate, 
+        freelancer_phone as string
+      );
+      
+      // Convert dates to São Paulo timezone for display
+      const formattedEntries = entries.map(entry => ({
+        ...entry,
+        timestamp: toSaoPauloTime(entry.timestamp),
+      }));
+      
+      res.json(formattedEntries);
+    } catch (error) {
+      console.error("Error fetching freelancer entries:", error);
+      res.status(500).json({ message: "Error fetching freelancer entries" });
+    }
+  });
+
+  // Get freelancer statistics for a period
+  app.get('/api/freelancer-stats', demoAuth, async (req, res) => {
+    try {
+      const { start_date, end_date } = req.query;
+      
+      // Default to last 7 days if no dates provided
+      const endDate = end_date 
+        ? fromSaoPauloTime(end_date as string)
+        : new Date();
+      const startDate = start_date 
+        ? fromSaoPauloTime(start_date as string)
+        : new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+      
+      const stats = await storage.getFreelancerStats(startDate, endDate);
+      
+      res.json({
+        period: {
+          start: toSaoPauloTime(startDate),
+          end: toSaoPauloTime(endDate),
+        },
+        freelancers: stats,
+      });
+    } catch (error) {
+      console.error("Error fetching freelancer stats:", error);
+      res.status(500).json({ message: "Error fetching freelancer statistics" });
+    }
+  });
+
+  // Create new time entry manually
+  app.post('/api/freelancer-entries', demoAuth, async (req, res) => {
+    try {
+      const entryData = {
+        freelancerPhone: req.body.freelancerPhone,
+        freelancerName: req.body.freelancerName,
+        unitId: req.body.unitId ? parseInt(req.body.unitId) : undefined,
+        entryType: req.body.entryType,
+        timestamp: fromSaoPauloTime(req.body.timestamp),
+        message: req.body.message,
+        isManualEntry: true,
+        notes: req.body.notes,
+      };
+      
+      const entry = await storage.createFreelancerTimeEntry(entryData);
+      res.json(entry);
+    } catch (error) {
+      console.error("Error creating freelancer entry:", error);
+      res.status(500).json({ message: "Error creating freelancer entry" });
+    }
+  });
+
+  // Update time entry
+  app.put('/api/freelancer-entries/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const entryData = {
+        freelancerPhone: req.body.freelancerPhone,
+        freelancerName: req.body.freelancerName,
+        unitId: req.body.unitId ? parseInt(req.body.unitId) : undefined,
+        entryType: req.body.entryType,
+        timestamp: req.body.timestamp ? fromSaoPauloTime(req.body.timestamp) : undefined,
+        message: req.body.message,
+        notes: req.body.notes,
+      };
+      
+      const entry = await storage.updateFreelancerTimeEntry(id, entryData);
+      res.json(entry);
+    } catch (error) {
+      console.error("Error updating freelancer entry:", error);
+      res.status(500).json({ message: "Error updating freelancer entry" });
+    }
+  });
+
+  // Delete time entry
+  app.delete('/api/freelancer-entries/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteFreelancerTimeEntry(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting freelancer entry:", error);
+      res.status(500).json({ message: "Error deleting freelancer entry" });
     }
   });
 

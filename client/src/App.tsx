@@ -15,6 +15,7 @@ import BeerStylesManagement from "@/pages/BeerStylesManagement";
 import DevicesManagement from "@/pages/DevicesManagement";
 import EmployeesManagement from "@/pages/EmployeesManagement";
 import RolesManagement from "@/pages/RolesManagement";
+import FreelancersManagement from "@/pages/FreelancersManagement";
 import UnitsManagement from "@/pages/UnitsManagement";
 import Co2Management from "@/pages/Co2Management";
 import NotFound from "@/pages/not-found";
@@ -63,6 +64,11 @@ function Router() {
           <Route path="/cargos">
             <Layout>
               <RolesManagement />
+            </Layout>
+          </Route>
+          <Route path="/freelancers">
+            <Layout>
+              <FreelancersManagement />
             </Layout>
           </Route>
           <Route path="/unidades">

@@ -10,6 +10,7 @@ import {
   employees,
   units,
   co2Refills,
+  freelancerTimeEntries,
   type User,
   type UpsertUser,
   type PointOfSale,
@@ -33,6 +34,9 @@ import {
   type Co2Refill,
   type InsertCo2Refill,
   type Co2RefillWithRelations,
+  type FreelancerTimeEntry,
+  type InsertFreelancerTimeEntry,
+  type FreelancerTimeEntryWithRelations,
   type TapWithRelations,
   type PourEventWithRelations,
   type EmployeeWithRelations,
@@ -129,6 +133,20 @@ export interface IStorage {
     kgPerLiterPrevious30Days: number;
     efficiencyChange: number;
   }>;
+  
+  // Freelancer Time Entries operations
+  getFreelancerTimeEntries(startDate?: Date, endDate?: Date, freelancerPhone?: string): Promise<FreelancerTimeEntryWithRelations[]>;
+  getFreelancerTimeEntry(id: number): Promise<FreelancerTimeEntryWithRelations | undefined>;
+  createFreelancerTimeEntry(entry: InsertFreelancerTimeEntry): Promise<FreelancerTimeEntry>;
+  updateFreelancerTimeEntry(id: number, entry: Partial<InsertFreelancerTimeEntry>): Promise<FreelancerTimeEntry>;
+  deleteFreelancerTimeEntry(id: number): Promise<void>;
+  getFreelancerStats(startDate: Date, endDate: Date): Promise<{
+    freelancerPhone: string;
+    freelancerName: string | null;
+    totalHours: number;
+    totalDays: number;
+    entries: FreelancerTimeEntryWithRelations[];
+  }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -972,6 +990,188 @@ export class DatabaseStorage implements IStorage {
       kgPerLiterPrevious30Days,
       efficiencyChange
     };
+  }
+
+  // Freelancer Time Entries operations
+  async getFreelancerTimeEntries(startDate?: Date, endDate?: Date, freelancerPhone?: string): Promise<FreelancerTimeEntryWithRelations[]> {
+    let query = db.select({
+      id: freelancerTimeEntries.id,
+      freelancerPhone: freelancerTimeEntries.freelancerPhone,
+      freelancerName: freelancerTimeEntries.freelancerName,
+      unitId: freelancerTimeEntries.unitId,
+      entryType: freelancerTimeEntries.entryType,
+      timestamp: freelancerTimeEntries.timestamp,
+      message: freelancerTimeEntries.message,
+      isManualEntry: freelancerTimeEntries.isManualEntry,
+      notes: freelancerTimeEntries.notes,
+      createdAt: freelancerTimeEntries.createdAt,
+      updatedAt: freelancerTimeEntries.updatedAt,
+      unit: {
+        id: units.id,
+        name: units.name,
+        address: units.address,
+        createdAt: units.createdAt,
+        updatedAt: units.updatedAt,
+      }
+    }).from(freelancerTimeEntries)
+    .leftJoin(units, eq(freelancerTimeEntries.unitId, units.id));
+
+    const conditions = [];
+    if (startDate) {
+      conditions.push(gte(freelancerTimeEntries.timestamp, startDate));
+    }
+    if (endDate) {
+      conditions.push(lte(freelancerTimeEntries.timestamp, endDate));
+    }
+    if (freelancerPhone) {
+      conditions.push(eq(freelancerTimeEntries.freelancerPhone, freelancerPhone));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const result = await query.orderBy(desc(freelancerTimeEntries.timestamp));
+    
+    return result.map(row => ({
+      id: row.id,
+      freelancerPhone: row.freelancerPhone,
+      freelancerName: row.freelancerName,
+      unitId: row.unitId,
+      entryType: row.entryType,
+      timestamp: row.timestamp,
+      message: row.message,
+      isManualEntry: row.isManualEntry,
+      notes: row.notes,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      unit: row.unit?.id ? row.unit : undefined,
+    }));
+  }
+
+  async getFreelancerTimeEntry(id: number): Promise<FreelancerTimeEntryWithRelations | undefined> {
+    const [result] = await db.select({
+      id: freelancerTimeEntries.id,
+      freelancerPhone: freelancerTimeEntries.freelancerPhone,
+      freelancerName: freelancerTimeEntries.freelancerName,
+      unitId: freelancerTimeEntries.unitId,
+      entryType: freelancerTimeEntries.entryType,
+      timestamp: freelancerTimeEntries.timestamp,
+      message: freelancerTimeEntries.message,
+      isManualEntry: freelancerTimeEntries.isManualEntry,
+      notes: freelancerTimeEntries.notes,
+      createdAt: freelancerTimeEntries.createdAt,
+      updatedAt: freelancerTimeEntries.updatedAt,
+      unit: {
+        id: units.id,
+        name: units.name,
+        address: units.address,
+        createdAt: units.createdAt,
+        updatedAt: units.updatedAt,
+      }
+    }).from(freelancerTimeEntries)
+    .leftJoin(units, eq(freelancerTimeEntries.unitId, units.id))
+    .where(eq(freelancerTimeEntries.id, id));
+
+    if (!result) return undefined;
+
+    return {
+      id: result.id,
+      freelancerPhone: result.freelancerPhone,
+      freelancerName: result.freelancerName,
+      unitId: result.unitId,
+      entryType: result.entryType,
+      timestamp: result.timestamp,
+      message: result.message,
+      isManualEntry: result.isManualEntry,
+      notes: result.notes,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+      unit: result.unit?.id ? result.unit : undefined,
+    };
+  }
+
+  async createFreelancerTimeEntry(entryData: InsertFreelancerTimeEntry): Promise<FreelancerTimeEntry> {
+    const [entry] = await db
+      .insert(freelancerTimeEntries)
+      .values(entryData)
+      .returning();
+    return entry;
+  }
+
+  async updateFreelancerTimeEntry(id: number, entryData: Partial<InsertFreelancerTimeEntry>): Promise<FreelancerTimeEntry> {
+    const [entry] = await db
+      .update(freelancerTimeEntries)
+      .set({ ...entryData, updatedAt: new Date() })
+      .where(eq(freelancerTimeEntries.id, id))
+      .returning();
+    return entry;
+  }
+
+  async deleteFreelancerTimeEntry(id: number): Promise<void> {
+    await db.delete(freelancerTimeEntries).where(eq(freelancerTimeEntries.id, id));
+  }
+
+  async getFreelancerStats(startDate: Date, endDate: Date): Promise<{
+    freelancerPhone: string;
+    freelancerName: string | null;
+    totalHours: number;
+    totalDays: number;
+    entries: FreelancerTimeEntryWithRelations[];
+  }[]> {
+    // Buscar todas as entradas no período
+    const entries = await this.getFreelancerTimeEntries(startDate, endDate);
+    
+    // Agrupar por freelancer
+    const freelancerGroups = new Map<string, FreelancerTimeEntryWithRelations[]>();
+    
+    for (const entry of entries) {
+      if (!freelancerGroups.has(entry.freelancerPhone)) {
+        freelancerGroups.set(entry.freelancerPhone, []);
+      }
+      freelancerGroups.get(entry.freelancerPhone)!.push(entry);
+    }
+
+    const stats: {
+      freelancerPhone: string;
+      freelancerName: string | null;
+      totalHours: number;
+      totalDays: number;
+      entries: FreelancerTimeEntryWithRelations[];
+    }[] = [];
+
+    for (const [phone, freelancerEntries] of freelancerGroups) {
+      // Ordenar por timestamp
+      freelancerEntries.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      
+      let totalHours = 0;
+      const workDays = new Set<string>();
+      
+      // Calcular horas trabalhadas
+      for (let i = 0; i < freelancerEntries.length; i += 2) {
+        const entrada = freelancerEntries[i];
+        const saida = freelancerEntries[i + 1];
+        
+        if (entrada?.entryType === 'entrada' && saida?.entryType === 'saida') {
+          const hoursWorked = (new Date(saida.timestamp).getTime() - new Date(entrada.timestamp).getTime()) / (1000 * 60 * 60);
+          totalHours += hoursWorked;
+          
+          // Adicionar dia de trabalho
+          const workDay = new Date(entrada.timestamp).toDateString();
+          workDays.add(workDay);
+        }
+      }
+
+      stats.push({
+        freelancerPhone: phone,
+        freelancerName: freelancerEntries[0]?.freelancerName || null,
+        totalHours: Math.round(totalHours * 100) / 100,
+        totalDays: workDays.size,
+        entries: freelancerEntries,
+      });
+    }
+
+    return stats.sort((a, b) => b.totalHours - a.totalHours);
   }
 }
 

@@ -13,7 +13,8 @@ import {
   Building2,
   ChevronDown,
   ChevronRight,
-  Wind
+  Wind,
+  Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,7 @@ const menuItems = [
     items: [
       { href: "/colaboradores", icon: Users, label: "Colaboradores" },
       { href: "/cargos", icon: UserCog, label: "Cargos" },
+      { href: "/freelancers", icon: Clock, label: "Freelancers" },
     ],
   },
   {

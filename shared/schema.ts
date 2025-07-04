@@ -151,6 +151,21 @@ export const co2Refills = pgTable("co2_refills", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Freelancer time tracking table
+export const freelancerTimeEntries = pgTable("freelancer_time_entries", {
+  id: serial("id").primaryKey(),
+  freelancerPhone: varchar("freelancer_phone", { length: 20 }).notNull(),
+  freelancerName: varchar("freelancer_name", { length: 100 }),
+  unitId: integer("unit_id").references(() => units.id),
+  entryType: varchar("entry_type", { length: 10 }).notNull(), // 'entrada' or 'saida'
+  timestamp: timestamp("timestamp").notNull(),
+  message: varchar("message", { length: 50 }), // 'Cheguei' or 'Fui'
+  isManualEntry: boolean("is_manual_entry").default(false),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   // Add user-specific relations if needed
@@ -217,6 +232,13 @@ export const unitsRelations = relations(units, ({ many }) => ({
 export const co2RefillsRelations = relations(co2Refills, ({ one }) => ({
   unit: one(units, {
     fields: [co2Refills.unitId],
+    references: [units.id],
+  }),
+}));
+
+export const freelancerTimeEntriesRelations = relations(freelancerTimeEntries, ({ one }) => ({
+  unit: one(units, {
+    fields: [freelancerTimeEntries.unitId],
     references: [units.id],
   }),
 }));
@@ -297,6 +319,12 @@ export const insertCo2RefillSchema = createInsertSchema(co2Refills).omit({
   valuePaid: z.number().min(0),
 });
 
+export const insertFreelancerTimeEntrySchema = createInsertSchema(freelancerTimeEntries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -320,9 +348,15 @@ export type Unit = typeof units.$inferSelect;
 export type InsertUnit = z.infer<typeof insertUnitSchema>;
 export type Co2Refill = typeof co2Refills.$inferSelect;
 export type InsertCo2Refill = z.infer<typeof insertCo2RefillSchema>;
+export type FreelancerTimeEntry = typeof freelancerTimeEntries.$inferSelect;
+export type InsertFreelancerTimeEntry = z.infer<typeof insertFreelancerTimeEntrySchema>;
 
 // Extended types for API responses
 export type Co2RefillWithRelations = Co2Refill & {
+  unit?: Unit;
+};
+
+export type FreelancerTimeEntryWithRelations = FreelancerTimeEntry & {
   unit?: Unit;
 };
 export type TapWithRelations = Tap & {
