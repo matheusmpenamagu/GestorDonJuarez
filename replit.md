@@ -370,6 +370,11 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - ✓ Exibição consistente de telefones formatados em todas as interfaces
 - ✓ Função displayWhatsApp() padronizada para apresentação visual
 - ✓ Sistema funciona perfeitamente com múltiplos tipos de emprego por funcionário
+- ✓ Problema no seletor de freelancers do formulário de ponto corrigido (Julho 4, 2025)
+- ✓ Filtro de funcionários atualizado para usar campo employmentTypes array
+- ✓ Sistema identifica corretamente funcionários com tipo "Freelancer"
+- ✓ Formulário de registro manual de ponto totalmente funcional
+- ✓ 12 freelancers disponíveis para seleção no sistema
 
 ## User Preferences
 
