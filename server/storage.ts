@@ -1127,46 +1127,76 @@ export class DatabaseStorage implements IStorage {
       let totalHours = 0;
       const workDays = new Set<string>();
       
-      // Calcular horas trabalhadas com lógica melhorada
-      let lastEntrada: FreelancerTimeEntryWithRelations | null = null;
+      // Primeiro, criar pares entrada/saída baseados na lógica de negócio
+      const workSessions = [];
+      const entradas = freelancerEntries.filter(e => e.entryType === 'entrada');
+      const saidas = freelancerEntries.filter(e => e.entryType === 'saida');
       
-      for (const entry of freelancerEntries) {
-        if (entry.entryType === 'entrada') {
-          lastEntrada = entry;
-          // Adicionar dia de trabalho quando há uma entrada (considerando regra das 5h)
-          const date = new Date(entry.timestamp);
-          const hour = date.getHours();
-          let workDay: string;
+      // Para cada entrada, encontrar a saída correspondente mais próxima
+      for (const entrada of entradas) {
+        const entradaTime = new Date(entrada.timestamp).getTime();
+        
+        // Procurar saída mais próxima APÓS a entrada
+        let correspondingSaida = saidas.find(saida => {
+          const saidaTime = new Date(saida.timestamp).getTime();
+          return saidaTime > entradaTime;
+        });
+        
+        // Se não achou saída APÓS entrada, procurar saída antes (considerando regra das 5h)
+        if (!correspondingSaida) {
+          correspondingSaida = saidas.find(saida => {
+            const saidaTime = new Date(saida.timestamp).getTime();
+            const saidaHour = new Date(saida.timestamp).getHours();
+            // Saída antes da entrada só é válida se for antes das 5h (próximo dia)
+            return saidaTime < entradaTime && saidaHour < 5;
+          });
+        }
+        
+        if (correspondingSaida) {
+          workSessions.push({ entrada, saida: correspondingSaida });
           
-          // Se for antes das 5h da manhã, considerar como dia anterior
-          if (hour < 5) {
-            const previousDay = new Date(date);
-            previousDay.setDate(date.getDate() - 1);
-            workDay = previousDay.toDateString();
-          } else {
-            workDay = date.toDateString();
-          }
-          
-          workDays.add(workDay);
-        } else if (entry.entryType === 'saida' && lastEntrada) {
-          // Calcular horas trabalhadas entre a última entrada e esta saída
-          const entryTime = new Date(entry.timestamp).getTime();
-          const entradaTime = new Date(lastEntrada.timestamp).getTime();
-          const hoursWorked = (entryTime - entradaTime) / (1000 * 60 * 60);
-          
-          // Validar período razoável (até 24h) e verificar se não é um período negativo 
-          // (quando saída é antes da entrada no mesmo ciclo de trabalho)
-          if (hoursWorked > 0 && hoursWorked <= 24) {
-            totalHours += hoursWorked;
-          } else if (hoursWorked < 0) {
-            // Caso especial: saída no dia seguinte até 5h (mesmo dia de trabalho)
-            const nextDayTime = entryTime + (24 * 60 * 60 * 1000); // Adicionar 24h
-            const adjustedHours = (nextDayTime - entradaTime) / (1000 * 60 * 60);
-            if (adjustedHours > 0 && adjustedHours <= 24) {
-              totalHours += adjustedHours;
-            }
-          }
-          lastEntrada = null; // Reset para próxima entrada
+          // Remover saída usada para não reutilizar
+          const saidaIndex = saidas.indexOf(correspondingSaida);
+          saidas.splice(saidaIndex, 1);
+        }
+      }
+      
+      // Calcular horas para cada sessão de trabalho
+      for (const session of workSessions) {
+        const { entrada, saida } = session;
+        
+        // Adicionar dia de trabalho baseado na entrada
+        const entradaDate = new Date(entrada.timestamp);
+        const entradaHour = entradaDate.getHours();
+        let workDay: string;
+        
+        if (entradaHour < 5) {
+          const previousDay = new Date(entradaDate);
+          previousDay.setDate(entradaDate.getDate() - 1);
+          workDay = previousDay.toDateString();
+        } else {
+          workDay = entradaDate.toDateString();
+        }
+        
+        workDays.add(workDay);
+        
+        // Calcular horas trabalhadas
+        let saidaTime = new Date(saida.timestamp).getTime();
+        const entradaTime = new Date(entrada.timestamp).getTime();
+        
+        // Verificar se a saída é antes das 5h e anterior à entrada (deve ser considerada do dia seguinte)
+        const saidaHour = new Date(saida.timestamp).getHours();
+        
+        if (saidaHour < 5 && saidaTime < entradaTime) {
+          // Saída é antes das 5h e antes da entrada, adicionar 24h
+          saidaTime += 24 * 60 * 60 * 1000;
+        }
+        
+        let hoursWorked = (saidaTime - entradaTime) / (1000 * 60 * 60);
+        
+        // Validar período razoável (até 24h)
+        if (hoursWorked > 0 && hoursWorked <= 24) {
+          totalHours += hoursWorked;
         }
       }
 

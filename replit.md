@@ -166,6 +166,11 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Sistema de turnos noturnos corrigido com regra das 5h da manhã (Julho 4, 2025)
+- ✓ Implementada lógica robusta de pareamento entrada/saída para registros fora de ordem
+- ✓ Correção de cálculo de horas para trabalhos que passam da meia-noite
+- ✓ Registros antes das 5h são considerados do dia de trabalho anterior
+- ✓ Sistema funciona corretamente para freelancers com turnos de 18h às 00:15h
 - ✓ Formulário de freelancers completamente reformulado (Julho 4, 2025)
 - ✓ Removido campo "Nome" manual, implementado seletor de funcionários freelancers
 - ✓ Integração com tabela employees para vincular registros via employeeId
