@@ -76,10 +76,12 @@ export default function StockCountsManagement() {
       return await apiRequest("POST", "/api/stock-counts", data);
     },
     onSuccess: async (stockCount: any) => {
+      console.log("Stock count created:", stockCount);
       queryClient.invalidateQueries({ queryKey: ["/api/stock-counts"] });
       
       // Initialize with all products
       try {
+        console.log("Initializing stock count with ID:", stockCount.id);
         await apiRequest("POST", `/api/stock-counts/${stockCount.id}/initialize`);
         setIsCreateDialogOpen(false);
         setFormData({

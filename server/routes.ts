@@ -2019,9 +2019,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/stock-counts/:id/initialize', demoAuth, async (req, res) => {
     try {
       const stockCountId = parseInt(req.params.id);
+      console.log("Initializing stock count ID:", stockCountId);
+      
+      if (isNaN(stockCountId)) {
+        return res.status(400).json({ message: "Invalid stock count ID" });
+      }
       
       // Get all products
       const products = await storage.getProducts();
+      console.log("Found products count:", products.length);
       
       // Create items for all products with 0 count
       const items = products.map(product => ({
@@ -2031,6 +2037,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         systemQuantity: null,
         notes: null,
       }));
+      
+      console.log("Creating items for products:", items.slice(0, 3));
       
       await storage.createStockCountItems(items);
       res.status(200).json({ message: "Stock count initialized with all products" });
