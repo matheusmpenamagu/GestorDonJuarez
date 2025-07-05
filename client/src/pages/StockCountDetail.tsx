@@ -530,7 +530,7 @@ function SortableProductItem({ product, quantity, onQuantityChange, disabled, is
       <div className={`${isEditingOrder ? 'col-span-8' : 'col-span-9'} flex-1`}>
         <div className="font-medium text-sm">{product.name}</div>
         <div className="text-xs text-gray-500">
-          {product.code} • {product.unit}
+          {product.code} • {product.unitOfMeasure || 'UN'}
         </div>
       </div>
       <div className="col-span-3">
@@ -546,7 +546,7 @@ function SortableProductItem({ product, quantity, onQuantityChange, disabled, is
             className="h-8 text-sm pr-12"
           />
           <div className="absolute inset-y-0 right-3 flex items-center text-xs text-gray-500 pointer-events-none">
-            {product.unit}
+            {product.unitOfMeasure || 'UN'}
           </div>
         </div>
       </div>
