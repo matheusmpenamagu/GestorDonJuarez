@@ -1953,6 +1953,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           let created = 0;
           let updated = 0;
+          let associated = 0; // New counter for unit associations
           const errors: any[] = [];
           const detailedErrors: string[] = [];
 
@@ -2051,11 +2052,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         unitOfMeasure: productInfo.unitOfMeasure,
                         currentValue: productInfo.currentValue
                       });
-                      updated++;
+                      associated++;
                       action = "ASSOCIATED_NEW_UNIT";
                       console.log(`✓ ASSOCIATED with new unit: ${product.code} - unit ${unitId}`);
                     } catch (unitError) {
                       console.log(`→ Error associating product with new unit:`, unitError);
+                      console.error("Full error:", unitError);
                     }
                   }
                 } else {
@@ -2080,8 +2082,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           res.json({
-            message: `Importação concluída: ${created} criados, ${updated} atualizados, ${errors.length} erros`,
-            stats: { created, updated, errors: errors.length, total: products.length },
+            message: `Importação concluída: ${created} criados, ${updated} atualizados, ${associated} associados a novas unidades, ${errors.length} erros`,
+            stats: { created, updated, associated, errors: errors.length, total: products.length },
             errors: detailedErrors.slice(0, 10) // Return first 10 errors only
           });
 
