@@ -2068,7 +2068,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Get stock count with responsible person
-      const stockCount = await storage.getStockCountById(stockCountId);
+      const stockCount = await storage.getStockCount(stockCountId);
       
       // Generate public URL
       const baseUrl = process.env.REPLIT_DEV_DOMAIN 
@@ -2077,7 +2077,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const publicUrl = `${baseUrl}/contagem-publica/${publicToken}`;
       
       // Send WhatsApp message to responsible person
-      if (stockCount?.responsible?.whatsappPhone) {
+      if (stockCount?.responsible?.whatsapp) {
+        const { format } = await import("date-fns");
+        const { ptBR } = await import("date-fns/locale");
+        
         const message = `🗂️ *Contagem de Estoque Iniciada*\n\n` +
           `📋 Contagem #${stockCountId}\n` +
           `📅 ${format(new Date(stockCount.date), "dd/MM/yyyy", { locale: ptBR })}\n\n` +
@@ -2088,12 +2091,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `• Anote observações quando necessário\n` +
           `• Os dados são salvos automaticamente`;
         
-        const success = await sendWhatsAppMessage(stockCount.responsible.whatsappPhone, message);
+        const success = await sendWhatsAppMessage(stockCount.responsible.whatsapp, message);
         
         if (success) {
-          console.log(`WhatsApp sent successfully to ${stockCount.responsible.whatsappPhone}`);
+          console.log(`WhatsApp sent successfully to ${stockCount.responsible.whatsapp}`);
         } else {
-          console.log(`Failed to send WhatsApp to ${stockCount.responsible.whatsappPhone}`);
+          console.log(`Failed to send WhatsApp to ${stockCount.responsible.whatsapp}`);
         }
       }
       
@@ -2105,6 +2108,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error starting stock count:", error);
       res.status(500).json({ message: "Failed to start stock count" });
+    }
+  });
+
+  // Route to get previous stock count order for smart ordering
+  app.get('/api/stock-counts/:id/previous-order', demoAuth, async (req, res) => {
+    try {
+      const currentStockCountId = parseInt(req.params.id);
+      
+      if (isNaN(currentStockCountId)) {
+        return res.status(400).json({ message: "Invalid stock count ID" });
+      }
+      
+      // Get current stock count to find responsible person
+      const currentStockCount = await storage.getStockCount(currentStockCountId);
+      
+      if (!currentStockCount) {
+        return res.status(404).json({ message: "Stock count not found" });
+      }
+      
+      // Find the most recent completed stock count by the same responsible person
+      const allStockCounts = await storage.getStockCounts();
+      
+      const previousStockCounts = allStockCounts
+        .filter(sc => 
+          sc.responsibleId === currentStockCount.responsibleId &&
+          sc.status === 'completed' &&
+          sc.id < currentStockCountId
+        )
+        .sort((a, b) => b.id - a.id)
+        .slice(0, 1);
+      
+      if (previousStockCounts.length === 0) {
+        // No previous count found, return default alphabetical order
+        return res.json({ 
+          hasOrder: false,
+          categories: [],
+          products: {}
+        });
+      }
+      
+      const previousStockCount = previousStockCounts[0];
+      
+      // Get items from previous stock count to extract ordering
+      const items = await storage.getStockCountItems(previousStockCount.id);
+      
+      // Get products to build category and product ordering
+      const products = await storage.getProducts();
+      
+      // Build category order based on product appearance in previous count
+      const categoryOrder: string[] = [];
+      const productOrder: Record<string, string[]> = {};
+      
+      // Process items in the order they were saved in previous count
+      items.forEach(item => {
+        const product = products.find(p => p.id === item.productId);
+        if (product) {
+          const categoryName = product.stockCategory || "Sem categoria";
+          
+          // Add category if not already in order
+          if (!categoryOrder.includes(categoryName)) {
+            categoryOrder.push(categoryName);
+            productOrder[categoryName] = [];
+          }
+          
+          // Add product if not already in category order
+          if (!productOrder[categoryName].includes(product.name)) {
+            productOrder[categoryName].push(product.name);
+          }
+        }
+      });
+      
+      res.json({
+        hasOrder: true,
+        categories: categoryOrder,
+        products: productOrder,
+        previousStockCountId: previousStockCount.id
+      });
+      
+    } catch (error) {
+      console.error("Error getting previous stock count order:", error);
+      res.status(500).json({ message: "Failed to get previous stock count order" });
     }
   });
 

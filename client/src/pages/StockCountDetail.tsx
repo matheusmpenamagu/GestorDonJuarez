@@ -33,6 +33,8 @@ export default function StockCountDetail() {
   const [searchTerm, setSearchTerm] = useState("");
   const [countItems, setCountItems] = useState<{ productId: number; countedQuantity: string; notes?: string }[]>([]);
   const [isStarting, setIsStarting] = useState(false);
+  const [categoryOrder, setCategoryOrder] = useState<string[]>([]);
+  const [productOrder, setProductOrder] = useState<Record<string, string[]>>({});
 
   const queryClient = useQueryClient();
 
@@ -56,6 +58,16 @@ export default function StockCountDetail() {
     queryKey: ["/api/products"],
   });
 
+  // Carregar ordem da contagem anterior
+  const { data: previousOrder } = useQuery({
+    queryKey: ["/api/stock-counts", stockCountId, "previous-order"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/stock-counts/${stockCountId}/previous-order`);
+      return await response.json();
+    },
+    enabled: !!stockCountId
+  });
+
   // Inicializar items da contagem
   useEffect(() => {
     if (stockCount?.items) {
@@ -67,9 +79,10 @@ export default function StockCountDetail() {
     }
   }, [stockCount]);
 
-  // Agrupar produtos por categoria
+  // Agrupar produtos por categoria (usando stockCategory diretamente)
   const productsByCategory = products.reduce((acc, product) => {
     const categoryName = product.stockCategory || "Sem categoria";
+    
     if (!acc[categoryName]) {
       acc[categoryName] = [];
     }
@@ -77,17 +90,82 @@ export default function StockCountDetail() {
     return acc;
   }, {} as Record<string, Product[]>);
 
-  // Filtrar produtos baseado na busca
-  const filteredProductsByCategory = Object.entries(productsByCategory).reduce((acc, [category, prods]) => {
-    const filtered = prods.filter(product => 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.code.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    if (filtered.length > 0) {
-      acc[category] = filtered;
+  // Aplicar ordenação inteligente baseada na contagem anterior
+  const getOrderedCategories = () => {
+    const categoryNames = Object.keys(productsByCategory);
+    
+    if (previousOrder?.hasOrder && previousOrder?.categories?.length > 0) {
+      // Usar ordem da contagem anterior
+      const orderedCategories = [...previousOrder.categories];
+      
+      // Adicionar categorias que não estavam na contagem anterior
+      categoryNames.forEach(catName => {
+        if (!orderedCategories.includes(catName)) {
+          orderedCategories.push(catName);
+        }
+      });
+      
+      return orderedCategories.filter(catName => categoryNames.includes(catName));
+    } else {
+      // Ordem alfabética como fallback
+      return categoryNames.sort();
     }
-    return acc;
-  }, {} as Record<string, Product[]>);
+  };
+
+  const getOrderedProducts = (categoryName: string) => {
+    const categoryProducts = productsByCategory[categoryName] || [];
+    
+    if (previousOrder?.hasOrder && previousOrder?.products?.[categoryName]?.length > 0) {
+      // Usar ordem da contagem anterior
+      const orderedProductNames = [...previousOrder.products[categoryName]];
+      const orderedProducts: Product[] = [];
+      
+      // Adicionar produtos na ordem da contagem anterior
+      orderedProductNames.forEach(productName => {
+        const product = categoryProducts.find(p => p.name === productName);
+        if (product) {
+          orderedProducts.push(product);
+        }
+      });
+      
+      // Adicionar produtos que não estavam na contagem anterior
+      categoryProducts.forEach(product => {
+        if (!orderedProductNames.includes(product.name)) {
+          orderedProducts.push(product);
+        }
+      });
+      
+      return orderedProducts;
+    } else {
+      // Ordem alfabética como fallback
+      return categoryProducts.sort((a, b) => a.name.localeCompare(b.name));
+    }
+  };
+
+  // Filtrar produtos baseado na busca e aplicar ordenação
+  const getFilteredAndOrderedData = () => {
+    const orderedCategories = getOrderedCategories();
+    const result: Array<{ category: string; products: Product[] }> = [];
+    
+    orderedCategories.forEach(categoryName => {
+      const orderedProducts = getOrderedProducts(categoryName);
+      const filteredProducts = orderedProducts.filter(product => 
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.code.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      
+      if (filteredProducts.length > 0) {
+        result.push({
+          category: categoryName,
+          products: filteredProducts
+        });
+      }
+    });
+    
+    return result;
+  };
+
+  const filteredAndOrderedData = getFilteredAndOrderedData();
 
   // Mutation para salvar contagem
   const saveCountMutation = useMutation({
@@ -274,7 +352,7 @@ export default function StockCountDetail() {
 
       {/* Products by Category */}
       <div className="space-y-6">
-        {Object.entries(filteredProductsByCategory).map(([categoryName, categoryProducts]) => (
+        {filteredAndOrderedData.map(({ category: categoryName, products: categoryProducts }) => (
           <Card key={categoryName}>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -283,47 +361,43 @@ export default function StockCountDetail() {
                 <Badge variant="outline" className="ml-2">
                   {categoryProducts.length} itens
                 </Badge>
+                {previousOrder?.hasOrder && previousOrder?.previousStockCountId && (
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    Ordem da contagem #{previousOrder.previousStockCountId}
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {categoryProducts.map((product) => (
-                  <div key={product.id} className="border rounded-lg p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="md:col-span-2">
-                        <div className="font-medium">{product.name}</div>
-                        <div className="text-sm text-gray-500">
-                          Código: {product.code} | Unidade: {product.unit}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          Valor: R$ {parseFloat(product.currentValue).toFixed(2)}
-                        </div>
+                  <div key={product.id} className="grid grid-cols-3 gap-2 items-center py-2 px-3 border rounded-md">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{product.name}</div>
+                      <div className="text-xs text-gray-500">
+                        {product.code} • {product.unit}
                       </div>
-                      <div className="space-y-2">
-                        <div>
-                          <Label htmlFor={`qty-${product.id}`}>Quantidade contada</Label>
-                          <Input
-                            id={`qty-${product.id}`}
-                            type="number"
-                            min="0"
-                            step="0.001"
-                            value={getItemQuantity(product.id)}
-                            onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                            placeholder="0"
-                            disabled={stockCount.status !== "draft"}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor={`notes-${product.id}`}>Observações</Label>
-                          <Input
-                            id={`notes-${product.id}`}
-                            value={getItemNotes(product.id)}
-                            onChange={(e) => handleNotesChange(product.id, e.target.value)}
-                            placeholder="Observações..."
-                            disabled={stockCount.status !== "draft"}
-                          />
-                        </div>
-                      </div>
+                    </div>
+                    <div>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.001"
+                        value={getItemQuantity(product.id)}
+                        onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                        placeholder="0"
+                        disabled={stockCount.status !== "draft"}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        value={getItemNotes(product.id)}
+                        onChange={(e) => handleNotesChange(product.id, e.target.value)}
+                        placeholder="Obs..."
+                        disabled={stockCount.status !== "draft"}
+                        className="h-8 text-sm"
+                      />
                     </div>
                   </div>
                 ))}
@@ -354,7 +428,7 @@ export default function StockCountDetail() {
             </div>
             <div>
               <div className="text-2xl font-bold text-blue-600">
-                {Object.keys(filteredProductsByCategory).length}
+                {filteredAndOrderedData.length}
               </div>
               <div className="text-sm text-gray-600">Categorias</div>
             </div>
