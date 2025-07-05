@@ -1548,7 +1548,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/products', demoAuth, async (req, res) => {
     try {
       const products = await storage.getProducts();
-      res.json(products);
+      
+      // For each product, get its associated units
+      const units = await storage.getUnits();
+      const unitsMap = new Map(units.map(unit => [unit.id, unit.name]));
+      
+      const productsWithUnits = await Promise.all(
+        products.map(async (product) => {
+          const productUnits = await storage.getProductUnits(product.id);
+          return {
+            ...product,
+            associatedUnits: productUnits.map(pu => ({
+              unitId: pu.unitId,
+              unitName: unitsMap.get(pu.unitId) || 'N/A'
+            }))
+          };
+        })
+      );
+      
+      res.json(productsWithUnits);
     } catch (error) {
       console.error("Error fetching products:", error);
       res.status(500).json({ message: "Error fetching products" });

@@ -45,6 +45,13 @@ import type { Product, InsertProduct, ProductCategory, InsertProductCategory, Un
 type SortField = 'code' | 'name' | 'stockCategory' | 'unit' | 'unitOfMeasure' | 'currentValue';
 type SortDirection = 'asc' | 'desc';
 
+type ProductWithUnits = Product & {
+  associatedUnits?: Array<{
+    unitId: number;
+    unitName: string;
+  }>;
+};
+
 function ProductsManagementContent() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -75,7 +82,7 @@ function ProductsManagementContent() {
 
   const queryClient = useQueryClient();
 
-  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
+  const { data: products = [], isLoading: productsLoading } = useQuery<ProductWithUnits[]>({
     queryKey: ["/api/products"],
   });
 
@@ -660,12 +667,27 @@ function ProductsManagementContent() {
                 </TableCell>
               </TableRow>
             ) : (
-              sortedProducts.map((product: Product) => (
+              sortedProducts.map((product: ProductWithUnits) => (
                 <TableRow key={product.id}>
                   <TableCell className="font-mono">{product.code}</TableCell>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{getCategoryName(product.stockCategory)}</TableCell>
-                  <TableCell>{getUnitName(product.unit)}</TableCell>
+                  <TableCell>
+                    {product.associatedUnits && product.associatedUnits.length > 0 ? (
+                      <div className="space-y-1">
+                        {product.associatedUnits.map((assocUnit: any, index: number) => (
+                          <span 
+                            key={assocUnit.unitId} 
+                            className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full mr-1"
+                          >
+                            {assocUnit.unitName}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gray-500 text-sm">Nenhuma unidade</span>
+                    )}
+                  </TableCell>
                   <TableCell>{product.unitOfMeasure}</TableCell>
                   <TableCell className="font-medium text-green-600">
                     {formatCurrency(product.currentValue)}
