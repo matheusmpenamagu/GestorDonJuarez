@@ -20,6 +20,7 @@ import UnitsManagement from "@/pages/UnitsManagement";
 import Co2Management from "@/pages/Co2Management";
 import ProductsManagement from "@/pages/ProductsManagement";
 import StockCountsManagement from "@/pages/StockCountsManagement";
+import StockCountDetail from "@/pages/StockCountDetail";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -91,6 +92,11 @@ function Router() {
           <Route path="/contagens">
             <Layout>
               <StockCountsManagement />
+            </Layout>
+          </Route>
+          <Route path="/estoque/contagens/:id">
+            <Layout>
+              <StockCountDetail />
             </Layout>
           </Route>
         </>

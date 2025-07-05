@@ -433,7 +433,8 @@ export const stockCounts = pgTable("stock_counts", {
   date: timestamp("date").notNull(),
   responsibleId: integer("responsible_id").notNull().references(() => employees.id),
   notes: text("notes"),
-  status: varchar("status", { length: 50 }).notNull().default("draft"), // draft, completed
+  status: varchar("status", { length: 50 }).notNull().default("draft"), // draft, started, completed
+  publicToken: varchar("public_token", { length: 32 }).unique(), // For public access
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

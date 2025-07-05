@@ -2048,6 +2048,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Route to start stock count (generate public token and send WhatsApp)
+  app.post('/api/stock-counts/:id/start', demoAuth, async (req, res) => {
+    try {
+      const stockCountId = parseInt(req.params.id);
+      
+      if (isNaN(stockCountId)) {
+        return res.status(400).json({ message: "Invalid stock count ID" });
+      }
+      
+      // Generate random token for public access
+      const crypto = await import('crypto');
+      const publicToken = crypto.randomBytes(16).toString('hex');
+      
+      // Update stock count with public token and status
+      await storage.updateStockCount(stockCountId, {
+        status: 'started',
+        publicToken
+      });
+      
+      // Get stock count with responsible person
+      const stockCount = await storage.getStockCountById(stockCountId);
+      
+      // Generate public URL
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+        : `https://gestor.donjuarez.com.br`;
+      const publicUrl = `${baseUrl}/contagem-publica/${publicToken}`;
+      
+      // Send WhatsApp message to responsible person
+      if (stockCount?.responsible?.whatsappPhone) {
+        const message = `🗂️ *Contagem de Estoque Iniciada*\n\n` +
+          `📋 Contagem #${stockCountId}\n` +
+          `📅 ${format(new Date(stockCount.date), "dd/MM/yyyy", { locale: ptBR })}\n\n` +
+          `🔗 Link para contagem:\n${publicUrl}\n\n` +
+          `*Instruções:*\n` +
+          `• Acesse o link acima\n` +
+          `• Conte os produtos por categoria\n` +
+          `• Anote observações quando necessário\n` +
+          `• Os dados são salvos automaticamente`;
+        
+        const success = await sendWhatsAppMessage(stockCount.responsible.whatsappPhone, message);
+        
+        if (success) {
+          console.log(`WhatsApp sent successfully to ${stockCount.responsible.whatsappPhone}`);
+        } else {
+          console.log(`Failed to send WhatsApp to ${stockCount.responsible.whatsappPhone}`);
+        }
+      }
+      
+      res.status(200).json({ 
+        message: "Stock count started successfully", 
+        publicUrl,
+        publicToken 
+      });
+    } catch (error) {
+      console.error("Error starting stock count:", error);
+      res.status(500).json({ message: "Failed to start stock count" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket for real-time updates

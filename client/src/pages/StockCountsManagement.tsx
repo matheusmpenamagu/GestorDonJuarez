@@ -365,9 +365,9 @@ export default function StockCountsManagement() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleStartCount(stockCount)}
+                      onClick={() => window.location.href = `/estoque/contagens/${stockCount.id}`}
                     >
-                      <Eye className="h-4 w-4" />
+                      <Pencil className="h-4 w-4" />
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
