@@ -79,9 +79,22 @@ export default function StockCountDetail() {
     }
   }, [stockCount]);
 
-  // Agrupar produtos por categoria (usando stockCategory diretamente)
+  // Agrupar produtos por categoria (mapeando para nome correto)
   const productsByCategory = products.reduce((acc, product) => {
-    const categoryName = product.stockCategory || "Sem categoria";
+    // Verificar se stockCategory é um ID numérico ou nome direto
+    let categoryName = "Sem categoria";
+    
+    if (product.stockCategory) {
+      // Se for um número, buscar na lista de categorias
+      if (!isNaN(Number(product.stockCategory))) {
+        const categoryId = Number(product.stockCategory);
+        const category = categories.find(cat => cat.id === categoryId);
+        categoryName = category ? category.name : `Categoria ID ${categoryId}`;
+      } else {
+        // Se for string, usar diretamente
+        categoryName = product.stockCategory;
+      }
+    }
     
     if (!acc[categoryName]) {
       acc[categoryName] = [];

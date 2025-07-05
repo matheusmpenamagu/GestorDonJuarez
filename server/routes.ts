@@ -2160,11 +2160,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const categoryOrder: string[] = [];
       const productOrder: Record<string, string[]> = {};
       
+      // Get product categories for name mapping
+      const productCategories = await storage.getProductCategories();
+      
       // Process items in the order they were saved in previous count
       items.forEach(item => {
         const product = products.find(p => p.id === item.productId);
         if (product) {
-          const categoryName = product.stockCategory || "Sem categoria";
+          // Map category correctly
+          let categoryName = "Sem categoria";
+          
+          if (product.stockCategory) {
+            // If it's a number, find the category name
+            if (!isNaN(Number(product.stockCategory))) {
+              const categoryId = Number(product.stockCategory);
+              const category = productCategories.find(cat => cat.id === categoryId);
+              categoryName = category ? category.name : `Categoria ID ${categoryId}`;
+            } else {
+              // If it's a string, use directly
+              categoryName = product.stockCategory;
+            }
+          }
           
           // Add category if not already in order
           if (!categoryOrder.includes(categoryName)) {
