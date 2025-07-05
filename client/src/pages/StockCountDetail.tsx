@@ -13,8 +13,28 @@ import {
   Search,
   Plus,
   Minus,
-  Send
+  Send,
+  GripVertical
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import {
+  CSS,
+} from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,10 +51,11 @@ export default function StockCountDetail() {
   const stockCountId = parseInt(params?.id || "0");
   
   const [searchTerm, setSearchTerm] = useState("");
-  const [countItems, setCountItems] = useState<{ productId: number; countedQuantity: string; notes?: string }[]>([]);
+  const [countItems, setCountItems] = useState<{ productId: number; countedQuantity: string }[]>([]);
   const [isStarting, setIsStarting] = useState(false);
   const [categoryOrder, setCategoryOrder] = useState<string[]>([]);
   const [productOrder, setProductOrder] = useState<Record<string, string[]>>({});
+  const [isEditingOrder, setIsEditingOrder] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -73,11 +94,24 @@ export default function StockCountDetail() {
     if (stockCount?.items) {
       setCountItems(stockCount.items.map(item => ({
         productId: item.productId,
-        countedQuantity: item.countedQuantity || "0",
-        notes: item.notes || "",
+        countedQuantity: item.countedQuantity || "0"
       })));
     }
   }, [stockCount]);
+
+  // Inicializar ordem das categorias e produtos baseado na ordem prévia ou alfabética
+  useEffect(() => {
+    if (previousOrder && products.length > 0) {
+      const orderedCategories = getOrderedCategories();
+      setCategoryOrder(orderedCategories);
+      
+      const orderedProducts: Record<string, string[]> = {};
+      orderedCategories.forEach(categoryName => {
+        orderedProducts[categoryName] = getOrderedProducts(categoryName).map(p => p.name);
+      });
+      setProductOrder(orderedProducts);
+    }
+  }, [previousOrder, products]);
 
   // Agrupar produtos por categoria (mapeando para nome correto)
   const productsByCategory = products.reduce((acc, product) => {
@@ -238,22 +272,7 @@ export default function StockCountDetail() {
             : item
         );
       } else {
-        return [...prev, { productId, countedQuantity: quantity, notes: "" }];
-      }
-    });
-  };
-
-  const handleNotesChange = (productId: number, notes: string) => {
-    setCountItems(prev => {
-      const existing = prev.find(item => item.productId === productId);
-      if (existing) {
-        return prev.map(item => 
-          item.productId === productId 
-            ? { ...item, notes }
-            : item
-        );
-      } else {
-        return [...prev, { productId, countedQuantity: "0", notes }];
+        return [...prev, { productId, countedQuantity: quantity }];
       }
     });
   };
@@ -263,9 +282,44 @@ export default function StockCountDetail() {
     return item?.countedQuantity || "0";
   };
 
-  const getItemNotes = (productId: number) => {
-    const item = countItems.find(item => item.productId === productId);
-    return item?.notes || "";
+  // Configurar sensores para drag-and-drop
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Funções para lidar com drag-and-drop de categorias
+  const handleCategoryDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setCategoryOrder((items) => {
+        const oldIndex = items.indexOf(active.id as string);
+        const newIndex = items.indexOf(over?.id as string);
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  // Funções para lidar com drag-and-drop de produtos
+  const handleProductDragEnd = (categoryName: string) => (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setProductOrder((prev) => {
+        const categoryProducts = prev[categoryName] || [];
+        const oldIndex = categoryProducts.indexOf(active.id as string);
+        const newIndex = categoryProducts.indexOf(over?.id as string);
+
+        return {
+          ...prev,
+          [categoryName]: arrayMove(categoryProducts, oldIndex, newIndex)
+        };
+      });
+    }
   };
 
   const handleSave = () => {
@@ -331,6 +385,13 @@ export default function StockCountDetail() {
         <div className="flex space-x-2">
           {stockCount.status === "draft" && (
             <>
+              <Button
+                variant={isEditingOrder ? "default" : "outline"}
+                onClick={() => setIsEditingOrder(!isEditingOrder)}
+              >
+                <GripVertical className="h-4 w-4 mr-2" />
+                {isEditingOrder ? "Finalizar Ordem" : "Editar Ordem"}
+              </Button>
               <Button onClick={handleSave} disabled={saveCountMutation.isPending}>
                 <Save className="h-4 w-4 mr-2" />
                 {saveCountMutation.isPending ? "Salvando..." : "Salvar"}
@@ -364,61 +425,33 @@ export default function StockCountDetail() {
       </Card>
 
       {/* Products by Category */}
-      <div className="space-y-6">
-        {filteredAndOrderedData.map(({ category: categoryName, products: categoryProducts }) => (
-          <Card key={categoryName}>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Package className="h-5 w-5 mr-2 text-orange-600" />
-                {categoryName}
-                <Badge variant="outline" className="ml-2">
-                  {categoryProducts.length} itens
-                </Badge>
-                {previousOrder?.hasOrder && previousOrder?.previousStockCountId && (
-                  <Badge variant="secondary" className="ml-2 text-xs">
-                    Ordem da contagem #{previousOrder.previousStockCountId}
-                  </Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {categoryProducts.map((product) => (
-                  <div key={product.id} className="grid grid-cols-3 gap-2 items-center py-2 px-3 border rounded-md">
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{product.name}</div>
-                      <div className="text-xs text-gray-500">
-                        {product.code} • {product.unit}
-                      </div>
-                    </div>
-                    <div>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.001"
-                        value={getItemQuantity(product.id)}
-                        onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                        placeholder="0"
-                        disabled={stockCount.status !== "draft"}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <Input
-                        value={getItemNotes(product.id)}
-                        onChange={(e) => handleNotesChange(product.id, e.target.value)}
-                        placeholder="Obs..."
-                        disabled={stockCount.status !== "draft"}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleCategoryDragEnd}
+      >
+        <SortableContext
+          items={categoryOrder.length > 0 ? categoryOrder : filteredAndOrderedData.map(item => item.category)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-6">
+            {filteredAndOrderedData.map(({ category: categoryName, products: categoryProducts }) => (
+              <SortableCategoryCard
+                key={categoryName}
+                categoryName={categoryName}
+                categoryProducts={categoryProducts}
+                isEditingOrder={isEditingOrder}
+                previousOrder={previousOrder}
+                getItemQuantity={getItemQuantity}
+                handleQuantityChange={handleQuantityChange}
+                stockCountStatus={stockCount.status}
+                onProductDragEnd={handleProductDragEnd(categoryName)}
+                productOrder={productOrder[categoryName] || []}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {/* Summary */}
       <Card>
@@ -447,11 +480,168 @@ export default function StockCountDetail() {
             </div>
             <div>
               <div className="text-2xl font-bold text-purple-600">
-                {countItems.filter(item => item.notes && item.notes.trim()).length}
+                {((countItems.filter(item => parseFloat(item.countedQuantity) > 0).length / products.length) * 100).toFixed(1)}%
               </div>
-              <div className="text-sm text-gray-600">Com Observações</div>
+              <div className="text-sm text-gray-600">Progresso</div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Componente para item sortable de produto
+interface SortableProductItemProps {
+  product: Product;
+  quantity: string;
+  onQuantityChange: (quantity: string) => void;
+  disabled: boolean;
+  isEditingOrder: boolean;
+}
+
+function SortableProductItem({ product, quantity, onQuantityChange, disabled, isEditingOrder }: SortableProductItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: product.name });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="grid grid-cols-12 gap-2 items-center py-2 px-3 border rounded-md"
+    >
+      {isEditingOrder && (
+        <div className="col-span-1 flex justify-center">
+          <div {...attributes} {...listeners} className="cursor-move">
+            <GripVertical className="h-4 w-4 text-gray-400" />
+          </div>
+        </div>
+      )}
+      <div className={`${isEditingOrder ? 'col-span-8' : 'col-span-9'} flex-1`}>
+        <div className="font-medium text-sm">{product.name}</div>
+        <div className="text-xs text-gray-500">
+          {product.code} • {product.unit}
+        </div>
+      </div>
+      <div className="col-span-3">
+        <Input
+          type="number"
+          min="0"
+          step="0.001"
+          value={quantity}
+          onChange={(e) => onQuantityChange(e.target.value)}
+          placeholder="0"
+          disabled={disabled}
+          className="h-8 text-sm"
+        />
+      </div>
+    </div>
+  );
+}
+
+// Componente para categoria sortable
+interface SortableCategoryCardProps {
+  categoryName: string;
+  categoryProducts: Product[];
+  isEditingOrder: boolean;
+  previousOrder: any;
+  getItemQuantity: (productId: number) => string;
+  handleQuantityChange: (productId: number, quantity: string) => void;
+  stockCountStatus: string;
+  onProductDragEnd: (event: DragEndEvent) => void;
+  productOrder: string[];
+}
+
+function SortableCategoryCard({
+  categoryName,
+  categoryProducts,
+  isEditingOrder,
+  previousOrder,
+  getItemQuantity,
+  handleQuantityChange,
+  stockCountStatus,
+  onProductDragEnd,
+  productOrder
+}: SortableCategoryCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: categoryName });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  // Ordenar produtos baseado na ordem customizada ou ordem original
+  const orderedProducts = productOrder.length > 0 
+    ? productOrder.map(productName => categoryProducts.find(p => p.name === productName)).filter(Boolean) as Product[]
+    : categoryProducts;
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            {isEditingOrder && (
+              <div {...attributes} {...listeners} className="cursor-move mr-2">
+                <GripVertical className="h-5 w-5 text-gray-400" />
+              </div>
+            )}
+            <Package className="h-5 w-5 mr-2 text-orange-600" />
+            {categoryName}
+            <Badge variant="outline" className="ml-2">
+              {categoryProducts.length} itens
+            </Badge>
+            {previousOrder?.hasOrder && previousOrder?.previousStockCountId && (
+              <Badge variant="secondary" className="ml-2 text-xs">
+                Ordem da contagem #{previousOrder.previousStockCountId}
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DndContext
+            sensors={useSensors(
+              useSensor(PointerSensor),
+              useSensor(KeyboardSensor, {
+                coordinateGetter: sortableKeyboardCoordinates,
+              })
+            )}
+            collisionDetection={closestCenter}
+            onDragEnd={onProductDragEnd}
+          >
+            <SortableContext
+              items={orderedProducts.map(p => p.name)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-2">
+                {orderedProducts.map((product) => (
+                  <SortableProductItem
+                    key={product.id}
+                    product={product}
+                    quantity={getItemQuantity(product.id)}
+                    onQuantityChange={(quantity) => handleQuantityChange(product.id, quantity)}
+                    disabled={stockCountStatus !== "draft"}
+                    isEditingOrder={isEditingOrder}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         </CardContent>
       </Card>
     </div>
