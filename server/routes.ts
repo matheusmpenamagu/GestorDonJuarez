@@ -1861,26 +1861,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (!unitName) return units.length > 0 ? units[0].id : null;
             
             const normalized = unitName.toLowerCase().trim();
+            console.log(`Finding unit for: "${unitName}" (normalized: "${normalized}")`);
             
-            // Create mapping patterns for unit matching
-            const unitMappings = {
-              'apollonio': (u: any) => u.name.toLowerCase().includes('apollonio'),
-              'grão pará': (u: any) => u.name.toLowerCase().includes('grão pará'),
-              'beer truck': (u: any) => u.name.toLowerCase().includes('beer truck'),
-              'chopeira': (u: any) => u.name.toLowerCase().includes('chopeira'),
-              'fábrica': (u: any) => u.name.toLowerCase().includes('fábrica')
-            };
-            
-            // Try exact match on name first
-            let match = units.find(unit => unit.name.toLowerCase().trim() === normalized);
-            if (match) return match.id;
-
-            // Try pattern matching
-            for (const [pattern, matcher] of Object.entries(unitMappings)) {
-              if (normalized.includes(pattern)) {
-                match = units.find(matcher);
-                if (match) return match.id;
+            // Specific mapping rules based on CSV patterns
+            const specificMappings = [
+              // Check for Grão Pará first (more specific than Apollonio)
+              { 
+                patterns: ['grão pará', 'graopara', 'grao para', 'grão para'], 
+                unitId: 1, 
+                unitName: 'Don Juarez Grão Pará' 
+              },
+              { 
+                patterns: ['beer truck', 'beertruck', 'truck'], 
+                unitId: 3, 
+                unitName: 'Beer Truck' 
+              },
+              { 
+                patterns: ['apollonio', 'frango na brasa', 'frango'], 
+                unitId: 5, 
+                unitName: 'Apollonio' 
+              },
+              { 
+                patterns: ['chopeira'], 
+                unitId: 4, 
+                unitName: 'Chopeira' 
+              },
+              { 
+                patterns: ['fábrica', 'fabrica'], 
+                unitId: 2, 
+                unitName: 'Fábrica' 
               }
+            ];
+            
+            // Try specific mappings first
+            for (const mapping of specificMappings) {
+              for (const pattern of mapping.patterns) {
+                if (normalized.includes(pattern)) {
+                  console.log(`✓ Matched pattern "${pattern}" -> ${mapping.unitName} (ID ${mapping.unitId})`);
+                  return mapping.unitId;
+                }
+              }
+            }
+            
+            // Try exact match on unit name
+            let match = units.find(unit => unit.name.toLowerCase().trim() === normalized);
+            if (match) {
+              console.log(`✓ Exact match -> ${match.name} (ID ${match.id})`);
+              return match.id;
             }
 
             // Try partial match on name (fallback)
@@ -1888,9 +1915,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               unit.name.toLowerCase().includes(normalized) || 
               normalized.includes(unit.name.toLowerCase())
             );
-            if (match) return match.id;
+            if (match) {
+              console.log(`✓ Partial match -> ${match.name} (ID ${match.id})`);
+              return match.id;
+            }
 
             // Default to first unit if no match
+            console.log(`⚠ No match found, using default unit (ID ${units[0]?.id})`);
             return units.length > 0 ? units[0].id : null;
           }
 

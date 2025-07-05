@@ -198,6 +198,9 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - ✓ Associações produto-unidade criadas automaticamente durante import CSV
 - ✓ Contagens de estoque filtram corretamente produtos por unidade selecionada
 - ✓ Sistema completo de gestão de produtos implementado com upload CSV inteligente (Julho 5, 2025)
+- ✓ Mapeamento de unidades corrigido para detectar corretamente Apollonio vs Grão Pará
+- ✓ Teste confirmado: produto novo aparece corretamente em múltiplas unidades
+- ✓ Logs detalhados de associação funcionando perfeitamente
 - ✓ Upload CSV totalmente funcional: 312 produtos importados com sucesso da planilha real
 - ✓ Detecção automática de separador CSV (vírgula ou ponto-e-vírgula) implementada
 - ✓ Mapeamento inteligente de colunas: "COD.", "PRODUTO", "CATEGORIA", "VALOR ATUAL"
