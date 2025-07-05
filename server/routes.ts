@@ -1921,7 +1921,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Stock Counts routes
-  app.get('/api/stock-counts', isAuthenticated, async (req, res) => {
+  app.get('/api/stock-counts', demoAuth, async (req, res) => {
     try {
       const stockCounts = await storage.getStockCounts();
       res.json(stockCounts);
@@ -1931,7 +1931,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/stock-counts/:id', isAuthenticated, async (req, res) => {
+  app.get('/api/stock-counts/:id', demoAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const stockCount = await storage.getStockCount(id);
@@ -1945,7 +1945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/stock-counts', isAuthenticated, async (req, res) => {
+  app.post('/api/stock-counts', demoAuth, async (req, res) => {
     try {
       const stockCount = await storage.createStockCount(req.body);
       res.status(201).json(stockCount);
@@ -1955,7 +1955,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/stock-counts/:id', isAuthenticated, async (req, res) => {
+  app.put('/api/stock-counts/:id', demoAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const stockCount = await storage.updateStockCount(id, req.body);
@@ -1966,7 +1966,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/stock-counts/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/stock-counts/:id', demoAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteStockCount(id);
@@ -1978,7 +1978,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Stock Count Items routes
-  app.get('/api/stock-counts/:id/items', isAuthenticated, async (req, res) => {
+  app.get('/api/stock-counts/:id/items', demoAuth, async (req, res) => {
     try {
       const stockCountId = parseInt(req.params.id);
       const items = await storage.getStockCountItems(stockCountId);
@@ -1989,7 +1989,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/stock-counts/:id/items', isAuthenticated, async (req, res) => {
+  app.post('/api/stock-counts/:id/items', demoAuth, async (req, res) => {
     try {
       const stockCountId = parseInt(req.params.id);
       const items = req.body.items || [];
@@ -2003,7 +2003,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Route to initialize stock count with all products
-  app.post('/api/stock-counts/:id/initialize', isAuthenticated, async (req, res) => {
+  app.post('/api/stock-counts/:id/initialize', demoAuth, async (req, res) => {
     try {
       const stockCountId = parseInt(req.params.id);
       
