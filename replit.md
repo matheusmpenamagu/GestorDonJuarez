@@ -192,6 +192,11 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - ✓ Relacionamento many-to-many entre produtos e unidades funcionando perfeitamente
 - ✓ Associações produto-unidade criadas automaticamente durante import CSV
 - ✓ Contagens de estoque filtram corretamente produtos por unidade selecionada
+- ✓ Sistema de produtos duplicados em unidades diferentes implementado (Julho 5, 2025)
+- ✓ Upload CSV inteligente lida com produtos duplicados em múltiplas unidades automaticamente
+- ✓ Relacionamento many-to-many entre produtos e unidades funcionando perfeitamente
+- ✓ Associações produto-unidade criadas automaticamente durante import CSV
+- ✓ Contagens de estoque filtram corretamente produtos por unidade selecionada
 - ✓ Sistema completo de gestão de produtos implementado com upload CSV inteligente (Julho 5, 2025)
 - ✓ Upload CSV totalmente funcional: 312 produtos importados com sucesso da planilha real
 - ✓ Detecção automática de separador CSV (vírgula ou ponto-e-vírgula) implementada
