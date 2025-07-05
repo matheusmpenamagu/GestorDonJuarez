@@ -71,6 +71,13 @@ export default function ProductsManagement() {
     name: "",
     description: "",
   });
+  
+  // CSV Upload state
+  const [uploadResult, setUploadResult] = useState<{
+    message: string;
+    stats: { created: number; updated: number; errors: number; total: number };
+    errors?: string[];
+  } | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -221,10 +228,12 @@ export default function ProductsManagement() {
       const response = await fetch('/api/products/upload', {
         method: 'POST',
         body: formData,
+        credentials: 'include', // Important for authentication
       });
       
       if (!response.ok) {
-        throw new Error('Erro no upload do arquivo');
+        const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
+        throw new Error(errorData.message || 'Erro no upload do arquivo');
       }
       
       return response.json();
@@ -232,12 +241,13 @@ export default function ProductsManagement() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       setIsUploading(false);
+      setUploadResult(data);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
       toast({
         title: "Upload concluído",
-        description: `${data.created} produtos criados, ${data.updated} produtos atualizados!`,
+        description: data.message || `${data.stats?.created || 0} criados, ${data.stats?.updated || 0} atualizados`,
       });
     },
     onError: (error) => {

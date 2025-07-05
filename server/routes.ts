@@ -1651,7 +1651,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Upload products from CSV file
+  // Upload products from CSV file with intelligent processing
   app.post('/api/products/upload', demoAuth, async (req, res) => {
     try {
       const multer = await import('multer');
@@ -1698,48 +1698,190 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ message: "Apenas arquivos CSV são suportados no momento" });
           }
 
+          // Get existing categories and units for intelligent matching
+          const categories = await storage.getProductCategories();
+          const units = await storage.getUnits();
+
+          // Function to find best matching category by similarity
+          const findBestCategory = (categoryName: string): number | null => {
+            if (!categoryName) return categories.length > 0 ? categories[0].id : null;
+            
+            const normalized = categoryName.toLowerCase().trim();
+            
+            // Try exact match first
+            let match = categories.find(cat => cat.name.toLowerCase() === normalized);
+            if (match) return match.id;
+
+            // Try partial match (contains)
+            match = categories.find(cat => 
+              cat.name.toLowerCase().includes(normalized) || 
+              normalized.includes(cat.name.toLowerCase())
+            );
+            if (match) return match.id;
+
+            // Default to first category if no match
+            return categories.length > 0 ? categories[0].id : null;
+          }
+
+          // Function to find best matching unit by similarity
+          const findBestUnit = (unitName: string): number | null => {
+            if (!unitName) return units.length > 0 ? units[0].id : null;
+            
+            const normalized = unitName.toLowerCase().trim();
+            
+            // Try exact match on name first
+            let match = units.find(unit => unit.name.toLowerCase() === normalized);
+            if (match) return match.id;
+
+            // Try partial match on name
+            match = units.find(unit => 
+              unit.name.toLowerCase().includes(normalized) || 
+              normalized.includes(unit.name.toLowerCase())
+            );
+            if (match) return match.id;
+
+            // Default to first unit if no match
+            return units.length > 0 ? units[0].id : null;
+          }
+
+          // Function to extract unit from product name and clean name
+          const processProductName = (fullName: string): { name: string; unitOfMeasure: string } => {
+            if (!fullName) return { name: "", unitOfMeasure: "" };
+            
+            const name = fullName.trim();
+            const unitMapping: { [key: string]: string } = {
+              'lt': 'LT',
+              'lts': 'LT', 
+              'litro': 'LT',
+              'litros': 'LT',
+              'und': 'UN',
+              'un': 'UN',
+              'unidade': 'UN',
+              'unidades': 'UN',
+              'pc': 'UN',
+              'pcs': 'UN',
+              'kg': 'KG',
+              'kgs': 'KG',
+              'quilo': 'KG',
+              'quilos': 'KG',
+              'kilogram': 'KG',
+              'kilograms': 'KG',
+              'g': 'G',
+              'grama': 'G',
+              'gramas': 'G',
+              'gram': 'G',
+              'grams': 'G',
+              'ml': 'ML',
+              'mls': 'ML',
+              'mililitro': 'ML',
+              'mililitros': 'ML',
+              'l': 'LT',
+              'm': 'M',
+              'metro': 'M',
+              'metros': 'M'
+            };
+
+            // Look for unit at the end of the name (separated by space)
+            const words = name.split(/\s+/);
+            const lastWord = words[words.length - 1].toLowerCase();
+            
+            if (unitMapping[lastWord]) {
+              // Remove the unit from the name
+              const cleanName = words.slice(0, -1).join(' ').trim();
+              return {
+                name: cleanName || name, // Fallback to original if clean name is empty
+                unitOfMeasure: unitMapping[lastWord]
+              };
+            }
+
+            // If no unit found, return original name
+            return {
+              name: name,
+              unitOfMeasure: ""
+            };
+          }
+
           let created = 0;
           let updated = 0;
           const errors: any[] = [];
+          const detailedErrors: string[] = [];
 
           for (const productData of products) {
             try {
-              // Map different possible column names to our schema
+              // Map common CSV column names (Portuguese and English)
+              const rawCode = productData.codigo || productData.code || productData.Codigo || productData.Code || productData.CODIGO || "";
+              const rawName = productData.produto || productData.product || productData.nome || productData.name || productData.Produto || productData.Product || productData.NOME || "";
+              const rawCategory = productData.categoria || productData.category || productData.Categoria || productData.Category || productData.CATEGORIA || "";
+              const rawUnit = productData.unidade || productData.unit || productData.Unidade || productData.Unit || productData.UNIDADE || "";
+              const rawUnitMeasure = productData.medida || productData.measure || productData.Medida || productData.Measure || productData.MEDIDA || "";
+              const rawValue = productData.valor || productData.value || productData.Valor || productData.Value || productData.VALOR || productData.currentValue || "0";
+
+              if (!rawCode) {
+                errors.push({ data: productData, error: 'Código é obrigatório' });
+                detailedErrors.push(`Linha sem código: ${JSON.stringify(productData)}`);
+                continue;
+              }
+
+              // Process product name to extract unit of measure
+              const { name, unitOfMeasure: extractedUnit } = processProductName(rawName);
+              
+              if (!name) {
+                errors.push({ data: productData, error: 'Nome do produto é obrigatório' });
+                detailedErrors.push(`Produto sem nome válido: código ${rawCode}`);
+                continue;
+              }
+
+              // Find matching category and unit using intelligent search
+              const stockCategoryId = findBestCategory(rawCategory);
+              const unitId = findBestUnit(rawUnit);
+
+              // Use extracted unit from name, or raw unit measure, or extracted unit
+              const finalUnitOfMeasure = rawUnitMeasure || extractedUnit || "";
+
               const productInfo = {
-                code: productData.code || productData.Code || productData.CODIGO || productData.código || '',
-                name: productData.name || productData.Name || productData.NOME || productData.nome || '',
-                stockCategory: productData.stockCategory || productData.categoria || productData.CATEGORIA || productData.stock_category || '',
-                unit: productData.unit || productData.unidade || productData.UNIDADE || '',
-                unitOfMeasure: productData.unitOfMeasure || productData.medida || productData.MEDIDA || productData.unit_measure || '',
-                currentValue: parseFloat(productData.currentValue || productData.valor || productData.VALOR || productData.current_value || '0') || 0,
+                code: rawCode.toString(),
+                name: name,
+                stockCategory: stockCategoryId?.toString() || "",
+                unit: unitId?.toString() || "",
+                unitOfMeasure: finalUnitOfMeasure,
+                currentValue: parseFloat(rawValue) || 0,
               };
 
-              if (!productInfo.code || !productInfo.name) {
-                errors.push({ data: productData, error: 'Código e nome são obrigatórios' });
-                continue;
-              }
+              console.log(`Processing product: ${productInfo.code} - ${productInfo.name}`);
+              console.log(`Category mapping: "${rawCategory}" -> ID ${stockCategoryId}`);
+              console.log(`Unit mapping: "${rawUnit}" -> ID ${unitId}`);
+              console.log(`Unit of measure: "${finalUnitOfMeasure}"`);
 
-              const result = insertProductSchema.safeParse(productInfo);
-              if (!result.success) {
-                errors.push({ data: productData, error: result.error.issues });
-                continue;
-              }
-
-              const existingProduct = await storage.getProductByCode(productInfo.code);
-              if (existingProduct) {
-                await storage.updateProduct(existingProduct.id, result.data);
-                updated++;
+              // Use upsert to create or update based on code
+              const product = await storage.upsertProductByCode(productInfo);
+              
+              // Determine if it was created or updated
+              const existing = await storage.getProductByCode(rawCode.toString());
+              if (existing && existing.updatedAt && existing.createdAt) {
+                // Check if creation and update timestamps are very close (within 1 second)
+                const timeDiff = Math.abs(existing.updatedAt.getTime() - existing.createdAt.getTime());
+                if (timeDiff < 1000) {
+                  created++;
+                } else {
+                  updated++;
+                }
               } else {
-                await storage.createProduct(result.data);
-                created++;
+                created++; // Fallback assumption
               }
+
             } catch (productError) {
-              console.error(`Erro processando produto ${productData.code}:`, productError);
+              console.error(`Erro processando produto ${productData.code || 'sem código'}:`, productError);
               errors.push({ data: productData, error: productError instanceof Error ? productError.message : 'Erro desconhecido' });
+              detailedErrors.push(`Erro ao processar produto: ${productError instanceof Error ? productError.message : 'Erro desconhecido'}`);
             }
           }
 
-          res.json({ created, updated, total: products.length, errors: errors.length });
+          res.json({
+            message: `Importação concluída: ${created} criados, ${updated} atualizados, ${errors.length} erros`,
+            stats: { created, updated, errors: errors.length, total: products.length },
+            errors: detailedErrors.slice(0, 10) // Return first 10 errors only
+          });
+
         } catch (parseError) {
           console.error("Erro analisando arquivo:", parseError);
           res.status(400).json({ message: "Erro ao analisar conteúdo do arquivo" });
