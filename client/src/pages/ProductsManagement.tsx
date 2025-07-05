@@ -755,22 +755,24 @@ function ProductsManagementContent() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-unit">Unidade</Label>
-              <Select
-                value={formData.unit}
-                onValueChange={(value) => setFormData({ ...formData, unit: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma unidade" />
-                </SelectTrigger>
-                <SelectContent>
-                  {units.map((unit) => (
-                    <SelectItem key={unit.id} value={unit.id.toString()}>
+              <Label>Unidades (selecione uma ou mais)</Label>
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                {units.map((unit) => (
+                  <div key={unit.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`edit-unit-${unit.id}`}
+                      checked={selectedUnits.includes(unit.id.toString())}
+                      onCheckedChange={(checked) => handleUnitChange(unit.id.toString(), checked)}
+                    />
+                    <Label 
+                      htmlFor={`edit-unit-${unit.id}`} 
+                      className="text-sm font-normal cursor-pointer"
+                    >
                       {unit.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    </Label>
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-unitOfMeasure">Unidade de Medida</Label>
