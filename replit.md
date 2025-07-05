@@ -181,6 +181,12 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - ✓ Sistema atualiza associações produto-unidade automaticamente durante edição
 - ✓ Correção do bug de formulário mostrando select na edição e checkboxes na criação
 - ✓ Correção de imports e componentes para funcionar sem erros JavaScript
+- ✓ Lógica de importação inteligente implementada (Julho 5, 2025)
+- ✓ Sistema verifica código e unidade antes de decidir ação
+- ✓ Novo código: cria produto e associa à unidade
+- ✓ Código existente + mesma unidade: atualiza informações
+- ✓ Código existente + nova unidade: associa produto à nova unidade
+- ✓ Interface mostra todas as unidades associadas em badges coloridos
 - ✓ Sistema de produtos duplicados em unidades diferentes implementado (Julho 5, 2025)
 - ✓ Upload CSV inteligente lida com produtos duplicados em múltiplas unidades automaticamente
 - ✓ Relacionamento many-to-many entre produtos e unidades funcionando perfeitamente

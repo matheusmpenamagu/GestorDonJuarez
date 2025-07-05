@@ -2002,40 +2002,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`Unit mapping: "${rawUnit}" -> ID ${unitId}`);
               console.log(`Unit of measure: "${finalUnitOfMeasure}"`);
 
-              // Check if product already exists
+              // Check if product already exists by code
               let product = await storage.getProductByCode(rawCode.toString());
-              let isNewProduct = false;
+              let action = "";
               
               if (!product) {
-                // Create new product
+                // CASO 1: Novo código - Cria o item
                 product = await storage.upsertProductByCode(productInfo);
                 created++;
-                isNewProduct = true;
-                console.log(`✓ New product created: ${product.code} - ${product.name}`);
-              } else {
-                // Update existing product with latest info
-                await storage.updateProduct(product.id, {
-                  name: productInfo.name,
-                  stockCategory: productInfo.stockCategory,
-                  unitOfMeasure: productInfo.unitOfMeasure,
-                  currentValue: productInfo.currentValue
-                });
-                updated++;
-                console.log(`✓ Existing product updated: ${product.code} - ${product.name}`);
-              }
-              
-              // Ensure product is associated with the unit from CSV
-              if (unitId) {
-                try {
-                  console.log(`Attempting to associate product ${product.id} (${product.code}) with unit ${unitId}`);
-                  await storage.addProductToUnit(product.id, unitId, 0);
-                  console.log(`✓ Product ${product.code} associated with unit ${unitId}`);
-                } catch (unitError) {
-                  // Log the actual error
-                  console.log(`→ Error associating product ${product.code} with unit ${unitId}:`, unitError);
+                action = "CREATED";
+                console.log(`✓ NEW PRODUCT: ${product.code} - ${product.name}`);
+                
+                // Associate with the unit from CSV
+                if (unitId) {
+                  try {
+                    await storage.addProductToUnit(product.id, unitId, 0);
+                    console.log(`✓ Associated new product with unit ${unitId}`);
+                  } catch (unitError) {
+                    console.log(`→ Error associating new product with unit:`, unitError);
+                  }
                 }
               } else {
-                console.log(`⚠ No unit ID found for product ${product.code}`);
+                // CASO 2 e 3: Produto já existe - verificar unidade
+                if (unitId) {
+                  // Verificar se o produto já está associado a esta unidade
+                  const productUnits = await storage.getProductUnits(product.id);
+                  const isAssociatedWithUnit = productUnits.some(pu => pu.unitId === unitId);
+                  
+                  if (isAssociatedWithUnit) {
+                    // CASO 3: Mesmo código e mesma unidade - Atualiza as informações
+                    await storage.updateProduct(product.id, {
+                      name: productInfo.name,
+                      stockCategory: productInfo.stockCategory,
+                      unitOfMeasure: productInfo.unitOfMeasure,
+                      currentValue: productInfo.currentValue
+                    });
+                    updated++;
+                    action = "UPDATED_SAME_UNIT";
+                    console.log(`✓ UPDATED (same unit): ${product.code} - ${product.name}`);
+                  } else {
+                    // CASO 2: Mesmo código, unidade diferente - Associa a nova unidade
+                    try {
+                      await storage.addProductToUnit(product.id, unitId, 0);
+                      // Também atualiza as informações do produto
+                      await storage.updateProduct(product.id, {
+                        name: productInfo.name,
+                        stockCategory: productInfo.stockCategory,
+                        unitOfMeasure: productInfo.unitOfMeasure,
+                        currentValue: productInfo.currentValue
+                      });
+                      updated++;
+                      action = "ASSOCIATED_NEW_UNIT";
+                      console.log(`✓ ASSOCIATED with new unit: ${product.code} - unit ${unitId}`);
+                    } catch (unitError) {
+                      console.log(`→ Error associating product with new unit:`, unitError);
+                    }
+                  }
+                } else {
+                  // Sem unidade específica - apenas atualiza informações
+                  await storage.updateProduct(product.id, {
+                    name: productInfo.name,
+                    stockCategory: productInfo.stockCategory,
+                    unitOfMeasure: productInfo.unitOfMeasure,
+                    currentValue: productInfo.currentValue
+                  });
+                  updated++;
+                  action = "UPDATED_NO_UNIT";
+                  console.log(`✓ UPDATED (no unit): ${product.code} - ${product.name}`);
+                }
               }
 
             } catch (productError) {
