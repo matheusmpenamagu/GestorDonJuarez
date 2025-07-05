@@ -1380,18 +1380,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .select({
         stockCount: stockCounts,
-        responsible: {
-          id: employees.id,
-          name: employees.name,
-          email: employees.email,
-          phone: employees.phone,
-          whatsapp: employees.whatsapp,
-          avatar: employees.avatar,
-          roleId: employees.roleId,
-          employmentTypes: employees.employmentTypes,
-          createdAt: employees.createdAt,
-          updatedAt: employees.updatedAt,
-        },
+        responsible: employees,
       })
       .from(stockCounts)
       .leftJoin(employees, eq(stockCounts.responsibleId, employees.id))
@@ -1399,26 +1388,19 @@ export class DatabaseStorage implements IStorage {
 
     return result.map(row => ({
       ...row.stockCount,
-      responsible: row.responsible,
-    }));
+      responsible: row.responsible ? {
+        ...row.responsible,
+        name: `${row.responsible.firstName} ${row.responsible.lastName}`,
+        phone: row.responsible.whatsapp
+      } as any : undefined,
+    })) as any;
   }
 
   async getStockCount(id: number): Promise<StockCountWithRelations | undefined> {
     const result = await db
       .select({
         stockCount: stockCounts,
-        responsible: {
-          id: employees.id,
-          name: employees.name,
-          email: employees.email,
-          phone: employees.phone,
-          whatsapp: employees.whatsapp,
-          avatar: employees.avatar,
-          roleId: employees.roleId,
-          employmentTypes: employees.employmentTypes,
-          createdAt: employees.createdAt,
-          updatedAt: employees.updatedAt,
-        },
+        responsible: employees,
       })
       .from(stockCounts)
       .leftJoin(employees, eq(stockCounts.responsibleId, employees.id))
@@ -1433,7 +1415,11 @@ export class DatabaseStorage implements IStorage {
 
     return {
       ...stockCount.stockCount,
-      responsible: stockCount.responsible,
+      responsible: stockCount.responsible ? {
+        ...stockCount.responsible,
+        name: `${stockCount.responsible.firstName} ${stockCount.responsible.lastName}`,
+        phone: stockCount.responsible.whatsapp
+      } as any : undefined,
       items,
     };
   }
@@ -1473,8 +1459,8 @@ export class DatabaseStorage implements IStorage {
 
     return result.map(row => ({
       ...row.item,
-      product: row.product,
-    }));
+      product: row.product || undefined,
+    })) as any;
   }
 
   async createStockCountItem(itemData: InsertStockCountItem): Promise<StockCountItem> {

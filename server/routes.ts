@@ -1947,7 +1947,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/stock-counts', demoAuth, async (req, res) => {
     try {
-      const stockCount = await storage.createStockCount(req.body);
+      console.log("Raw request body:", req.body);
+      
+      // Validate and transform the request data
+      const stockCountData = {
+        date: new Date(req.body.date),
+        responsibleId: parseInt(req.body.responsibleId),
+        notes: req.body.notes || null,
+        status: req.body.status || "draft",
+      };
+      
+      console.log("Processed stock count data:", stockCountData);
+      console.log("Date is valid:", !isNaN(stockCountData.date.getTime()));
+      
+      const stockCount = await storage.createStockCount(stockCountData);
       res.status(201).json(stockCount);
     } catch (error) {
       console.error("Error creating stock count:", error);
