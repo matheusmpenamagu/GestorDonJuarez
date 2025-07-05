@@ -1699,11 +1699,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               return res.status(400).json({ message: "Arquivo CSV deve ter pelo menos um cabeçalho e uma linha de dados" });
             }
 
-            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            // Auto-detect CSV separator (comma or semicolon)
+            const firstLine = lines[0];
+            const separator = firstLine.includes(';') ? ';' : ',';
+            console.log("Detected CSV separator:", separator);
+            
+            const headers = firstLine.split(separator).map(h => h.trim().replace(/['"]/g, ''));
             console.log("Headers found:", headers);
             
             for (let i = 1; i < lines.length; i++) {
-              const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+              const values = lines[i].split(separator).map(v => v.trim().replace(/['"]/g, ''));
               if (values.length === headers.length && values.some(v => v)) { // Skip empty lines
                 const product: any = {};
                 headers.forEach((header, index) => {
@@ -1830,12 +1835,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           for (const productData of products) {
             try {
               // Map common CSV column names (Portuguese and English)
-              const rawCode = productData.codigo || productData.code || productData.Codigo || productData.Code || productData.CODIGO || "";
-              const rawName = productData.produto || productData.product || productData.nome || productData.name || productData.Produto || productData.Product || productData.NOME || "";
+              const rawCode = productData.codigo || productData.code || productData.Codigo || productData.Code || productData.CODIGO || productData["COD."] || "";
+              const rawName = productData.produto || productData.product || productData.nome || productData.name || productData.Produto || productData.Product || productData.NOME || productData.PRODUTO || "";
               const rawCategory = productData.categoria || productData.category || productData.Categoria || productData.Category || productData.CATEGORIA || "";
               const rawUnit = productData.unidade || productData.unit || productData.Unidade || productData.Unit || productData.UNIDADE || "";
               const rawUnitMeasure = productData.medida || productData.measure || productData.Medida || productData.Measure || productData.MEDIDA || "";
-              const rawValue = productData.valor || productData.value || productData.Valor || productData.Value || productData.VALOR || productData.currentValue || "0";
+              const rawValue = productData.valor || productData.value || productData.Valor || productData.Value || productData.VALOR || productData.currentValue || productData["VALOR ATUAL"] || "0";
 
               if (!rawCode) {
                 errors.push({ data: productData, error: 'Código é obrigatório' });
