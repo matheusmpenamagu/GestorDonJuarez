@@ -84,7 +84,7 @@ export default function ProductsManagement() {
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertProduct) => {
-      return await apiRequest("/api/products", "POST", data);
+      return await apiRequest("POST", "/api/products", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
@@ -106,7 +106,7 @@ export default function ProductsManagement() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<InsertProduct> }) => {
-      return await apiRequest(`/api/products/${id}`, "PUT", data);
+      return await apiRequest("PUT", `/api/products/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
@@ -129,7 +129,7 @@ export default function ProductsManagement() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/products/${id}`, "DELETE");
+      return await apiRequest("DELETE", `/api/products/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
@@ -149,7 +149,7 @@ export default function ProductsManagement() {
 
   const createCategoryMutation = useMutation({
     mutationFn: async (data: InsertProductCategory) => {
-      return await apiRequest("/api/product-categories", "POST", data);
+      return await apiRequest("POST", "/api/product-categories", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/product-categories"] });
@@ -171,7 +171,8 @@ export default function ProductsManagement() {
 
   const updateCategoryMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<InsertProductCategory> }) => {
-      return await apiRequest(`/api/product-categories/${id}`, "PUT", data);
+      console.log("Making PUT request to:", `/api/product-categories/${id}`, "with data:", data);
+      return await apiRequest("PUT", `/api/product-categories/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/product-categories"] });
@@ -194,7 +195,7 @@ export default function ProductsManagement() {
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/product-categories/${id}`, "DELETE");
+      return await apiRequest("DELETE", `/api/product-categories/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/product-categories"] });
