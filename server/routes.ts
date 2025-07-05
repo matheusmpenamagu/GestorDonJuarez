@@ -1653,6 +1653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Upload products from CSV file with intelligent processing
   app.post('/api/products/upload', demoAuth, async (req, res) => {
+    console.log("=== CSV Upload Request Started ===");
     try {
       const multer = await import('multer');
       const upload = multer.default({ 
@@ -1661,11 +1662,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       upload.single('file')(req, res, async (err) => {
+        console.log("Upload middleware executed");
         if (err) {
+          console.error("Multer error:", err);
           return res.status(400).json({ message: "Erro no upload do arquivo" });
         }
 
+        console.log("File received:", req.file ? {
+          originalname: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size
+        } : "No file");
+
         if (!req.file) {
+          console.log("No file provided in request");
           return res.status(400).json({ message: "Nenhum arquivo enviado" });
         }
 
@@ -1673,16 +1683,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const fileBuffer = req.file.buffer;
           let products: any[] = [];
 
+          console.log("Processing file:", req.file.originalname);
+
           if (req.file.originalname.endsWith('.csv')) {
             // Parse CSV
             const csvContent = fileBuffer.toString('utf-8');
+            console.log("CSV content length:", csvContent.length);
+            console.log("First 200 chars:", csvContent.substring(0, 200));
+            
             const lines = csvContent.split('\n').filter(line => line.trim());
+            console.log("Total lines found:", lines.length);
             
             if (lines.length < 2) {
+              console.log("CSV has insufficient lines");
               return res.status(400).json({ message: "Arquivo CSV deve ter pelo menos um cabeçalho e uma linha de dados" });
             }
 
             const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            console.log("Headers found:", headers);
             
             for (let i = 1; i < lines.length; i++) {
               const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
@@ -1694,6 +1712,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 products.push(product);
               }
             }
+            
+            console.log("Products parsed from CSV:", products.length);
+            console.log("First product example:", products[0]);
           } else {
             return res.status(400).json({ message: "Apenas arquivos CSV são suportados no momento" });
           }

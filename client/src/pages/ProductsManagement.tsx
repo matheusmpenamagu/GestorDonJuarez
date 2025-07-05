@@ -335,15 +335,18 @@ export default function ProductsManagement() {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.name.endsWith('.csv') && !file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      console.log("File selected:", file.name, "Size:", file.size, "Type:", file.type);
+      
+      if (!file.name.endsWith('.csv')) {
         toast({
           title: "Arquivo inválido",
-          description: "Por favor, selecione um arquivo CSV ou Excel (.xlsx, .xls)",
+          description: "Por favor, selecione um arquivo CSV (.csv)",
           variant: "destructive",
         });
         return;
       }
       
+      console.log("Starting upload...");
       setIsUploading(true);
       uploadMutation.mutate(file);
     }
