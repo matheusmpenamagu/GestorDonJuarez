@@ -1584,6 +1584,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create product with multiple units
+  app.post('/api/products/multi-unit', demoAuth, async (req, res) => {
+    try {
+      const { units, ...productData } = req.body;
+      
+      if (!units || !Array.isArray(units) || units.length === 0) {
+        return res.status(400).json({ message: "Pelo menos uma unidade deve ser selecionada" });
+      }
+      
+      // Create the product first (use first unit for compatibility)
+      const productToCreate = {
+        ...productData,
+        unit: units[0] // Use first unit for the product record
+      };
+      
+      const product = await storage.createProduct(productToCreate);
+      
+      // Associate product with all selected units
+      for (const unitId of units) {
+        try {
+          await storage.addProductToUnit(product.id, unitId, 0);
+        } catch (unitError) {
+          // Ignore if association already exists
+          console.log(`Association product ${product.id} - unit ${unitId} already exists`);
+        }
+      }
+      
+      res.status(201).json(product);
+    } catch (error) {
+      console.error("Error creating product with multiple units:", error);
+      res.status(500).json({ message: "Failed to create product with multiple units" });
+    }
+  });
+
   app.put('/api/products/:id', demoAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);

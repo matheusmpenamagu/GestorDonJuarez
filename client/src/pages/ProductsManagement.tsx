@@ -64,6 +64,8 @@ function ProductsManagementContent() {
     currentValue: "",
   });
 
+  const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
+
   // CSV Upload state
   const [uploadResult, setUploadResult] = useState<{
     message: string;
@@ -113,9 +115,40 @@ function ProductsManagementContent() {
         unitOfMeasure: "",
         currentValue: "",
       });
+      setSelectedUnits([]);
       toast({
         title: "Produto criado",
         description: "Produto criado com sucesso!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao criar produto",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const multiUnitCreateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", "/api/products/multi-unit", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      setIsCreateDialogOpen(false);
+      setFormData({
+        code: "",
+        name: "",
+        stockCategory: "",
+        unit: "",
+        unitOfMeasure: "",
+        currentValue: "",
+      });
+      setSelectedUnits([]);
+      toast({
+        title: "Produto criado",
+        description: "Produto criado e associado às unidades selecionadas!",
       });
     },
     onError: (error: Error) => {
@@ -210,19 +243,38 @@ function ProductsManagementContent() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const productData: InsertProduct = {
+    if (selectedUnits.length === 0) {
+      toast({
+        title: "Erro",
+        description: "Selecione pelo menos uma unidade",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const productData = {
       code: formData.code,
       name: formData.name,
       stockCategory: parseInt(formData.stockCategory),
-      unit: parseInt(formData.unit),
       unitOfMeasure: formData.unitOfMeasure,
       currentValue: parseFloat(formData.currentValue),
+      units: selectedUnits.map(id => parseInt(id))
     };
 
     if (editingProduct) {
-      updateMutation.mutate({ id: editingProduct.id, product: productData });
+      // For editing, use the existing single-unit update for now
+      const singleUnitData: InsertProduct = {
+        code: formData.code,
+        name: formData.name,
+        stockCategory: parseInt(formData.stockCategory),
+        unit: parseInt(selectedUnits[0]), // Use first selected unit for compatibility
+        unitOfMeasure: formData.unitOfMeasure,
+        currentValue: parseFloat(formData.currentValue),
+      };
+      updateMutation.mutate({ id: editingProduct.id, product: singleUnitData });
     } else {
-      createMutation.mutate(productData);
+      // Use new multi-unit creation
+      multiUnitCreateMutation.mutate(productData);
     }
   };
 
@@ -403,22 +455,37 @@ function ProductsManagementContent() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="unit">Unidade</Label>
-                  <Select
-                    value={formData.unit}
-                    onValueChange={(value) => setFormData({ ...formData, unit: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma unidade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {units.map((unit) => (
-                        <SelectItem key={unit.id} value={unit.id.toString()}>
+                  <Label htmlFor="units">Unidades</Label>
+                  <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2">
+                    {units.map((unit) => (
+                      <div key={unit.id} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`unit-${unit.id}`}
+                          checked={selectedUnits.includes(unit.id.toString())}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedUnits([...selectedUnits, unit.id.toString()]);
+                            } else {
+                              setSelectedUnits(selectedUnits.filter(id => id !== unit.id.toString()));
+                            }
+                          }}
+                          className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                        />
+                        <Label htmlFor={`unit-${unit.id}`} className="text-sm font-normal cursor-pointer">
                           {unit.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                  {selectedUnits.length === 0 && (
+                    <p className="text-sm text-gray-500">Selecione pelo menos uma unidade</p>
+                  )}
+                  {selectedUnits.length > 0 && (
+                    <p className="text-sm text-green-600">
+                      {selectedUnits.length} unidade{selectedUnits.length > 1 ? 's' : ''} selecionada{selectedUnits.length > 1 ? 's' : ''}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="unitOfMeasure">Unidade de Medida</Label>
