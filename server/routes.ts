@@ -1756,11 +1756,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             const normalized = unitName.toLowerCase().trim();
             
+            // Create mapping patterns for unit matching
+            const unitMappings = {
+              'apollonio': (u: any) => u.name.toLowerCase().includes('apollonio'),
+              'grão pará': (u: any) => u.name.toLowerCase().includes('grão pará'),
+              'beer truck': (u: any) => u.name.toLowerCase().includes('beer truck'),
+              'chopeira': (u: any) => u.name.toLowerCase().includes('chopeira'),
+              'fábrica': (u: any) => u.name.toLowerCase().includes('fábrica')
+            };
+            
             // Try exact match on name first
-            let match = units.find(unit => unit.name.toLowerCase() === normalized);
+            let match = units.find(unit => unit.name.toLowerCase().trim() === normalized);
             if (match) return match.id;
 
-            // Try partial match on name
+            // Try pattern matching
+            for (const [pattern, matcher] of Object.entries(unitMappings)) {
+              if (normalized.includes(pattern)) {
+                match = units.find(matcher);
+                if (match) return match.id;
+              }
+            }
+
+            // Try partial match on name (fallback)
             match = units.find(unit => 
               unit.name.toLowerCase().includes(normalized) || 
               normalized.includes(unit.name.toLowerCase())
@@ -1879,21 +1896,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`Unit mapping: "${rawUnit}" -> ID ${unitId}`);
               console.log(`Unit of measure: "${finalUnitOfMeasure}"`);
 
-              // Use upsert to create or update based on code
-              const product = await storage.upsertProductByCode(productInfo);
+              // Check if product already exists
+              let product = await storage.getProductByCode(rawCode.toString());
+              let isNewProduct = false;
               
-              // Determine if it was created or updated
-              const existing = await storage.getProductByCode(rawCode.toString());
-              if (existing && existing.updatedAt && existing.createdAt) {
-                // Check if creation and update timestamps are very close (within 1 second)
-                const timeDiff = Math.abs(existing.updatedAt.getTime() - existing.createdAt.getTime());
-                if (timeDiff < 1000) {
-                  created++;
-                } else {
-                  updated++;
+              if (!product) {
+                // Create new product
+                product = await storage.upsertProductByCode(productInfo);
+                created++;
+                isNewProduct = true;
+                console.log(`✓ New product created: ${product.code} - ${product.name}`);
+              } else {
+                // Update existing product with latest info
+                await storage.updateProduct(product.id, {
+                  name: productInfo.name,
+                  stockCategory: productInfo.stockCategory,
+                  unitOfMeasure: productInfo.unitOfMeasure,
+                  currentValue: productInfo.currentValue
+                });
+                updated++;
+                console.log(`✓ Existing product updated: ${product.code} - ${product.name}`);
+              }
+              
+              // Ensure product is associated with the unit from CSV
+              if (unitId) {
+                try {
+                  console.log(`Attempting to associate product ${product.id} (${product.code}) with unit ${unitId}`);
+                  await storage.addProductToUnit(product.id, unitId, 0);
+                  console.log(`✓ Product ${product.code} associated with unit ${unitId}`);
+                } catch (unitError) {
+                  // Log the actual error
+                  console.log(`→ Error associating product ${product.code} with unit ${unitId}:`, unitError);
                 }
               } else {
-                created++; // Fallback assumption
+                console.log(`⚠ No unit ID found for product ${product.code}`);
               }
 
             } catch (productError) {
