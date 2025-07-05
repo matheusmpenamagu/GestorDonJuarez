@@ -1618,6 +1618,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update product with multiple units
+  app.put('/api/products/multi-unit', demoAuth, async (req, res) => {
+    try {
+      const { productId, units, ...productData } = req.body;
+      
+      if (!productId) {
+        return res.status(400).json({ message: "Product ID é obrigatório" });
+      }
+      
+      if (!units || !Array.isArray(units) || units.length === 0) {
+        return res.status(400).json({ message: "Pelo menos uma unidade deve ser selecionada" });
+      }
+      
+      // Update the product (use first unit for compatibility)
+      const productToUpdate = {
+        ...productData,
+        unit: units[0] // Use first unit for the product record
+      };
+      
+      const product = await storage.updateProduct(productId, productToUpdate);
+      
+      // Get current associations
+      const currentAssociations = await storage.getProductUnits(productId);
+      const currentUnitIds = currentAssociations.map(pa => pa.unitId);
+      
+      // Remove old associations that are not in new selection
+      for (const association of currentAssociations) {
+        if (!units.includes(association.unitId)) {
+          try {
+            await storage.removeProductFromUnit(productId, association.unitId);
+          } catch (error) {
+            console.log(`Error removing association product ${productId} - unit ${association.unitId}`);
+          }
+        }
+      }
+      
+      // Add new associations
+      for (const unitId of units) {
+        if (!currentUnitIds.includes(unitId)) {
+          try {
+            await storage.addProductToUnit(productId, unitId, 0);
+          } catch (unitError) {
+            console.log(`Association product ${productId} - unit ${unitId} already exists or failed to create`);
+          }
+        }
+      }
+      
+      res.json(product);
+    } catch (error) {
+      console.error("Error updating product with multiple units:", error);
+      res.status(500).json({ message: "Failed to update product with multiple units" });
+    }
+  });
+
   app.put('/api/products/:id', demoAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);

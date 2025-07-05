@@ -160,6 +160,37 @@ function ProductsManagementContent() {
     },
   });
 
+  const multiUnitUpdateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("PUT", "/api/products/multi-unit", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      setIsEditDialogOpen(false);
+      setEditingProduct(null);
+      setFormData({
+        code: "",
+        name: "",
+        stockCategory: "",
+        unit: "",
+        unitOfMeasure: "",
+        currentValue: "",
+      });
+      setSelectedUnits([]);
+      toast({
+        title: "Produto atualizado",
+        description: "Produto atualizado e associações de unidades atualizadas!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar produto",
+        variant: "destructive",
+      });
+    },
+  });
+
   const updateMutation = useMutation({
     mutationFn: async (data: { id: number; product: Partial<InsertProduct> }) => {
       return await apiRequest("PUT", `/api/products/${data.id}`, data.product);
@@ -262,23 +293,19 @@ function ProductsManagementContent() {
     };
 
     if (editingProduct) {
-      // For editing, use the existing single-unit update for now
-      const singleUnitData: InsertProduct = {
-        code: formData.code,
-        name: formData.name,
-        stockCategory: parseInt(formData.stockCategory),
-        unit: parseInt(selectedUnits[0]), // Use first selected unit for compatibility
-        unitOfMeasure: formData.unitOfMeasure,
-        currentValue: parseFloat(formData.currentValue),
+      // Use multi-unit update for editing
+      const editData = {
+        ...productData,
+        productId: editingProduct.id
       };
-      updateMutation.mutate({ id: editingProduct.id, product: singleUnitData });
+      multiUnitUpdateMutation.mutate(editData);
     } else {
       // Use new multi-unit creation
       multiUnitCreateMutation.mutate(productData);
     }
   };
 
-  const handleEdit = (product: Product) => {
+  const handleEdit = async (product: Product) => {
     setEditingProduct(product);
     setFormData({
       code: product.code,
@@ -288,6 +315,24 @@ function ProductsManagementContent() {
       unitOfMeasure: product.unitOfMeasure,
       currentValue: product.currentValue.toString(),
     });
+    
+    // Load the units this product is associated with
+    try {
+      const response = await fetch(`/api/product-units?productId=${product.id}`);
+      if (response.ok) {
+        const productUnits = await response.json();
+        const associatedUnitIds = productUnits.map((pu: any) => pu.unitId.toString());
+        setSelectedUnits(associatedUnitIds);
+      } else {
+        // Fallback to current unit if API fails
+        setSelectedUnits([product.unit.toString()]);
+      }
+    } catch (error) {
+      console.error("Error loading product units:", error);
+      // Fallback to current unit if API fails
+      setSelectedUnits([product.unit.toString()]);
+    }
+    
     setIsEditDialogOpen(true);
   };
 

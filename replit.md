@@ -175,6 +175,11 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Formulário de produtos com seleção múltipla de unidades implementado (Julho 5, 2025)
+- ✓ Interface unificada para criação e edição com checkboxes de unidades múltiplas
+- ✓ Endpoint /api/products/multi-unit (POST e PUT) para operações com múltiplas unidades
+- ✓ Sistema atualiza associações produto-unidade automaticamente durante edição
+- ✓ Correção do bug de formulário mostrando select na edição e checkboxes na criação
 - ✓ Sistema de produtos duplicados em unidades diferentes implementado (Julho 5, 2025)
 - ✓ Upload CSV inteligente lida com produtos duplicados em múltiplas unidades automaticamente
 - ✓ Relacionamento many-to-many entre produtos e unidades funcionando perfeitamente
