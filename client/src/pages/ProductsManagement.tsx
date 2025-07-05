@@ -309,10 +309,14 @@ export default function ProductsManagement() {
 
   const handleCategorySubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log("Category form submitted:", { editingCategory, categoryFormData });
 
     if (editingCategory) {
+      console.log("Updating category with ID:", editingCategory.id, "Data:", categoryFormData);
       updateCategoryMutation.mutate({ id: editingCategory.id, data: categoryFormData });
     } else {
+      console.log("Creating new category with data:", categoryFormData);
       createCategoryMutation.mutate(categoryFormData);
     }
   };
@@ -476,7 +480,7 @@ export default function ProductsManagement() {
                           <SelectValue placeholder="Selecione uma categoria" />
                         </SelectTrigger>
                         <SelectContent>
-                          {categories.map((category: ProductCategory) => (
+                          {(categories as ProductCategory[]).map((category: ProductCategory) => (
                             <SelectItem key={category.id} value={category.name}>
                               {category.name}
                             </SelectItem>
@@ -707,7 +711,7 @@ export default function ProductsManagement() {
                       <SelectValue placeholder="Selecione uma categoria" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((category: ProductCategory) => (
+                      {(categories as ProductCategory[]).map((category: ProductCategory) => (
                         <SelectItem key={category.id} value={category.name}>
                           {category.name}
                         </SelectItem>
@@ -841,14 +845,14 @@ export default function ProductsManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {categories.length === 0 ? (
+                {(categories as ProductCategory[]).length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={3} className="text-center py-8 text-gray-500">
                       Nenhuma categoria cadastrada.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  categories.map((category: ProductCategory) => (
+                  (categories as ProductCategory[]).map((category: ProductCategory) => (
                     <TableRow key={category.id}>
                       <TableCell className="font-medium">{category.name}</TableCell>
                       <TableCell>{category.description || "-"}</TableCell>
