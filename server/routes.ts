@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupWebSocket, broadcastUpdate } from "./websocket";
 import { storage } from "./storage";
+import { isAuthenticated } from "./replitAuth";
 // Removed Replit Auth for demo purposes
 import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, insertPointOfSaleSchema, insertBeerStyleSchema, insertDeviceSchema, insertUnitSchema, insertCo2RefillSchema, insertProductCategorySchema, insertProductSchema } from "@shared/schema";
 import { z } from "zod";
@@ -1916,6 +1917,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro no endpoint de upload:", error);
       res.status(500).json({ message: "Falha ao processar upload" });
+    }
+  });
+
+  // Stock Counts routes
+  app.get('/api/stock-counts', isAuthenticated, async (req, res) => {
+    try {
+      const stockCounts = await storage.getStockCounts();
+      res.json(stockCounts);
+    } catch (error) {
+      console.error("Error fetching stock counts:", error);
+      res.status(500).json({ message: "Failed to fetch stock counts" });
+    }
+  });
+
+  app.get('/api/stock-counts/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const stockCount = await storage.getStockCount(id);
+      if (!stockCount) {
+        return res.status(404).json({ message: "Stock count not found" });
+      }
+      res.json(stockCount);
+    } catch (error) {
+      console.error("Error fetching stock count:", error);
+      res.status(500).json({ message: "Failed to fetch stock count" });
+    }
+  });
+
+  app.post('/api/stock-counts', isAuthenticated, async (req, res) => {
+    try {
+      const stockCount = await storage.createStockCount(req.body);
+      res.status(201).json(stockCount);
+    } catch (error) {
+      console.error("Error creating stock count:", error);
+      res.status(500).json({ message: "Failed to create stock count" });
+    }
+  });
+
+  app.put('/api/stock-counts/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const stockCount = await storage.updateStockCount(id, req.body);
+      res.json(stockCount);
+    } catch (error) {
+      console.error("Error updating stock count:", error);
+      res.status(500).json({ message: "Failed to update stock count" });
+    }
+  });
+
+  app.delete('/api/stock-counts/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteStockCount(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting stock count:", error);
+      res.status(500).json({ message: "Failed to delete stock count" });
+    }
+  });
+
+  // Stock Count Items routes
+  app.get('/api/stock-counts/:id/items', isAuthenticated, async (req, res) => {
+    try {
+      const stockCountId = parseInt(req.params.id);
+      const items = await storage.getStockCountItems(stockCountId);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching stock count items:", error);
+      res.status(500).json({ message: "Failed to fetch stock count items" });
+    }
+  });
+
+  app.post('/api/stock-counts/:id/items', isAuthenticated, async (req, res) => {
+    try {
+      const stockCountId = parseInt(req.params.id);
+      const items = req.body.items || [];
+      
+      await storage.updateStockCountItems(stockCountId, items);
+      res.status(200).json({ message: "Items updated successfully" });
+    } catch (error) {
+      console.error("Error updating stock count items:", error);
+      res.status(500).json({ message: "Failed to update stock count items" });
+    }
+  });
+
+  // Route to initialize stock count with all products
+  app.post('/api/stock-counts/:id/initialize', isAuthenticated, async (req, res) => {
+    try {
+      const stockCountId = parseInt(req.params.id);
+      
+      // Get all products
+      const products = await storage.getProducts();
+      
+      // Create items for all products with 0 count
+      const items = products.map(product => ({
+        stockCountId,
+        productId: product.id,
+        countedQuantity: "0",
+        systemQuantity: null,
+        notes: null,
+      }));
+      
+      await storage.createStockCountItems(items);
+      res.status(200).json({ message: "Stock count initialized with all products" });
+    } catch (error) {
+      console.error("Error initializing stock count:", error);
+      res.status(500).json({ message: "Failed to initialize stock count" });
     }
   });
 

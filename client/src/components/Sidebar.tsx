@@ -13,6 +13,7 @@ import {
   Building2,
   ChevronDown,
   ChevronRight,
+  FileText,
   Wind,
   Clock,
   Package
@@ -43,6 +44,7 @@ const menuItems = [
     icon: Package,
     items: [
       { href: "/produtos", icon: Package, label: "Produtos" },
+      { href: "/contagens", icon: FileText, label: "Contagens" },
     ],
   },
   {

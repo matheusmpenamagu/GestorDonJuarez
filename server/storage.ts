@@ -13,6 +13,8 @@ import {
   freelancerTimeEntries,
   productCategories,
   products,
+  stockCounts,
+  stockCountItems,
   type User,
   type UpsertUser,
   type PointOfSale,
@@ -43,6 +45,12 @@ import {
   type InsertProductCategory,
   type Product,
   type InsertProduct,
+  type StockCount,
+  type InsertStockCount,
+  type StockCountWithRelations,
+  type StockCountItem,
+  type InsertStockCountItem,
+  type StockCountItemWithRelations,
   type TapWithRelations,
   type PourEventWithRelations,
   type EmployeeWithRelations,
@@ -169,6 +177,23 @@ export interface IStorage {
   updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product>;
   deleteProduct(id: number): Promise<void>;
   upsertProductByCode(product: InsertProduct): Promise<Product>;
+  
+  // Stock Counts operations
+  getStockCounts(): Promise<StockCountWithRelations[]>;
+  getStockCount(id: number): Promise<StockCountWithRelations | undefined>;
+  createStockCount(stockCount: InsertStockCount): Promise<StockCount>;
+  updateStockCount(id: number, stockCount: Partial<InsertStockCount>): Promise<StockCount>;
+  deleteStockCount(id: number): Promise<void>;
+  
+  // Stock Count Items operations
+  getStockCountItems(stockCountId: number): Promise<StockCountItemWithRelations[]>;
+  createStockCountItem(item: InsertStockCountItem): Promise<StockCountItem>;
+  updateStockCountItem(id: number, item: Partial<InsertStockCountItem>): Promise<StockCountItem>;
+  deleteStockCountItem(id: number): Promise<void>;
+  
+  // Bulk operations for stock count items
+  createStockCountItems(items: InsertStockCountItem[]): Promise<StockCountItem[]>;
+  updateStockCountItems(stockCountId: number, items: { productId: number; countedQuantity: string; notes?: string }[]): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1348,6 +1373,157 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return product;
+  }
+
+  // Stock Counts operations
+  async getStockCounts(): Promise<StockCountWithRelations[]> {
+    const result = await db
+      .select({
+        stockCount: stockCounts,
+        responsible: {
+          id: employees.id,
+          name: employees.name,
+          email: employees.email,
+          phone: employees.phone,
+          whatsapp: employees.whatsapp,
+          avatar: employees.avatar,
+          roleId: employees.roleId,
+          employmentTypes: employees.employmentTypes,
+          createdAt: employees.createdAt,
+          updatedAt: employees.updatedAt,
+        },
+      })
+      .from(stockCounts)
+      .leftJoin(employees, eq(stockCounts.responsibleId, employees.id))
+      .orderBy(desc(stockCounts.createdAt));
+
+    return result.map(row => ({
+      ...row.stockCount,
+      responsible: row.responsible,
+    }));
+  }
+
+  async getStockCount(id: number): Promise<StockCountWithRelations | undefined> {
+    const result = await db
+      .select({
+        stockCount: stockCounts,
+        responsible: {
+          id: employees.id,
+          name: employees.name,
+          email: employees.email,
+          phone: employees.phone,
+          whatsapp: employees.whatsapp,
+          avatar: employees.avatar,
+          roleId: employees.roleId,
+          employmentTypes: employees.employmentTypes,
+          createdAt: employees.createdAt,
+          updatedAt: employees.updatedAt,
+        },
+      })
+      .from(stockCounts)
+      .leftJoin(employees, eq(stockCounts.responsibleId, employees.id))
+      .where(eq(stockCounts.id, id));
+
+    if (result.length === 0) return undefined;
+
+    const stockCount = result[0];
+    
+    // Get items for this stock count
+    const items = await this.getStockCountItems(id);
+
+    return {
+      ...stockCount.stockCount,
+      responsible: stockCount.responsible,
+      items,
+    };
+  }
+
+  async createStockCount(stockCountData: InsertStockCount): Promise<StockCount> {
+    const [stockCount] = await db
+      .insert(stockCounts)
+      .values(stockCountData)
+      .returning();
+    return stockCount;
+  }
+
+  async updateStockCount(id: number, stockCountData: Partial<InsertStockCount>): Promise<StockCount> {
+    const [stockCount] = await db
+      .update(stockCounts)
+      .set({ ...stockCountData, updatedAt: new Date() })
+      .where(eq(stockCounts.id, id))
+      .returning();
+    return stockCount;
+  }
+
+  async deleteStockCount(id: number): Promise<void> {
+    await db.delete(stockCounts).where(eq(stockCounts.id, id));
+  }
+
+  // Stock Count Items operations
+  async getStockCountItems(stockCountId: number): Promise<StockCountItemWithRelations[]> {
+    const result = await db
+      .select({
+        item: stockCountItems,
+        product: products,
+      })
+      .from(stockCountItems)
+      .leftJoin(products, eq(stockCountItems.productId, products.id))
+      .where(eq(stockCountItems.stockCountId, stockCountId))
+      .orderBy(products.name);
+
+    return result.map(row => ({
+      ...row.item,
+      product: row.product,
+    }));
+  }
+
+  async createStockCountItem(itemData: InsertStockCountItem): Promise<StockCountItem> {
+    const [item] = await db
+      .insert(stockCountItems)
+      .values(itemData)
+      .returning();
+    return item;
+  }
+
+  async updateStockCountItem(id: number, itemData: Partial<InsertStockCountItem>): Promise<StockCountItem> {
+    const [item] = await db
+      .update(stockCountItems)
+      .set({ ...itemData, updatedAt: new Date() })
+      .where(eq(stockCountItems.id, id))
+      .returning();
+    return item;
+  }
+
+  async deleteStockCountItem(id: number): Promise<void> {
+    await db.delete(stockCountItems).where(eq(stockCountItems.id, id));
+  }
+
+  // Bulk operations for stock count items
+  async createStockCountItems(items: InsertStockCountItem[]): Promise<StockCountItem[]> {
+    if (items.length === 0) return [];
+    
+    const result = await db
+      .insert(stockCountItems)
+      .values(items)
+      .returning();
+    return result;
+  }
+
+  async updateStockCountItems(stockCountId: number, items: { productId: number; countedQuantity: string; notes?: string }[]): Promise<void> {
+    if (items.length === 0) return;
+
+    // Delete existing items for this stock count
+    await db.delete(stockCountItems).where(eq(stockCountItems.stockCountId, stockCountId));
+
+    // Insert new items
+    const newItems: InsertStockCountItem[] = items.map(item => ({
+      stockCountId,
+      productId: item.productId,
+      countedQuantity: item.countedQuantity,
+      notes: item.notes,
+    }));
+
+    await this.createStockCountItems(newItems);
   }
 }
 

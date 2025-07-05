@@ -426,3 +426,73 @@ export type PourEventWithRelations = PourEvent & {
 export type EmployeeWithRelations = Employee & {
   role?: Role;
 };
+
+// Stock Counts table
+export const stockCounts = pgTable("stock_counts", {
+  id: serial("id").primaryKey(),
+  date: timestamp("date").notNull(),
+  responsibleId: integer("responsible_id").notNull().references(() => employees.id),
+  notes: text("notes"),
+  status: varchar("status", { length: 50 }).notNull().default("draft"), // draft, completed
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Stock Count Items table
+export const stockCountItems = pgTable("stock_count_items", {
+  id: serial("id").primaryKey(),
+  stockCountId: integer("stock_count_id").notNull().references(() => stockCounts.id, { onDelete: "cascade" }),
+  productId: integer("product_id").notNull().references(() => products.id),
+  countedQuantity: decimal("counted_quantity", { precision: 10, scale: 3 }).notNull(),
+  systemQuantity: decimal("system_quantity", { precision: 10, scale: 3 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Relations for Stock Counts
+export const stockCountsRelations = relations(stockCounts, ({ one, many }) => ({
+  responsible: one(employees, {
+    fields: [stockCounts.responsibleId],
+    references: [employees.id],
+  }),
+  items: many(stockCountItems),
+}));
+
+export const stockCountItemsRelations = relations(stockCountItems, ({ one }) => ({
+  stockCount: one(stockCounts, {
+    fields: [stockCountItems.stockCountId],
+    references: [stockCounts.id],
+  }),
+  product: one(products, {
+    fields: [stockCountItems.productId],
+    references: [products.id],
+  }),
+}));
+
+// Types for Stock Counts
+export type StockCount = typeof stockCounts.$inferSelect;
+export type InsertStockCount = typeof stockCounts.$inferInsert;
+export type StockCountItem = typeof stockCountItems.$inferSelect;
+export type InsertStockCountItem = typeof stockCountItems.$inferInsert;
+
+export const insertStockCountSchema = createInsertSchema(stockCounts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertStockCountItemSchema = createInsertSchema(stockCountItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type StockCountWithRelations = StockCount & {
+  responsible?: EmployeeWithRelations;
+  items?: (StockCountItem & { product?: Product })[];
+};
+
+export type StockCountItemWithRelations = StockCountItem & {
+  product?: Product;
+};

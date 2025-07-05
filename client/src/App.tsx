@@ -19,6 +19,7 @@ import FreelancersManagement from "@/pages/FreelancersManagement";
 import UnitsManagement from "@/pages/UnitsManagement";
 import Co2Management from "@/pages/Co2Management";
 import ProductsManagement from "@/pages/ProductsManagement";
+import StockCountsManagement from "@/pages/StockCountsManagement";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -85,6 +86,11 @@ function Router() {
           <Route path="/produtos">
             <Layout>
               <ProductsManagement />
+            </Layout>
+          </Route>
+          <Route path="/contagens">
+            <Layout>
+              <StockCountsManagement />
             </Layout>
           </Route>
         </>
