@@ -11,6 +11,7 @@ import {
   units,
   co2Refills,
   freelancerTimeEntries,
+  productCategories,
   products,
   type User,
   type UpsertUser,
@@ -38,6 +39,8 @@ import {
   type FreelancerTimeEntry,
   type InsertFreelancerTimeEntry,
   type FreelancerTimeEntryWithRelations,
+  type ProductCategory,
+  type InsertProductCategory,
   type Product,
   type InsertProduct,
   type TapWithRelations,
@@ -150,6 +153,13 @@ export interface IStorage {
     totalDays: number;
     entries: FreelancerTimeEntryWithRelations[];
   }[]>;
+  
+  // Product Categories operations
+  getProductCategories(): Promise<ProductCategory[]>;
+  getProductCategory(id: number): Promise<ProductCategory | undefined>;
+  createProductCategory(category: InsertProductCategory): Promise<ProductCategory>;
+  updateProductCategory(id: number, category: Partial<InsertProductCategory>): Promise<ProductCategory>;
+  deleteProductCategory(id: number): Promise<void>;
   
   // Products operations
   getProducts(): Promise<Product[]>;
@@ -1237,6 +1247,44 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Products operations
+  // Product Categories operations
+  async getProductCategories(): Promise<ProductCategory[]> {
+    return await db.select().from(productCategories).orderBy(productCategories.name);
+  }
+
+  async getProductCategory(id: number): Promise<ProductCategory | undefined> {
+    const [category] = await db.select().from(productCategories).where(eq(productCategories.id, id));
+    return category;
+  }
+
+  async createProductCategory(categoryData: InsertProductCategory): Promise<ProductCategory> {
+    const [category] = await db
+      .insert(productCategories)
+      .values({
+        ...categoryData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return category;
+  }
+
+  async updateProductCategory(id: number, categoryData: Partial<InsertProductCategory>): Promise<ProductCategory> {
+    const [category] = await db
+      .update(productCategories)
+      .set({
+        ...categoryData,
+        updatedAt: new Date(),
+      })
+      .where(eq(productCategories.id, id))
+      .returning();
+    return category;
+  }
+
+  async deleteProductCategory(id: number): Promise<void> {
+    await db.delete(productCategories).where(eq(productCategories.id, id));
+  }
+
   async getProducts(): Promise<Product[]> {
     return await db.select().from(products).orderBy(products.name);
   }

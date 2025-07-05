@@ -167,6 +167,15 @@ export const freelancerTimeEntries = pgTable("freelancer_time_entries", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Product Categories table for inventory categorization
+export const productCategories = pgTable("product_categories", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  description: varchar("description", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Products table for inventory management
 export const products = pgTable("products", {
   id: serial("id").primaryKey(),
@@ -343,6 +352,12 @@ export const insertFreelancerTimeEntrySchema = createInsertSchema(freelancerTime
   updatedAt: true,
 });
 
+export const insertProductCategorySchema = createInsertSchema(productCategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
   createdAt: true,
@@ -376,6 +391,8 @@ export type Co2Refill = typeof co2Refills.$inferSelect;
 export type InsertCo2Refill = z.infer<typeof insertCo2RefillSchema>;
 export type FreelancerTimeEntry = typeof freelancerTimeEntries.$inferSelect;
 export type InsertFreelancerTimeEntry = z.infer<typeof insertFreelancerTimeEntrySchema>;
+export type ProductCategory = typeof productCategories.$inferSelect;
+export type InsertProductCategory = z.infer<typeof insertProductCategorySchema>;
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 

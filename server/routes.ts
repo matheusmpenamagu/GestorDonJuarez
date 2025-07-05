@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupWebSocket, broadcastUpdate } from "./websocket";
 import { storage } from "./storage";
 // Removed Replit Auth for demo purposes
-import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, insertPointOfSaleSchema, insertBeerStyleSchema, insertDeviceSchema, insertUnitSchema, insertCo2RefillSchema, insertProductSchema } from "@shared/schema";
+import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, insertPointOfSaleSchema, insertBeerStyleSchema, insertDeviceSchema, insertUnitSchema, insertCo2RefillSchema, insertProductCategorySchema, insertProductSchema } from "@shared/schema";
 import { z } from "zod";
 import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
@@ -1473,6 +1473,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting freelancer entry:", error);
       res.status(500).json({ message: "Error deleting freelancer entry" });
+    }
+  });
+
+  // Product Categories routes
+  app.get('/api/product-categories', demoAuth, async (req, res) => {
+    try {
+      const categories = await storage.getProductCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching product categories:", error);
+      res.status(500).json({ message: "Error fetching product categories" });
+    }
+  });
+
+  app.get('/api/product-categories/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const category = await storage.getProductCategory(id);
+      if (!category) {
+        return res.status(404).json({ message: "Categoria não encontrada" });
+      }
+      res.json(category);
+    } catch (error) {
+      console.error("Error fetching product category:", error);
+      res.status(500).json({ message: "Error fetching product category" });
+    }
+  });
+
+  app.post('/api/product-categories', demoAuth, async (req, res) => {
+    try {
+      const result = insertProductCategorySchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Dados inválidos", errors: result.error.issues });
+      }
+      
+      const category = await storage.createProductCategory(result.data);
+      res.status(201).json(category);
+    } catch (error) {
+      console.error("Error creating product category:", error);
+      res.status(500).json({ message: "Error creating product category" });
+    }
+  });
+
+  app.put('/api/product-categories/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const result = insertProductCategorySchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Dados inválidos", errors: result.error.issues });
+      }
+      
+      const category = await storage.updateProductCategory(id, result.data);
+      res.json(category);
+    } catch (error) {
+      console.error("Error updating product category:", error);
+      res.status(500).json({ message: "Error updating product category" });
+    }
+  });
+
+  app.delete('/api/product-categories/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteProductCategory(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting product category:", error);
+      res.status(500).json({ message: "Error deleting product category" });
     }
   });
 
