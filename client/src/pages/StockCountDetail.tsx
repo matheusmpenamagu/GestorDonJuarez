@@ -518,38 +518,30 @@ function SortableProductItem({ product, quantity, onQuantityChange, disabled, is
     <div
       ref={setNodeRef}
       style={style}
-      className="grid grid-cols-12 gap-2 items-center py-2 px-3 border rounded-md"
+      className="flex items-center gap-3 py-2 px-3 border rounded-md"
     >
       {isEditingOrder && (
-        <div className="col-span-1 flex justify-center">
+        <div className="flex justify-center">
           <div {...attributes} {...listeners} className="cursor-move">
             <GripVertical className="h-4 w-4 text-gray-400" />
           </div>
         </div>
       )}
-      <div className={`${isEditingOrder ? 'col-span-8' : 'col-span-9'} flex-1`}>
-        <div className="font-medium text-sm">{product.name}</div>
-        <div className="text-xs text-gray-500">
-          {product.code} • {product.unitOfMeasure || 'UN'}
-        </div>
+      <div className="flex-1 font-medium text-sm">{product.name}</div>
+      <div className="text-xs text-gray-500 w-20">{product.code}</div>
+      <div className="w-24">
+        <Input
+          type="number"
+          min="0"
+          step="0.001"
+          value={quantity}
+          onChange={(e) => onQuantityChange(e.target.value)}
+          placeholder="0"
+          disabled={disabled}
+          className="h-8 text-sm"
+        />
       </div>
-      <div className="col-span-3">
-        <div className="relative">
-          <Input
-            type="number"
-            min="0"
-            step="0.001"
-            value={quantity}
-            onChange={(e) => onQuantityChange(e.target.value)}
-            placeholder="0"
-            disabled={disabled}
-            className="h-8 text-sm pr-12"
-          />
-          <div className="absolute inset-y-0 right-3 flex items-center text-xs text-gray-500 pointer-events-none">
-            {product.unitOfMeasure || 'UN'}
-          </div>
-        </div>
-      </div>
+      <div className="text-xs text-gray-500 w-8">{product.unitOfMeasure || 'UN'}</div>
     </div>
   );
 }
