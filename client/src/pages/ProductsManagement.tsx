@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Product, InsertProduct, ProductCategory, InsertProductCategory } from "@shared/schema";
+import type { Product, InsertProduct, ProductCategory, InsertProductCategory, Unit } from "@shared/schema";
 
 type SortField = 'code' | 'name' | 'stockCategory' | 'unit' | 'unitOfMeasure' | 'currentValue';
 type SortDirection = 'asc' | 'desc';
@@ -81,13 +81,30 @@ export default function ProductsManagement() {
 
   const queryClient = useQueryClient();
 
-  const { data: products = [], isLoading: productsLoading } = useQuery({
+  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
   });
 
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<ProductCategory[]>({
     queryKey: ["/api/product-categories"],
   });
+
+  const { data: units = [] } = useQuery<Unit[]>({
+    queryKey: ["/api/units"],
+  });
+
+  // Helper functions to get names by ID
+  const getCategoryName = (categoryId: number | string) => {
+    const id = typeof categoryId === 'string' ? parseInt(categoryId) : categoryId;
+    const category = categories.find((c: ProductCategory) => c.id === id);
+    return category ? category.name : 'Categoria não encontrada';
+  };
+
+  const getUnitName = (unitId: number | string) => {
+    const id = typeof unitId === 'string' ? parseInt(unitId) : unitId;
+    const unit = units.find((u: Unit) => u.id === id);
+    return unit ? unit.name : 'Unidade não encontrada';
+  };
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertProduct) => {
@@ -642,8 +659,8 @@ export default function ProductsManagement() {
                       <TableRow key={product.id}>
                         <TableCell className="font-mono">{product.code}</TableCell>
                         <TableCell className="font-medium">{product.name}</TableCell>
-                        <TableCell>{product.stockCategory}</TableCell>
-                        <TableCell>{product.unit}</TableCell>
+                        <TableCell>{getCategoryName(product.stockCategory)}</TableCell>
+                        <TableCell>{getUnitName(product.unit)}</TableCell>
                         <TableCell>{product.unitOfMeasure}</TableCell>
                         <TableCell className="font-medium text-green-600">
                           {formatCurrency(product.currentValue)}

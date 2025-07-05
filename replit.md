@@ -175,6 +175,14 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Sistema completo de gestão de produtos implementado com upload CSV inteligente (Julho 5, 2025)
+- ✓ Upload CSV totalmente funcional: 312 produtos importados com sucesso da planilha real
+- ✓ Detecção automática de separador CSV (vírgula ou ponto-e-vírgula) implementada
+- ✓ Mapeamento inteligente de colunas: "COD.", "PRODUTO", "CATEGORIA", "VALOR ATUAL"
+- ✓ Sistema ignora colunas extras automaticamente conforme solicitado
+- ✓ Interface corrigida para exibir nomes de categorias e unidades em vez de IDs
+- ✓ Processamento robusto com logs detalhados para debug
+- ✓ Tipagem TypeScript completa para todas as consultas e componentes
 - ✓ Sistema completo de gestão de produtos implementado (Julho 5, 2025)
 - ✓ Menu "Estoque" criado com submenu "Produtos" no sistema de navegação
 - ✓ Tabela avançada com ordenação clicável em todas as colunas (código, nome, categoria, unidade, medida, valor)
