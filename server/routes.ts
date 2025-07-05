@@ -2026,9 +2026,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid stock count ID" });
       }
       
-      // Get all products
-      const products = await storage.getProducts();
-      console.log("Found products count:", products.length);
+      // Get the stock count to find the unit
+      const stockCount = await storage.getStockCount(stockCountId);
+      if (!stockCount) {
+        return res.status(404).json({ message: "Stock count not found" });
+      }
+
+      // Get products available in this unit
+      const products = await storage.getProductsByUnit(stockCount.unitId);
+      console.log("Found products for unit", stockCount.unitId, ":", products.length);
       
       // Create items for all products with 0 count
       const items = products.map(product => ({
@@ -2206,6 +2212,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting previous stock count order:", error);
       res.status(500).json({ message: "Failed to get previous stock count order" });
+    }
+  });
+
+  // Product Units routes
+  app.get('/api/product-units', demoAuth, async (req, res) => {
+    try {
+      const { productId, unitId } = req.query;
+      const productUnits = await storage.getProductUnits(
+        productId ? parseInt(productId as string) : undefined,
+        unitId ? parseInt(unitId as string) : undefined
+      );
+      res.json(productUnits);
+    } catch (error) {
+      console.error("Error fetching product units:", error);
+      res.status(500).json({ message: "Failed to fetch product units" });
+    }
+  });
+
+  app.post('/api/product-units', demoAuth, async (req, res) => {
+    try {
+      const { productId, unitId, stockQuantity } = req.body;
+      const productUnit = await storage.addProductToUnit(
+        parseInt(productId), 
+        parseInt(unitId), 
+        parseFloat(stockQuantity || 0)
+      );
+      res.status(201).json(productUnit);
+    } catch (error) {
+      console.error("Error creating product unit:", error);
+      res.status(500).json({ message: "Failed to create product unit association" });
+    }
+  });
+
+  app.delete('/api/product-units/:productId/:unitId', demoAuth, async (req, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      const unitId = parseInt(req.params.unitId);
+      await storage.removeProductFromUnit(productId, unitId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error removing product from unit:", error);
+      res.status(500).json({ message: "Failed to remove product from unit" });
+    }
+  });
+
+  // Route to populate all products to all units (for initial setup)
+  app.post('/api/product-units/populate-all', demoAuth, async (req, res) => {
+    try {
+      const products = await storage.getProducts();
+      const units = await storage.getUnits();
+      
+      let created = 0;
+      let errors = 0;
+      
+      for (const product of products) {
+        for (const unit of units) {
+          try {
+            await storage.addProductToUnit(product.id, unit.id, 0);
+            created++;
+          } catch (error) {
+            // Ignore duplicates, just count errors
+            errors++;
+          }
+        }
+      }
+      
+      res.json({ 
+        message: `Populated products to units: ${created} created, ${errors} duplicates/errors`,
+        created,
+        errors
+      });
+    } catch (error) {
+      console.error("Error populating product units:", error);
+      res.status(500).json({ message: "Failed to populate product units" });
     }
   });
 

@@ -13,6 +13,7 @@ import {
   freelancerTimeEntries,
   productCategories,
   products,
+  productUnits,
   stockCounts,
   stockCountItems,
   type User,
@@ -45,6 +46,8 @@ import {
   type InsertProductCategory,
   type Product,
   type InsertProduct,
+  type ProductUnit,
+  type InsertProductUnit,
   type StockCount,
   type InsertStockCount,
   type StockCountWithRelations,
@@ -1516,6 +1519,72 @@ export class DatabaseStorage implements IStorage {
     }));
 
     await this.createStockCountItems(newItems);
+  }
+
+  // Product Units operations
+  async getProductsByUnit(unitId: number): Promise<Product[]> {
+    const result = await db
+      .select({
+        product: products,
+      })
+      .from(productUnits)
+      .innerJoin(products, eq(productUnits.productId, products.id))
+      .where(eq(productUnits.unitId, unitId))
+      .orderBy(products.name);
+
+    return result.map(row => row.product);
+  }
+
+  async getProductUnits(productId?: number, unitId?: number): Promise<ProductUnit[]> {
+    let query = db.select().from(productUnits);
+    
+    const conditions = [];
+    if (productId) conditions.push(eq(productUnits.productId, productId));
+    if (unitId) conditions.push(eq(productUnits.unitId, unitId));
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query;
+  }
+
+  async createProductUnit(productUnitData: InsertProductUnit): Promise<ProductUnit> {
+    const [productUnit] = await db
+      .insert(productUnits)
+      .values(productUnitData)
+      .returning();
+    return productUnit;
+  }
+
+  async updateProductUnit(id: number, productUnitData: Partial<InsertProductUnit>): Promise<ProductUnit> {
+    const [productUnit] = await db
+      .update(productUnits)
+      .set({ ...productUnitData, updatedAt: new Date() })
+      .where(eq(productUnits.id, id))
+      .returning();
+    return productUnit;
+  }
+
+  async deleteProductUnit(id: number): Promise<void> {
+    await db.delete(productUnits).where(eq(productUnits.id, id));
+  }
+
+  async addProductToUnit(productId: number, unitId: number, stockQuantity: number = 0): Promise<ProductUnit> {
+    return this.createProductUnit({
+      productId,
+      unitId,
+      stockQuantity: stockQuantity.toString(),
+    });
+  }
+
+  async removeProductFromUnit(productId: number, unitId: number): Promise<void> {
+    await db.delete(productUnits).where(
+      and(
+        eq(productUnits.productId, productId),
+        eq(productUnits.unitId, unitId)
+      )
+    );
   }
 }
 

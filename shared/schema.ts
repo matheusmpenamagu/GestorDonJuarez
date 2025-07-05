@@ -9,6 +9,7 @@ import {
   integer,
   decimal,
   boolean,
+  unique,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -189,6 +190,18 @@ export const products = pgTable("products", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Tabela de relacionamento produto-unidade (many-to-many)
+export const productUnits = pgTable("product_units", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  unitId: integer("unit_id").notNull().references(() => units.id, { onDelete: "cascade" }),
+  stockQuantity: decimal("stock_quantity", { precision: 10, scale: 3 }).default("0"),
+  minQuantity: decimal("min_quantity", { precision: 10, scale: 3 }).default("0"),
+  maxQuantity: decimal("max_quantity", { precision: 10, scale: 3 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   // Add user-specific relations if needed
@@ -250,6 +263,8 @@ export const employeesRelations = relations(employees, ({ one }) => ({
 
 export const unitsRelations = relations(units, ({ many }) => ({
   co2Refills: many(co2Refills),
+  productUnits: many(productUnits),
+  stockCounts: many(stockCounts),
 }));
 
 export const co2RefillsRelations = relations(co2Refills, ({ one }) => ({
@@ -266,6 +281,22 @@ export const freelancerTimeEntriesRelations = relations(freelancerTimeEntries, (
   }),
   unit: one(units, {
     fields: [freelancerTimeEntries.unitId],
+    references: [units.id],
+  }),
+}));
+
+export const productsRelations = relations(products, ({ many }) => ({
+  productUnits: many(productUnits),
+  stockCountItems: many(stockCountItems),
+}));
+
+export const productUnitsRelations = relations(productUnits, ({ one }) => ({
+  product: one(products, {
+    fields: [productUnits.productId],
+    references: [products.id],
+  }),
+  unit: one(units, {
+    fields: [productUnits.unitId],
     references: [units.id],
   }),
 }));
@@ -395,6 +426,8 @@ export type ProductCategory = typeof productCategories.$inferSelect;
 export type InsertProductCategory = z.infer<typeof insertProductCategorySchema>;
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type ProductUnit = typeof productUnits.$inferSelect;
+export type InsertProductUnit = typeof productUnits.$inferInsert;
 
 // Extended types for API responses
 export type Co2RefillWithRelations = Co2Refill & {
