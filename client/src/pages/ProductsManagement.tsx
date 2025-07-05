@@ -755,24 +755,37 @@ function ProductsManagementContent() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Unidades (selecione uma ou mais)</Label>
-              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-md p-2">
+              <Label htmlFor="edit-units">Unidades</Label>
+              <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2">
                 {units.map((unit) => (
                   <div key={unit.id} className="flex items-center space-x-2">
-                    <Checkbox
+                    <input
+                      type="checkbox"
                       id={`edit-unit-${unit.id}`}
                       checked={selectedUnits.includes(unit.id.toString())}
-                      onCheckedChange={(checked) => handleUnitChange(unit.id.toString(), checked)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedUnits([...selectedUnits, unit.id.toString()]);
+                        } else {
+                          setSelectedUnits(selectedUnits.filter(id => id !== unit.id.toString()));
+                        }
+                      }}
+                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                     />
-                    <Label 
-                      htmlFor={`edit-unit-${unit.id}`} 
-                      className="text-sm font-normal cursor-pointer"
-                    >
+                    <Label htmlFor={`edit-unit-${unit.id}`} className="text-sm font-normal cursor-pointer">
                       {unit.name}
                     </Label>
                   </div>
                 ))}
               </div>
+              {selectedUnits.length === 0 && (
+                <p className="text-sm text-gray-500">Selecione pelo menos uma unidade</p>
+              )}
+              {selectedUnits.length > 0 && (
+                <p className="text-sm text-green-600">
+                  {selectedUnits.length} unidade{selectedUnits.length > 1 ? 's' : ''} selecionada{selectedUnits.length > 1 ? 's' : ''}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-unitOfMeasure">Unidade de Medida</Label>
