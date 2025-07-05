@@ -1381,9 +1381,11 @@ export class DatabaseStorage implements IStorage {
       .select({
         stockCount: stockCounts,
         responsible: employees,
+        unit: units,
       })
       .from(stockCounts)
       .leftJoin(employees, eq(stockCounts.responsibleId, employees.id))
+      .leftJoin(units, eq(stockCounts.unitId, units.id))
       .orderBy(desc(stockCounts.createdAt));
 
     return result.map(row => ({
@@ -1393,6 +1395,7 @@ export class DatabaseStorage implements IStorage {
         name: `${row.responsible.firstName} ${row.responsible.lastName}`,
         phone: row.responsible.whatsapp
       } as any : undefined,
+      unit: row.unit || undefined,
     })) as any;
   }
 
@@ -1401,9 +1404,11 @@ export class DatabaseStorage implements IStorage {
       .select({
         stockCount: stockCounts,
         responsible: employees,
+        unit: units,
       })
       .from(stockCounts)
       .leftJoin(employees, eq(stockCounts.responsibleId, employees.id))
+      .leftJoin(units, eq(stockCounts.unitId, units.id))
       .where(eq(stockCounts.id, id));
 
     if (result.length === 0) return undefined;
@@ -1420,6 +1425,7 @@ export class DatabaseStorage implements IStorage {
         name: `${stockCount.responsible.firstName} ${stockCount.responsible.lastName}`,
         phone: stockCount.responsible.whatsapp
       } as any : undefined,
+      unit: stockCount.unit || undefined,
       items,
     };
   }

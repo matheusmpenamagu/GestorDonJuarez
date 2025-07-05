@@ -1953,6 +1953,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stockCountData = {
         date: new Date(req.body.date),
         responsibleId: parseInt(req.body.responsibleId),
+        unitId: parseInt(req.body.unitId),
         notes: req.body.notes || null,
         status: req.body.status || "draft",
       };

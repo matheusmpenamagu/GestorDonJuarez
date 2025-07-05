@@ -432,6 +432,7 @@ export const stockCounts = pgTable("stock_counts", {
   id: serial("id").primaryKey(),
   date: timestamp("date").notNull(),
   responsibleId: integer("responsible_id").notNull().references(() => employees.id),
+  unitId: integer("unit_id").notNull().references(() => units.id),
   notes: text("notes"),
   status: varchar("status", { length: 50 }).notNull().default("draft"), // draft, started, completed
   publicToken: varchar("public_token", { length: 32 }).unique(), // For public access
@@ -457,6 +458,10 @@ export const stockCountsRelations = relations(stockCounts, ({ one, many }) => ({
     fields: [stockCounts.responsibleId],
     references: [employees.id],
   }),
+  unit: one(units, {
+    fields: [stockCounts.unitId],
+    references: [units.id],
+  }),
   items: many(stockCountItems),
 }));
 
@@ -481,6 +486,8 @@ export const insertStockCountSchema = createInsertSchema(stockCounts).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  unitId: z.number().min(1, "Selecione uma unidade"),
 });
 
 export const insertStockCountItemSchema = createInsertSchema(stockCountItems).omit({
@@ -491,6 +498,7 @@ export const insertStockCountItemSchema = createInsertSchema(stockCountItems).om
 
 export type StockCountWithRelations = StockCount & {
   responsible?: EmployeeWithRelations;
+  unit?: Unit;
   items?: (StockCountItem & { product?: Product })[];
 };
 

@@ -43,7 +43,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { StockCountWithRelations, InsertStockCount, Product, EmployeeWithRelations } from "@shared/schema";
+import type { StockCountWithRelations, InsertStockCount, Product, EmployeeWithRelations, Unit } from "@shared/schema";
 
 export default function StockCountsManagement() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -54,6 +54,7 @@ export default function StockCountsManagement() {
   const [formData, setFormData] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
     responsibleId: "",
+    unitId: "",
     notes: "",
   });
 
@@ -69,6 +70,10 @@ export default function StockCountsManagement() {
 
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ["/api/products"],
+  });
+
+  const { data: units = [] } = useQuery<Unit[]>({
+    queryKey: ["/api/units"],
   });
 
   const createMutation = useMutation({
@@ -88,6 +93,7 @@ export default function StockCountsManagement() {
         setFormData({
           date: format(new Date(), 'yyyy-MM-dd'),
           responsibleId: "",
+          unitId: "",
           notes: "",
         });
         toast({
@@ -166,6 +172,7 @@ export default function StockCountsManagement() {
     const stockCountData: InsertStockCount = {
       date: selectedDate,
       responsibleId: parseInt(formData.responsibleId),
+      unitId: parseInt(formData.unitId),
       notes: formData.notes || null,
       status: "draft",
     };
@@ -299,6 +306,24 @@ export default function StockCountsManagement() {
                 </Select>
               </div>
               <div className="space-y-2">
+                <Label htmlFor="unitId">Unidade</Label>
+                <Select
+                  value={formData.unitId}
+                  onValueChange={(value) => setFormData({ ...formData, unitId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a unidade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {units.map((unit: any) => (
+                      <SelectItem key={unit.id} value={unit.id.toString()}>
+                        {unit.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="notes">Observações</Label>
                 <Textarea
                   id="notes"
@@ -330,6 +355,7 @@ export default function StockCountsManagement() {
             <TableRow>
               <TableHead>Data</TableHead>
               <TableHead>Responsável</TableHead>
+              <TableHead>Unidade</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Observações</TableHead>
               <TableHead className="text-right">Ações</TableHead>
@@ -338,7 +364,7 @@ export default function StockCountsManagement() {
           <TableBody>
             {stockCounts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                   Nenhuma contagem cadastrada.
                 </TableCell>
               </TableRow>
@@ -356,6 +382,9 @@ export default function StockCountsManagement() {
                       <User className="h-4 w-4 text-gray-400" />
                       <span>{getEmployeeName(stockCount.responsibleId)}</span>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <span>{stockCount.unit?.name || "N/A"}</span>
                   </TableCell>
                   <TableCell>{getStatusBadge(stockCount.status)}</TableCell>
                   <TableCell className="max-w-xs truncate">
