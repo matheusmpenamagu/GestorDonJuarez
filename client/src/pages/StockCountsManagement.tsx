@@ -73,7 +73,8 @@ export default function StockCountsManagement() {
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertStockCount) => {
-      return await apiRequest("POST", "/api/stock-counts", data);
+      const response = await apiRequest("POST", "/api/stock-counts", data);
+      return await response.json();
     },
     onSuccess: async (stockCount: any) => {
       console.log("Stock count created:", stockCount);
@@ -132,9 +133,10 @@ export default function StockCountsManagement() {
 
   const saveCountMutation = useMutation({
     mutationFn: async (data: { stockCountId: number; items: typeof countItems }) => {
-      return await apiRequest("POST", `/api/stock-counts/${data.stockCountId}/items`, {
+      const response = await apiRequest("POST", `/api/stock-counts/${data.stockCountId}/items`, {
         items: data.items
       });
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stock-counts"] });
@@ -174,12 +176,13 @@ export default function StockCountsManagement() {
   const handleStartCount = async (stockCount: StockCountWithRelations) => {
     try {
       // Fetch stock count details with items
-      const response: any = await apiRequest("GET", `/api/stock-counts/${stockCount.id}`);
-      setSelectedStockCount(response);
+      const response = await apiRequest("GET", `/api/stock-counts/${stockCount.id}`);
+      const stockCountData = await response.json();
+      setSelectedStockCount(stockCountData);
       
       // Initialize count items if they exist
-      if (response.items && response.items.length > 0) {
-        setCountItems(response.items.map((item: any) => ({
+      if (stockCountData.items && stockCountData.items.length > 0) {
+        setCountItems(stockCountData.items.map((item: any) => ({
           productId: item.productId,
           countedQuantity: item.countedQuantity || "0",
           notes: item.notes || "",
