@@ -1584,6 +1584,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Upload products from CSV file
+  app.post('/api/products/upload', demoAuth, async (req, res) => {
+    try {
+      const multer = await import('multer');
+      const upload = multer.default({ 
+        storage: multer.memoryStorage(),
+        limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+      });
+
+      upload.single('file')(req, res, async (err) => {
+        if (err) {
+          return res.status(400).json({ message: "Erro no upload do arquivo" });
+        }
+
+        if (!req.file) {
+          return res.status(400).json({ message: "Nenhum arquivo enviado" });
+        }
+
+        try {
+          const fileBuffer = req.file.buffer;
+          let products: any[] = [];
+
+          if (req.file.originalname.endsWith('.csv')) {
+            // Parse CSV
+            const csvContent = fileBuffer.toString('utf-8');
+            const lines = csvContent.split('\n').filter(line => line.trim());
+            
+            if (lines.length < 2) {
+              return res.status(400).json({ message: "Arquivo CSV deve ter pelo menos um cabeçalho e uma linha de dados" });
+            }
+
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            
+            for (let i = 1; i < lines.length; i++) {
+              const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+              if (values.length === headers.length && values.some(v => v)) { // Skip empty lines
+                const product: any = {};
+                headers.forEach((header, index) => {
+                  product[header] = values[index];
+                });
+                products.push(product);
+              }
+            }
+          } else {
+            return res.status(400).json({ message: "Apenas arquivos CSV são suportados no momento" });
+          }
+
+          let created = 0;
+          let updated = 0;
+          const errors: any[] = [];
+
+          for (const productData of products) {
+            try {
+              // Map different possible column names to our schema
+              const productInfo = {
+                code: productData.code || productData.Code || productData.CODIGO || productData.código || '',
+                name: productData.name || productData.Name || productData.NOME || productData.nome || '',
+                stockCategory: productData.stockCategory || productData.categoria || productData.CATEGORIA || productData.stock_category || '',
+                unit: productData.unit || productData.unidade || productData.UNIDADE || '',
+                unitOfMeasure: productData.unitOfMeasure || productData.medida || productData.MEDIDA || productData.unit_measure || '',
+                currentValue: parseFloat(productData.currentValue || productData.valor || productData.VALOR || productData.current_value || '0') || 0,
+              };
+
+              if (!productInfo.code || !productInfo.name) {
+                errors.push({ data: productData, error: 'Código e nome são obrigatórios' });
+                continue;
+              }
+
+              const result = insertProductSchema.safeParse(productInfo);
+              if (!result.success) {
+                errors.push({ data: productData, error: result.error.issues });
+                continue;
+              }
+
+              const existingProduct = await storage.getProductByCode(productInfo.code);
+              if (existingProduct) {
+                await storage.updateProduct(existingProduct.id, result.data);
+                updated++;
+              } else {
+                await storage.createProduct(result.data);
+                created++;
+              }
+            } catch (productError) {
+              console.error(`Erro processando produto ${productData.code}:`, productError);
+              errors.push({ data: productData, error: productError instanceof Error ? productError.message : 'Erro desconhecido' });
+            }
+          }
+
+          res.json({ created, updated, total: products.length, errors: errors.length });
+        } catch (parseError) {
+          console.error("Erro analisando arquivo:", parseError);
+          res.status(400).json({ message: "Erro ao analisar conteúdo do arquivo" });
+        }
+      });
+    } catch (error) {
+      console.error("Erro no endpoint de upload:", error);
+      res.status(500).json({ message: "Falha ao processar upload" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket for real-time updates
