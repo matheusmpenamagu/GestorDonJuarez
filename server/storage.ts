@@ -11,6 +11,7 @@ import {
   units,
   co2Refills,
   freelancerTimeEntries,
+  products,
   type User,
   type UpsertUser,
   type PointOfSale,
@@ -37,6 +38,8 @@ import {
   type FreelancerTimeEntry,
   type InsertFreelancerTimeEntry,
   type FreelancerTimeEntryWithRelations,
+  type Product,
+  type InsertProduct,
   type TapWithRelations,
   type PourEventWithRelations,
   type EmployeeWithRelations,
@@ -147,6 +150,15 @@ export interface IStorage {
     totalDays: number;
     entries: FreelancerTimeEntryWithRelations[];
   }[]>;
+  
+  // Products operations
+  getProducts(): Promise<Product[]>;
+  getProduct(id: number): Promise<Product | undefined>;
+  getProductByCode(code: string): Promise<Product | undefined>;
+  createProduct(product: InsertProduct): Promise<Product>;
+  updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product>;
+  deleteProduct(id: number): Promise<void>;
+  upsertProductByCode(product: InsertProduct): Promise<Product>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1222,6 +1234,72 @@ export class DatabaseStorage implements IStorage {
     });
 
     return stats.sort((a, b) => b.totalHours - a.totalHours);
+  }
+
+  // Products operations
+  async getProducts(): Promise<Product[]> {
+    return await db.select().from(products).orderBy(products.name);
+  }
+
+  async getProduct(id: number): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product;
+  }
+
+  async getProductByCode(code: string): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.code, code));
+    return product;
+  }
+
+  async createProduct(productData: InsertProduct): Promise<Product> {
+    const [product] = await db
+      .insert(products)
+      .values({
+        ...productData,
+        currentValue: productData.currentValue.toString()
+      })
+      .returning();
+    return product;
+  }
+
+  async updateProduct(id: number, productData: Partial<InsertProduct>): Promise<Product> {
+    const updateData: any = { ...productData, updatedAt: new Date() };
+    if (updateData.currentValue !== undefined) {
+      updateData.currentValue = updateData.currentValue.toString();
+    }
+    
+    const [product] = await db
+      .update(products)
+      .set(updateData)
+      .where(eq(products.id, id))
+      .returning();
+    return product;
+  }
+
+  async deleteProduct(id: number): Promise<void> {
+    await db.delete(products).where(eq(products.id, id));
+  }
+
+  async upsertProductByCode(productData: InsertProduct): Promise<Product> {
+    const insertData = {
+      ...productData,
+      currentValue: productData.currentValue.toString()
+    };
+    
+    const updateData: any = { ...productData, updatedAt: new Date() };
+    if (updateData.currentValue !== undefined) {
+      updateData.currentValue = updateData.currentValue.toString();
+    }
+    
+    const [product] = await db
+      .insert(products)
+      .values(insertData)
+      .onConflictDoUpdate({
+        target: products.code,
+        set: updateData,
+      })
+      .returning();
+    return product;
   }
 }
 

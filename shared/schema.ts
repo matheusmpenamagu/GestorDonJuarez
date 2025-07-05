@@ -167,6 +167,19 @@ export const freelancerTimeEntries = pgTable("freelancer_time_entries", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Products table for inventory management
+export const products = pgTable("products", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 200 }).notNull(),
+  stockCategory: varchar("stock_category", { length: 100 }).notNull(),
+  unit: varchar("unit", { length: 50 }).notNull(),
+  unitOfMeasure: varchar("unit_of_measure", { length: 20 }).notNull(),
+  currentValue: decimal("current_value", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   // Add user-specific relations if needed
@@ -330,6 +343,14 @@ export const insertFreelancerTimeEntrySchema = createInsertSchema(freelancerTime
   updatedAt: true,
 });
 
+export const insertProductSchema = createInsertSchema(products).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  currentValue: z.number().min(0),
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -355,6 +376,8 @@ export type Co2Refill = typeof co2Refills.$inferSelect;
 export type InsertCo2Refill = z.infer<typeof insertCo2RefillSchema>;
 export type FreelancerTimeEntry = typeof freelancerTimeEntries.$inferSelect;
 export type InsertFreelancerTimeEntry = z.infer<typeof insertFreelancerTimeEntrySchema>;
+export type Product = typeof products.$inferSelect;
+export type InsertProduct = z.infer<typeof insertProductSchema>;
 
 // Extended types for API responses
 export type Co2RefillWithRelations = Co2Refill & {

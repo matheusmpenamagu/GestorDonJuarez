@@ -14,7 +14,8 @@ import {
   ChevronDown,
   ChevronRight,
   Wind,
-  Clock
+  Clock,
+  Package
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,13 @@ const menuItems = [
     ],
   },
   {
+    title: "Estoque",
+    icon: Package,
+    items: [
+      { href: "/produtos", icon: Package, label: "Produtos" },
+    ],
+  },
+  {
     title: "Empresa",
     icon: Building2,
     items: [
@@ -51,6 +59,7 @@ export function Sidebar() {
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
     "Chopes": false,
     "Pessoas": false,
+    "Estoque": false,
     "Empresa": false
   });
 

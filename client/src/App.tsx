@@ -18,6 +18,7 @@ import RolesManagement from "@/pages/RolesManagement";
 import FreelancersManagement from "@/pages/FreelancersManagement";
 import UnitsManagement from "@/pages/UnitsManagement";
 import Co2Management from "@/pages/Co2Management";
+import ProductsManagement from "@/pages/ProductsManagement";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -79,6 +80,11 @@ function Router() {
           <Route path="/co2">
             <Layout>
               <Co2Management />
+            </Layout>
+          </Route>
+          <Route path="/produtos">
+            <Layout>
+              <ProductsManagement />
             </Layout>
           </Route>
         </>

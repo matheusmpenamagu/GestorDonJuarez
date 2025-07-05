@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupWebSocket, broadcastUpdate } from "./websocket";
 import { storage } from "./storage";
 // Removed Replit Auth for demo purposes
-import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, insertPointOfSaleSchema, insertBeerStyleSchema, insertDeviceSchema, insertUnitSchema, insertCo2RefillSchema } from "@shared/schema";
+import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, insertPointOfSaleSchema, insertBeerStyleSchema, insertDeviceSchema, insertUnitSchema, insertCo2RefillSchema, insertProductSchema } from "@shared/schema";
 import { z } from "zod";
 import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
@@ -1473,6 +1473,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting freelancer entry:", error);
       res.status(500).json({ message: "Error deleting freelancer entry" });
+    }
+  });
+
+  // Products routes
+  app.get('/api/products', demoAuth, async (req, res) => {
+    try {
+      const products = await storage.getProducts();
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ message: "Error fetching products" });
+    }
+  });
+
+  app.get('/api/products/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const product = await storage.getProduct(id);
+      if (!product) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+      }
+      res.json(product);
+    } catch (error) {
+      console.error("Error fetching product:", error);
+      res.status(500).json({ message: "Error fetching product" });
+    }
+  });
+
+  app.post('/api/products', demoAuth, async (req, res) => {
+    try {
+      const result = insertProductSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Dados inválidos", errors: result.error.issues });
+      }
+      
+      const product = await storage.createProduct(result.data);
+      res.status(201).json(product);
+    } catch (error) {
+      console.error("Error creating product:", error);
+      res.status(500).json({ message: "Error creating product" });
+    }
+  });
+
+  app.put('/api/products/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const result = insertProductSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Dados inválidos", errors: result.error.issues });
+      }
+      
+      const product = await storage.updateProduct(id, result.data);
+      res.json(product);
+    } catch (error) {
+      console.error("Error updating product:", error);
+      res.status(500).json({ message: "Error updating product" });
+    }
+  });
+
+  app.delete('/api/products/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteProduct(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      res.status(500).json({ message: "Error deleting product" });
+    }
+  });
+
+  // Bulk import/update products by code
+  app.post('/api/products/import', demoAuth, async (req, res) => {
+    try {
+      if (!Array.isArray(req.body)) {
+        return res.status(400).json({ message: "Esperado um array de produtos" });
+      }
+
+      const results = {
+        created: 0,
+        updated: 0,
+        errors: [] as any[]
+      };
+
+      for (const productData of req.body) {
+        try {
+          const result = insertProductSchema.safeParse(productData);
+          if (!result.success) {
+            results.errors.push({ data: productData, error: result.error.issues });
+            continue;
+          }
+          
+          const existingProduct = await storage.getProductByCode(result.data.code);
+          if (existingProduct) {
+            await storage.updateProduct(existingProduct.id, result.data);
+            results.updated++;
+          } else {
+            await storage.createProduct(result.data);
+            results.created++;
+          }
+        } catch (error) {
+          results.errors.push({ data: productData, error: error instanceof Error ? error.message : 'Unknown error' });
+        }
+      }
+
+      res.json(results);
+    } catch (error) {
+      console.error("Error importing products:", error);
+      res.status(500).json({ message: "Error importing products" });
     }
   });
 
