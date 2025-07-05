@@ -59,15 +59,15 @@ export default function StockCountsManagement() {
 
   const queryClient = useQueryClient();
 
-  const { data: stockCounts = [], isLoading: isLoadingCounts } = useQuery({
+  const { data: stockCounts = [], isLoading: isLoadingCounts } = useQuery<StockCountWithRelations[]>({
     queryKey: ["/api/stock-counts"],
   });
 
-  const { data: employees = [] } = useQuery({
+  const { data: employees = [] } = useQuery<EmployeeWithRelations[]>({
     queryKey: ["/api/employees"],
   });
 
-  const { data: products = [] } = useQuery({
+  const { data: products = [] } = useQuery<Product[]>({
     queryKey: ["/api/products"],
   });
 
@@ -75,7 +75,7 @@ export default function StockCountsManagement() {
     mutationFn: async (data: InsertStockCount) => {
       return await apiRequest("POST", "/api/stock-counts", data);
     },
-    onSuccess: async (stockCount) => {
+    onSuccess: async (stockCount: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/stock-counts"] });
       
       // Initialize with all products
@@ -156,8 +156,11 @@ export default function StockCountsManagement() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Create a proper date object for the selected date at midnight in local timezone
+    const selectedDate = new Date(formData.date + 'T00:00:00');
+    
     const stockCountData: InsertStockCount = {
-      date: new Date(formData.date + 'T00:00:00.000Z'),
+      date: selectedDate,
       responsibleId: parseInt(formData.responsibleId),
       notes: formData.notes || null,
       status: "draft",
@@ -169,7 +172,7 @@ export default function StockCountsManagement() {
   const handleStartCount = async (stockCount: StockCountWithRelations) => {
     try {
       // Fetch stock count details with items
-      const response = await apiRequest("GET", `/api/stock-counts/${stockCount.id}`);
+      const response: any = await apiRequest("GET", `/api/stock-counts/${stockCount.id}`);
       setSelectedStockCount(response);
       
       // Initialize count items if they exist
@@ -181,7 +184,7 @@ export default function StockCountsManagement() {
         })));
       } else {
         // Initialize with all products at 0
-        setCountItems(products.map(product => ({
+        setCountItems(products.map((product: Product) => ({
           productId: product.id,
           countedQuantity: "0",
           notes: "",
