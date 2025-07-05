@@ -534,16 +534,21 @@ function SortableProductItem({ product, quantity, onQuantityChange, disabled, is
         </div>
       </div>
       <div className="col-span-3">
-        <Input
-          type="number"
-          min="0"
-          step="0.001"
-          value={quantity}
-          onChange={(e) => onQuantityChange(e.target.value)}
-          placeholder="0"
-          disabled={disabled}
-          className="h-8 text-sm"
-        />
+        <div className="relative">
+          <Input
+            type="number"
+            min="0"
+            step="0.001"
+            value={quantity}
+            onChange={(e) => onQuantityChange(e.target.value)}
+            placeholder="0"
+            disabled={disabled}
+            className="h-8 text-sm pr-12"
+          />
+          <div className="absolute inset-y-0 right-3 flex items-center text-xs text-gray-500 pointer-events-none">
+            {product.unit}
+          </div>
+        </div>
       </div>
     </div>
   );
