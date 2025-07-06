@@ -2501,6 +2501,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Finish counting via public token (em_contagem -> contagem_finalizada)
+  app.post('/api/stock-counts/public/:token/finish', async (req, res) => {
+    try {
+      const publicToken = req.params.token;
+      
+      if (!publicToken) {
+        return res.status(400).json({ message: "Token público inválido" });
+      }
+      
+      // Find stock count by public token
+      const stockCount = await storage.getStockCountByPublicToken(publicToken);
+      if (!stockCount) {
+        return res.status(404).json({ message: "Contagem não encontrada" });
+      }
+      
+      if (stockCount.status !== 'em_contagem') {
+        return res.status(400).json({ message: "Contagem não está em andamento" });
+      }
+      
+      // Finalize the stock count
+      const finalizedCount = await storage.finalizeStockCount(stockCount.id);
+      
+      res.status(200).json({ 
+        message: "Contagem finalizada com sucesso", 
+        stockCount: finalizedCount
+      });
+    } catch (error) {
+      console.error("Error finishing counting:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Erro ao finalizar contagem" 
+      });
+    }
+  });
+
   // Finalize stock count (em_contagem -> contagem_finalizada)
   app.post('/api/stock-counts/:id/finalizar', demoAuth, async (req, res) => {
     try {

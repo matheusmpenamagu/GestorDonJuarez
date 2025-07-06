@@ -30,6 +30,7 @@ export default function PublicStockCount() {
   const [searchTerm, setSearchTerm] = useState("");
   const [countItems, setCountItems] = useState<{ productId: number; countedQuantity: string }[]>([]);
   const [isBeginning, setIsBeginning] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -116,6 +117,37 @@ export default function PublicStockCount() {
     },
   });
 
+  // Mutation para finalizar a contagem
+  const finishCountMutation = useMutation({
+    mutationFn: async () => {
+      // Primeiro salva as quantidades atuais
+      if (countItems.length > 0) {
+        await apiRequest("PUT", `/api/stock-counts/public/${publicToken}/items`, {
+          items: countItems
+        });
+      }
+      
+      // Depois finaliza a contagem
+      const response = await apiRequest("POST", `/api/stock-counts/public/${publicToken}/finish`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Contagem finalizada",
+        description: "A contagem foi finalizada com sucesso",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/stock-counts/public", publicToken] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao finalizar contagem",
+        variant: "destructive",
+      });
+      setIsFinishing(false);
+    },
+  });
+
   const handleQuantityChange = (productId: number, quantity: string) => {
     setCountItems(prev => {
       const existing = prev.find(item => item.productId === productId);
@@ -139,6 +171,11 @@ export default function PublicStockCount() {
   const handleBeginCount = () => {
     setIsBeginning(true);
     beginCountMutation.mutate();
+  };
+
+  const handleFinishCount = () => {
+    setIsFinishing(true);
+    finishCountMutation.mutate();
   };
 
   // Salvar automaticamente após mudanças
@@ -397,6 +434,19 @@ export default function PublicStockCount() {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+
+            {/* Botão Finalizar Contagem */}
+            <div className="flex justify-center pt-6">
+              <Button
+                onClick={handleFinishCount}
+                disabled={isFinishing}
+                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg font-medium"
+                size="lg"
+              >
+                <CheckCircle className="h-5 w-5 mr-2" />
+                {isFinishing ? "Finalizando..." : "Finalizar Contagem"}
+              </Button>
             </div>
           </>
         )}

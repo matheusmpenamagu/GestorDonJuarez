@@ -184,6 +184,7 @@ export interface IStorage {
   // Stock Counts operations
   getStockCounts(): Promise<StockCountWithRelations[]>;
   getStockCount(id: number): Promise<StockCountWithRelations | undefined>;
+  getStockCountByPublicToken(publicToken: string): Promise<StockCountWithRelations | undefined>;
   createStockCount(stockCount: InsertStockCount): Promise<StockCount>;
   updateStockCount(id: number, stockCount: Partial<InsertStockCount>): Promise<StockCount>;
   deleteStockCount(id: number): Promise<void>;
@@ -1426,6 +1427,37 @@ export class DatabaseStorage implements IStorage {
     
     // Get items for this stock count
     const items = await this.getStockCountItems(id);
+
+    return {
+      ...stockCount.stockCount,
+      responsible: stockCount.responsible ? {
+        ...stockCount.responsible,
+        name: `${stockCount.responsible.firstName} ${stockCount.responsible.lastName}`,
+        phone: stockCount.responsible.whatsapp
+      } as any : undefined,
+      unit: stockCount.unit || undefined,
+      items,
+    };
+  }
+
+  async getStockCountByPublicToken(publicToken: string): Promise<StockCountWithRelations | undefined> {
+    const result = await db
+      .select({
+        stockCount: stockCounts,
+        responsible: employees,
+        unit: units,
+      })
+      .from(stockCounts)
+      .leftJoin(employees, eq(stockCounts.responsibleId, employees.id))
+      .leftJoin(units, eq(stockCounts.unitId, units.id))
+      .where(eq(stockCounts.publicToken, publicToken));
+
+    if (result.length === 0) return undefined;
+
+    const stockCount = result[0];
+    
+    // Get items for this stock count
+    const items = await this.getStockCountItems(stockCount.stockCount.id);
 
     return {
       ...stockCount.stockCount,
