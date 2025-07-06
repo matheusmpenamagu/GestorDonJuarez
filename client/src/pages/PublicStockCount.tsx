@@ -661,7 +661,7 @@ export default function PublicStockCount() {
                               isItemSaved(product.id) ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
                             }`}>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center space-x-2 mb-1">
+                                <div className="flex items-center space-x-2">
                                   <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
                                     {product.code}
                                   </span>
@@ -671,9 +671,6 @@ export default function PublicStockCount() {
                                   {isItemSaved(product.id) && (
                                     <span className="text-xs text-green-600 font-medium">✓ Salvo</span>
                                   )}
-                                </div>
-                                <div className="text-xs text-gray-600 font-medium">
-                                  {product.unitOfMeasure}
                                 </div>
                               </div>
                               <div className="flex items-center space-x-2 flex-shrink-0">
