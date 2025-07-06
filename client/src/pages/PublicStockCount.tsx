@@ -264,7 +264,7 @@ export default function PublicStockCount() {
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Status da contagem */}
-        {stockCount.status === 'pronta_para_contagem' && (
+        {(stockCount.status === 'pronta_para_contagem' || stockCount.status === 'started') && (
           <Card className="border-orange-200 bg-orange-50">
             <CardContent className="pt-6 text-center">
               <h2 className="text-xl font-semibold text-orange-800 mb-2">
