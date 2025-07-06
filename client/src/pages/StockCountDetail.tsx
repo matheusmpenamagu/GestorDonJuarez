@@ -426,6 +426,41 @@ export default function StockCountDetail() {
         </div>
       </div>
 
+      {/* Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Resumo</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-bold text-orange-600">
+                {products.length}
+              </div>
+              <div className="text-sm text-gray-600">Total de Produtos</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-green-600">
+                {countItems.filter(item => parseFloat(item.countedQuantity) > 0).length}
+              </div>
+              <div className="text-sm text-gray-600">Produtos Contados</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-blue-600">
+                {filteredAndOrderedData.length}
+              </div>
+              <div className="text-sm text-gray-600">Categorias</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-purple-600">
+                {((countItems.filter(item => parseFloat(item.countedQuantity) > 0).length / products.length) * 100).toFixed(1)}%
+              </div>
+              <div className="text-sm text-gray-600">Progresso</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Search */}
       <Card>
         <CardContent className="pt-6">
@@ -470,41 +505,6 @@ export default function StockCountDetail() {
           </div>
         </SortableContext>
       </DndContext>
-
-      {/* Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Resumo</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold text-orange-600">
-                {products.length}
-              </div>
-              <div className="text-sm text-gray-600">Total de Produtos</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-green-600">
-                {countItems.filter(item => parseFloat(item.countedQuantity) > 0).length}
-              </div>
-              <div className="text-sm text-gray-600">Produtos Contados</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-blue-600">
-                {filteredAndOrderedData.length}
-              </div>
-              <div className="text-sm text-gray-600">Categorias</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-purple-600">
-                {((countItems.filter(item => parseFloat(item.countedQuantity) > 0).length / products.length) * 100).toFixed(1)}%
-              </div>
-              <div className="text-sm text-gray-600">Progresso</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
