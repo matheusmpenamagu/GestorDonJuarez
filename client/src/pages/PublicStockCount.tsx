@@ -374,6 +374,8 @@ export default function PublicStockCount() {
   };
 
   const handleFinishCount = () => {
+    console.log("handleFinishCount chamado - publicToken:", publicToken);
+    console.log("stockCount status:", stockCount?.status);
     setIsFinishing(true);
     finishCountMutation.mutate();
   };
