@@ -185,8 +185,27 @@ export default function PublicStockCount() {
     });
   };
 
-  // Verificar se categoria está expandida (padrão: expandida)
+  // Verificar se categoria está expandida (navegação sequencial)
   const isCategoryExpanded = (categoryName: string): boolean => {
+    // Se não há estado salvo, usar lógica sequencial
+    if (Object.keys(expandedCategories).length === 0) {
+      const categoryIndex = orderedData.findIndex(item => item.category === categoryName);
+      
+      // Encontrar a primeira categoria incompleta
+      const firstIncompleteIndex = orderedData.findIndex(item => 
+        !isCategoryComplete(item.products)
+      );
+      
+      // Se todas estão completas, mostrar todas colapsadas
+      if (firstIncompleteIndex === -1) {
+        return false;
+      }
+      
+      // Mostrar apenas a primeira categoria incompleta
+      return categoryIndex === firstIncompleteIndex;
+    }
+    
+    // Usar estado salvo
     return expandedCategories[categoryName] !== false;
   };
 
@@ -211,22 +230,62 @@ export default function PublicStockCount() {
     }
   }, [countItems, stockCount?.status]);
 
-  // Auto-colapsar categorias quando completadas
+  // Navegação sequencial automática entre categorias
   useEffect(() => {
-    if (products.length > 0) {
-      Object.entries(productsByCategory).forEach(([categoryName, categoryProducts]) => {
-        if (isCategoryComplete(categoryProducts) && isCategoryExpanded(categoryName)) {
-          // Colapsar categoria automaticamente após 1 segundo
+    if (products.length > 0 && orderedData.length > 0) {
+      // Encontrar categoria atualmente expandida
+      const currentExpandedIndex = orderedData.findIndex(item => 
+        isCategoryExpanded(item.category)
+      );
+      
+      // Se existe uma categoria expandida
+      if (currentExpandedIndex !== -1) {
+        const currentCategory = orderedData[currentExpandedIndex];
+        
+        // Se a categoria atual está completa
+        if (isCategoryComplete(currentCategory.products)) {
+          // Encontrar próxima categoria incompleta
+          const nextIncompleteIndex = orderedData.findIndex((item, index) => 
+            index > currentExpandedIndex && !isCategoryComplete(item.products)
+          );
+          
           setTimeout(() => {
-            setExpandedCategories(prev => ({
-              ...prev,
-              [categoryName]: false
-            }));
+            if (nextIncompleteIndex !== -1) {
+              // Expandir próxima categoria e colapsar atual
+              const nextCategory = orderedData[nextIncompleteIndex];
+              setExpandedCategories({
+                [currentCategory.category]: false,
+                [nextCategory.category]: true
+              });
+            } else {
+              // Todas categorias completas, colapsar tudo
+              setExpandedCategories(prev => ({
+                ...prev,
+                [currentCategory.category]: false
+              }));
+            }
           }, 1000);
         }
-      });
+      }
     }
   }, [countItems, products]);
+
+  // Inicializar primeira categoria expandida
+  useEffect(() => {
+    if (orderedData.length > 0 && Object.keys(expandedCategories).length === 0) {
+      // Encontrar primeira categoria incompleta
+      const firstIncompleteIndex = orderedData.findIndex(item => 
+        !isCategoryComplete(item.products)
+      );
+      
+      if (firstIncompleteIndex !== -1) {
+        const firstIncompleteCategory = orderedData[firstIncompleteIndex];
+        setExpandedCategories({
+          [firstIncompleteCategory.category]: true
+        });
+      }
+    }
+  }, [orderedData]);
 
   // Agrupar produtos por categoria
   const productsByCategory = products.reduce((acc, product) => {
