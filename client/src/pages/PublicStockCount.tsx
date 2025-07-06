@@ -116,7 +116,7 @@ export default function PublicStockCount() {
   const updateItemsMutation = useMutation({
     mutationFn: (items: { productId: number; countedQuantity: string }[]) => {
       console.log("Enviando dados para salvamento:", { items, publicToken });
-      return apiRequest(`/api/stock-counts/public/${publicToken}/items`, "PUT", { items });
+      return apiRequest("PUT", `/api/stock-counts/public/${publicToken}/items`, { items });
     },
     onSuccess: (data) => {
       console.log("Dados salvos com sucesso:", data);
@@ -147,11 +147,14 @@ export default function PublicStockCount() {
     // Aceitar vírgula como separador decimal e converter para ponto
     const normalizedQuantity = quantity.replace(',', '.');
     
+    console.log(`Atualizando produto ${productId} com quantidade "${normalizedQuantity}"`);
+    
     setCountItems(prev => {
       const updated = prev.filter(item => item.productId !== productId);
       if (normalizedQuantity !== "") {
         updated.push({ productId, countedQuantity: normalizedQuantity });
       }
+      console.log("Estado atualizado:", updated);
       return updated;
     });
   };
