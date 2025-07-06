@@ -647,13 +647,10 @@ export default function StockCountDetail() {
               <div className="text-sm text-gray-600">Categorias Ativas</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-purple-600">
-                {availableProducts.length > 0 ? 
-                  ((countItems.filter(item => parseFloat(item.countedQuantity) > 0).length / availableProducts.length) * 100).toFixed(1) 
-                  : "0"
-                }%
+              <div className="text-2xl font-bold text-red-600">
+                {availableProducts.length - countItems.filter(item => parseFloat(item.countedQuantity) > 0).length}
               </div>
-              <div className="text-sm text-gray-600">Progresso</div>
+              <div className="text-sm text-gray-600">Não Contados</div>
             </div>
           </div>
           
