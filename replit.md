@@ -190,6 +190,12 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - ✓ Endpoint /api/products/by-unit/:unitId implementado para filtrar produtos por unidade
 - ✓ StockCountDetail.tsx corrigido para usar query específica em vez de carregar todos os produtos
 - ✓ Teste confirmado: tela de edição agora mostra apenas 17 produtos da unidade Apollonio
+- ✓ Funcionalidades de edição de contagem aprimoradas (Julho 6, 2025)
+- ✓ Botão de reordenar produtos restaurado com suporte a status "rascunho"
+- ✓ Ícone de deletar produtos adicionado com confirmação via toast
+- ✓ Timeline de status integrada ao card de resumo da contagem
+- ✓ Layout otimizado: timeline centralizada ocupando largura total do card
+- ✓ Resumo reorganizado: timeline no topo, depois estatísticas
 - ✓ URLs do sistema padronizadas para estrutura consistente menu/submenu (Julho 6, 2025)
 - ✓ Implementada nova estrutura de rotas: /chopes/*, /pessoas/*, /estoque/*, /empresa/*
 - ✓ Sidebar atualizado com navegação organizada por seções expandíveis

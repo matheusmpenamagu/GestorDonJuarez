@@ -469,14 +469,15 @@ export default function StockCountDetail() {
 
       {/* Summary */}
       <Card>
-        <CardHeader>
-          <CardTitle>Resumo</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="pt-6 space-y-6">
           {/* Status Timeline */}
-          <div>
-            <div className="text-sm font-medium text-gray-700 mb-3">Andamento da Contagem</div>
-            {getStatusTimeline(stockCount.status)}
+          <div className="flex justify-center">
+            <div className="w-full max-w-lg">
+              <div className="text-sm font-medium text-gray-700 mb-4 text-center">Andamento da Contagem</div>
+              <div className="flex justify-center">
+                {getStatusTimeline(stockCount.status)}
+              </div>
+            </div>
           </div>
           
           <Separator />
