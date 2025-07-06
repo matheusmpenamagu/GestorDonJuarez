@@ -638,7 +638,7 @@ export default function StockCountDetail() {
               <div className="text-2xl font-bold text-green-600">
                 {availableProducts.filter(product => {
                   const item = countItems.find(item => item.productId === product.id);
-                  return item && item.countedQuantity !== "" && item.countedQuantity !== "0";
+                  return item && item.countedQuantity !== "";
                 }).length}
               </div>
               <div className="text-sm text-gray-600">Produtos Contados</div>
@@ -653,7 +653,7 @@ export default function StockCountDetail() {
               <div className="text-2xl font-bold text-red-600">
                 {availableProducts.filter(product => {
                   const item = countItems.find(item => item.productId === product.id);
-                  return !item || item.countedQuantity === "" || item.countedQuantity === "0";
+                  return !item || item.countedQuantity === "";
                 }).length}
               </div>
               <div className="text-sm text-gray-600">Não Contados</div>
