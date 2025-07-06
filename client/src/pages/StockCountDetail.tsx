@@ -15,7 +15,9 @@ import {
   Minus,
   Send,
   GripVertical,
-  Trash2
+  Trash2,
+  Pencil,
+  CheckCircle
 } from "lucide-react";
 import {
   DndContext,
@@ -346,6 +348,45 @@ export default function StockCountDetail() {
     });
   };
 
+  // Função para renderizar a timeline de status
+  const getStatusTimeline = (currentStatus: string) => {
+    const statuses = [
+      { key: 'rascunho', label: 'Rascunho', icon: Pencil },
+      { key: 'pronta_para_contagem', label: 'Pronta', icon: Send },
+      { key: 'em_contagem', label: 'Em contagem', icon: Play },
+      { key: 'contagem_finalizada', label: 'Finalizada', icon: CheckCircle }
+    ];
+    
+    const currentIndex = statuses.findIndex(s => s.key === currentStatus);
+    
+    return (
+      <div className="flex items-center space-x-2">
+        {statuses.map((status, index) => {
+          const isActive = index <= currentIndex;
+          const isCurrent = index === currentIndex;
+          const IconComponent = status.icon;
+          
+          return (
+            <div key={status.key} className="flex items-center">
+              <div className={`flex items-center justify-center w-6 h-6 rounded-full border-2 ${
+                isActive 
+                  ? (isCurrent ? 'bg-orange-500 border-orange-500 text-white' : 'bg-green-500 border-green-500 text-white')
+                  : 'bg-gray-200 border-gray-300 text-gray-400'
+              }`}>
+                <IconComponent className="h-3 w-3" />
+              </div>
+              {index < statuses.length - 1 && (
+                <div className={`w-8 h-0.5 mx-1 ${
+                  index < currentIndex ? 'bg-green-500' : 'bg-gray-300'
+                }`} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return <div className="p-6">Carregando...</div>;
   }
@@ -431,7 +472,16 @@ export default function StockCountDetail() {
         <CardHeader>
           <CardTitle>Resumo</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
+          {/* Status Timeline */}
+          <div>
+            <div className="text-sm font-medium text-gray-700 mb-3">Andamento da Contagem</div>
+            {getStatusTimeline(stockCount.status)}
+          </div>
+          
+          <Separator />
+          
+          {/* Statistics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
               <div className="text-2xl font-bold text-orange-600">
