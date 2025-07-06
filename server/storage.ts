@@ -1515,6 +1515,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async beginCounting(publicToken: string): Promise<StockCount> {
+    console.log(`[STORAGE] beginCounting called with token: ${publicToken}`);
+    
+    // First, let's check if the stock count exists and what status it has
+    const existingCount = await db
+      .select()
+      .from(stockCounts)
+      .where(eq(stockCounts.publicToken, publicToken))
+      .limit(1);
+    
+    console.log(`[STORAGE] Found stock count:`, existingCount[0] || 'NOT FOUND');
+    
+    if (existingCount.length === 0) {
+      throw new Error('Contagem não encontrada com este token');
+    }
+    
+    const currentStatus = existingCount[0].status;
+    console.log(`[STORAGE] Current status: ${currentStatus}`);
+    
     // Changes status from 'pronta_para_contagem' or 'started' to 'em_contagem'
     const [stockCount] = await db
       .update(stockCounts)
@@ -1528,10 +1546,13 @@ export class DatabaseStorage implements IStorage {
       ))
       .returning();
     
+    console.log(`[STORAGE] Update result:`, stockCount || 'NO UPDATE');
+    
     if (!stockCount) {
-      throw new Error('Contagem não encontrada ou não está pronta para contagem');
+      throw new Error(`Contagem não está pronta para contagem (status atual: ${currentStatus})`);
     }
     
+    console.log(`[STORAGE] Successfully updated to status: ${stockCount.status}`);
     return stockCount;
   }
 

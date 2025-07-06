@@ -2519,20 +2519,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Begin counting via public token (pronta_para_contagem -> em_contagem)
   app.post('/api/stock-counts/public/:token/begin', async (req, res) => {
     try {
+      console.log(`[BEGIN] Starting count for token: ${req.params.token}`);
       const publicToken = req.params.token;
       
       if (!publicToken) {
+        console.log(`[BEGIN] Invalid token: ${publicToken}`);
         return res.status(400).json({ message: "Token público inválido" });
       }
       
+      console.log(`[BEGIN] Calling storage.beginCounting for token: ${publicToken}`);
       const stockCount = await storage.beginCounting(publicToken);
+      console.log(`[BEGIN] Success! Stock count ID: ${stockCount.id}, new status: ${stockCount.status}`);
       
       res.status(200).json({ 
         message: "Contagem iniciada com sucesso", 
         stockCount
       });
     } catch (error) {
-      console.error("Error beginning counting:", error);
+      console.error("[BEGIN] Error beginning counting:", error);
+      console.error("[BEGIN] Error stack:", error.stack);
       res.status(500).json({ 
         message: error instanceof Error ? error.message : "Erro ao iniciar contagem" 
       });

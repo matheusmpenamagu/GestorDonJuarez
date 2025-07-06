@@ -79,8 +79,16 @@ export default function PublicStockCount() {
 
   // Mutations para iniciar e finalizar contagem
   const beginCountMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/stock-counts/public/${publicToken}/begin`, "POST"),
-    onSuccess: () => {
+    mutationFn: async () => {
+      console.log("beginCountMutation.mutationFn chamado - publicToken:", publicToken);
+      const response = await apiRequest("POST", `/api/stock-counts/public/${publicToken}/begin`);
+      console.log("Response status:", response.status);
+      const data = await response.json();
+      console.log("Response data:", data);
+      return data;
+    },
+    onSuccess: (data) => {
+      console.log("beginCountMutation.onSuccess:", data);
       setIsBeginning(false);
       queryClient.invalidateQueries({ queryKey: [`/api/stock-counts/public/${publicToken}`] });
       toast({
@@ -88,7 +96,13 @@ export default function PublicStockCount() {
         description: "Agora você pode contar os produtos!",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("beginCountMutation.onError:", error);
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        cause: error.cause
+      });
       setIsBeginning(false);
       toast({
         title: "Erro",
