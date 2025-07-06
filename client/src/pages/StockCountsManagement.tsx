@@ -71,7 +71,6 @@ export default function StockCountsManagement() {
     date: format(new Date(), 'yyyy-MM-dd'),
     responsibleId: "",
     unitId: "",
-    notes: "",
   });
 
   const queryClient = useQueryClient();
@@ -110,7 +109,6 @@ export default function StockCountsManagement() {
           date: format(new Date(), 'yyyy-MM-dd'),
           responsibleId: "",
           unitId: "",
-          notes: "",
         });
         toast({
           title: "Contagem criada",
@@ -232,7 +230,7 @@ export default function StockCountsManagement() {
       date: selectedDate,
       responsibleId: parseInt(formData.responsibleId),
       unitId: parseInt(formData.unitId),
-      notes: formData.notes || null,
+      notes: null,
       status: "rascunho",
     };
 
@@ -298,15 +296,41 @@ export default function StockCountsManagement() {
     return employee ? `${employee.firstName} ${employee.lastName}` : 'Funcionário não encontrado';
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusInfo = getStatusInfo(status);
-    const IconComponent = statusInfo.icon;
+  const getStatusTimeline = (currentStatus: string) => {
+    const statuses = [
+      { key: 'rascunho', label: 'Rascunho', icon: Pencil },
+      { key: 'pronta_para_contagem', label: 'Pronta', icon: Send },
+      { key: 'em_contagem', label: 'Em contagem', icon: Play },
+      { key: 'contagem_finalizada', label: 'Finalizada', icon: CheckCircle }
+    ];
+    
+    const currentIndex = statuses.findIndex(s => s.key === currentStatus);
     
     return (
-      <Badge variant={statusInfo.variant} className="flex items-center gap-1">
-        <IconComponent className="h-3 w-3" />
-        {statusInfo.text}
-      </Badge>
+      <div className="flex items-center space-x-2">
+        {statuses.map((status, index) => {
+          const isActive = index <= currentIndex;
+          const isCurrent = index === currentIndex;
+          const IconComponent = status.icon;
+          
+          return (
+            <div key={status.key} className="flex items-center">
+              <div className={`flex items-center justify-center w-6 h-6 rounded-full border-2 ${
+                isActive 
+                  ? (isCurrent ? 'bg-orange-500 border-orange-500 text-white' : 'bg-green-500 border-green-500 text-white')
+                  : 'bg-gray-200 border-gray-300 text-gray-400'
+              }`}>
+                <IconComponent className="h-3 w-3" />
+              </div>
+              {index < statuses.length - 1 && (
+                <div className={`w-8 h-0.5 mx-1 ${
+                  index < currentIndex ? 'bg-green-500' : 'bg-gray-300'
+                }`} />
+              )}
+            </div>
+          );
+        })}
+      </div>
     );
   };
 
@@ -462,15 +486,7 @@ export default function StockCountsManagement() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">Observações</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Observações sobre a contagem..."
-                />
-              </div>
+
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   Cancelar
@@ -495,15 +511,14 @@ export default function StockCountsManagement() {
               <TableHead>Data</TableHead>
               <TableHead>Responsável</TableHead>
               <TableHead>Unidade</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Observações</TableHead>
+              <TableHead>Progresso</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {stockCounts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                   Nenhuma contagem cadastrada.
                 </TableCell>
               </TableRow>
@@ -525,9 +540,8 @@ export default function StockCountsManagement() {
                   <TableCell>
                     <span>{stockCount.unit?.name || "N/A"}</span>
                   </TableCell>
-                  <TableCell>{getStatusBadge(stockCount.status)}</TableCell>
-                  <TableCell className="max-w-xs truncate">
-                    {stockCount.notes || "-"}
+                  <TableCell>
+                    {getStatusTimeline(stockCount.status)}
                   </TableCell>
                   <TableCell className="text-right">
                     {getActionButtons(stockCount)}
