@@ -229,16 +229,22 @@ export default function StockCountDetail() {
 
   // Filtrar produtos baseado na busca e aplicar ordenação
   const getFilteredAndOrderedData = () => {
-    // Se estamos editando a ordem, usar categoryOrder, senão usar ordem padrão
-    const orderedCategories = isEditingOrder && categoryOrder.length > 0 
+    // Usar categoryOrder se disponível, senão usar ordem padrão
+    const orderedCategories = categoryOrder.length > 0 
       ? categoryOrder 
       : getOrderedCategories();
+    
+    console.log("getFilteredAndOrderedData - orderedCategories:", orderedCategories);
+    console.log("getFilteredAndOrderedData - categoryOrder.length:", categoryOrder.length);
     
     const result: Array<{ category: string; products: Product[] }> = [];
     
     orderedCategories.forEach(categoryName => {
       // Verificar se a categoria ainda existe nos dados atuais
-      if (!productsByCategory[categoryName]) return;
+      if (!productsByCategory[categoryName]) {
+        console.log("Category not found in productsByCategory:", categoryName);
+        return;
+      }
       
       const orderedProducts = getOrderedProducts(categoryName);
       const filteredProducts = orderedProducts.filter(product => 
@@ -254,6 +260,7 @@ export default function StockCountDetail() {
       }
     });
     
+    console.log("getFilteredAndOrderedData - result:", result.map(r => r.category));
     return result;
   };
 
