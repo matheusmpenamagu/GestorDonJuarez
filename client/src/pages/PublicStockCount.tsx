@@ -315,12 +315,12 @@ export default function PublicStockCount() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
               Contagem de Estoque #{stockCount.id}
             </h1>
-            <div className="flex items-center justify-center space-x-6 text-sm text-gray-600">
+            <div className="flex flex-col sm:flex-row items-center justify-center sm:space-x-6 space-y-2 sm:space-y-0 text-sm text-gray-600">
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-1" />
                 {format(new Date(stockCount.date), "dd/MM/yyyy", { locale: ptBR })}
@@ -338,7 +338,7 @@ export default function PublicStockCount() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Status da contagem */}
         {(stockCount.status === 'pronta_para_contagem' || stockCount.status === 'started') && (
           <Card className="border-orange-200 bg-orange-50">
@@ -367,7 +367,7 @@ export default function PublicStockCount() {
             {/* Resumo rápido */}
             <Card>
               <CardContent className="pt-6">
-                <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-center">
                   <div>
                     <div className="text-2xl font-bold text-orange-600">
                       {products.length}
@@ -395,21 +395,21 @@ export default function PublicStockCount() {
 
             {/* Busca */}
             <Card>
-              <CardContent className="pt-6">
+              <CardContent className="pt-4 sm:pt-6">
                 <div className="flex items-center space-x-2">
-                  <Search className="h-5 w-5 text-gray-400" />
+                  <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                   <Input
-                    placeholder="Buscar produtos por nome ou código..."
+                    placeholder="Buscar produtos..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-1 text-lg"
+                    className="flex-1 text-base sm:text-lg"
                   />
                 </div>
               </CardContent>
             </Card>
 
             {/* Produtos por categoria */}
-            <div className="space-y-6">
+            <div className="space-y-3 sm:space-y-6">
               {orderedData.map(({ category: categoryName, products: categoryProducts }) => {
                 const isComplete = isCategoryComplete(categoryProducts);
                 const isExpanded = isCategoryExpanded(categoryName);
@@ -424,57 +424,57 @@ export default function PublicStockCount() {
                       className="cursor-pointer hover:bg-gray-50"
                       onClick={() => toggleCategoryExpansion(categoryName)}
                     >
-                      <CardTitle className="flex items-center justify-between">
-                        <div className="flex items-center">
+                      <CardTitle className="flex items-center justify-between text-base sm:text-lg">
+                        <div className="flex items-center min-w-0 flex-1">
                           {isComplete ? (
-                            <CheckCircle className="h-6 w-6 mr-3 text-green-600" />
+                            <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3 text-green-600 flex-shrink-0" />
                           ) : (
-                            <Package className="h-6 w-6 mr-3 text-orange-600" />
+                            <Package className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3 text-orange-600 flex-shrink-0" />
                           )}
-                          {categoryName}
-                          <Badge variant="outline" className="ml-3">
-                            {countedItems}/{categoryProducts.length} itens
+                          <span className="truncate">{categoryName}</span>
+                          <Badge variant="outline" className="ml-2 sm:ml-3 text-xs sm:text-sm">
+                            {countedItems}/{categoryProducts.length}
                           </Badge>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center flex-shrink-0 ml-2">
                           {isComplete && (
-                            <Badge className="mr-2 bg-green-600">
+                            <Badge className="mr-1 sm:mr-2 bg-green-600 text-xs hidden sm:inline-flex">
                               Completa
                             </Badge>
                           )}
                           {isExpanded ? (
-                            <ChevronUp className="h-5 w-5 text-gray-500" />
+                            <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
                           ) : (
-                            <ChevronDown className="h-5 w-5 text-gray-500" />
+                            <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
                           )}
                         </div>
                       </CardTitle>
                     </CardHeader>
                     {isExpanded && (
                       <CardContent>
-                        <div className="grid gap-3">
+                        <div className="grid gap-2 sm:gap-3">
                           {categoryProducts.map((product) => (
                             <div
                               key={product.id}
-                              className="flex items-center gap-4 p-4 border rounded-lg bg-white"
+                              className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-3 sm:p-4 border rounded-lg bg-white"
                             >
-                              <div className="flex-1">
-                                <div className="font-medium text-lg">{product.name}</div>
-                                <div className="text-sm text-gray-500">Código: {product.code}</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-base sm:text-lg truncate">{product.name}</div>
+                                <div className="text-xs sm:text-sm text-gray-500">Código: {product.code}</div>
                               </div>
-                              <div className="flex items-center">
+                              <div className="flex items-center gap-2 w-full sm:w-auto">
                                 <Input
                                   type="number"
                                   min="0"
                                   step="0.001"
                                   value={getItemQuantity(product.id)}
                                   onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                                  className="w-32 text-center text-lg font-medium"
+                                  className="w-24 sm:w-32 text-center text-base sm:text-lg font-medium"
                                   placeholder="0.000"
                                 />
-                              </div>
-                              <div className="text-sm text-gray-500 w-12 text-center">
-                                {product.unitOfMeasure || 'UN'}
+                                <div className="text-xs sm:text-sm text-gray-500 w-8 sm:w-12 text-center">
+                                  {product.unitOfMeasure || 'UN'}
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -487,14 +487,14 @@ export default function PublicStockCount() {
             </div>
 
             {/* Botão Finalizar Contagem */}
-            <div className="flex justify-center pt-6">
+            <div className="flex justify-center pt-4 sm:pt-6">
               <Button
                 onClick={handleFinishCount}
                 disabled={isFinishing}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg font-medium"
+                className="bg-green-600 hover:bg-green-700 text-white px-6 sm:px-8 py-2 sm:py-3 text-base sm:text-lg font-medium w-full sm:w-auto"
                 size="lg"
               >
-                <CheckCircle className="h-5 w-5 mr-2" />
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                 {isFinishing ? "Finalizando..." : "Finalizar Contagem"}
               </Button>
             </div>
