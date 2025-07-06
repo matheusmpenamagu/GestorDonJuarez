@@ -191,7 +191,8 @@ export default function PublicStockCount() {
 
   // Agrupar produtos por categoria
   const productsByCategory = products.reduce((acc, product) => {
-    const categoryName = product.stockCategory || 'Sem categoria';
+    const category = categories.find(cat => cat.id === parseInt(product.stockCategory));
+    const categoryName = category ? category.name : 'Sem categoria';
     
     if (!acc[categoryName]) {
       acc[categoryName] = [];
