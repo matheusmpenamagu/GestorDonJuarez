@@ -64,14 +64,22 @@ function getStatusInfo(status: string) {
 
 export default function StockCountsManagement() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCountDialogOpen, setIsCountDialogOpen] = useState(false);
   const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
   const [selectedStockCount, setSelectedStockCount] = useState<StockCountWithRelations | null>(null);
+  const [editingStockCount, setEditingStockCount] = useState<StockCountWithRelations | null>(null);
   const [countItems, setCountItems] = useState<{ productId: number; countedQuantity: string; notes?: string }[]>([]);
   const [publicUrl, setPublicUrl] = useState<string>("");
 
   const [formData, setFormData] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
+    responsibleId: "",
+    unitId: "",
+  });
+
+  const [editFormData, setEditFormData] = useState({
+    date: "",
     responsibleId: "",
     unitId: "",
   });
@@ -130,6 +138,30 @@ export default function StockCountsManagement() {
       toast({
         title: "Erro",
         description: error.message || "Erro ao criar contagem",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: { id: number; stockCount: Partial<InsertStockCount> }) => {
+      const response = await apiRequest("PUT", `/api/stock-counts/${data.id}`, data.stockCount);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stock-counts"] });
+      setIsEditDialogOpen(false);
+      setEditingStockCount(null);
+      setEditFormData({ date: "", responsibleId: "", unitId: "" });
+      toast({
+        title: "Contagem atualizada",
+        description: "Contagem atualizada com sucesso!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar contagem",
         variant: "destructive",
       });
     },
@@ -262,6 +294,35 @@ export default function StockCountsManagement() {
     createMutation.mutate(stockCountData);
   };
 
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingStockCount) return;
+    
+    const selectedDate = new Date(editFormData.date + 'T00:00:00');
+    
+    const stockCountData: Partial<InsertStockCount> = {
+      date: selectedDate,
+      responsibleId: parseInt(editFormData.responsibleId),
+      unitId: parseInt(editFormData.unitId),
+    };
+
+    updateMutation.mutate({
+      id: editingStockCount.id,
+      stockCount: stockCountData
+    });
+  };
+
+  const handleEditStockCount = (stockCount: StockCountWithRelations) => {
+    setEditingStockCount(stockCount);
+    setEditFormData({
+      date: format(new Date(stockCount.date), 'yyyy-MM-dd'),
+      responsibleId: stockCount.responsibleId.toString(),
+      unitId: stockCount.unitId.toString(),
+    });
+    setIsEditDialogOpen(true);
+  };
+
   const handleStartCount = async (stockCount: StockCountWithRelations) => {
     try {
       // Fetch stock count details with items
@@ -389,7 +450,12 @@ export default function StockCountsManagement() {
       <div className="flex items-center justify-end space-x-1">
         {/* Editar contagem - só para rascunhos */}
         {status === 'rascunho' && (
-          <Button variant="ghost" size="sm" title="Editar contagem">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            title="Editar contagem"
+            onClick={() => handleEditStockCount(stockCount)}
+          >
             <Edit className="h-4 w-4" />
           </Button>
         )}
@@ -712,6 +778,76 @@ export default function StockCountsManagement() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Stock Count Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Contagem</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-date">Data da Contagem</Label>
+              <Input
+                id="edit-date"
+                type="date"
+                value={editFormData.date}
+                onChange={(e) => setEditFormData({ ...editFormData, date: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-responsibleId">Responsável</Label>
+              <Select
+                value={editFormData.responsibleId}
+                onValueChange={(value) => setEditFormData({ ...editFormData, responsibleId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((employee: any) => (
+                    <SelectItem key={employee.id} value={employee.id.toString()}>
+                      {employee.firstName} {employee.lastName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-unitId">Unidade</Label>
+              <Select
+                value={editFormData.unitId}
+                onValueChange={(value) => setEditFormData({ ...editFormData, unitId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a unidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {units.map((unit: any) => (
+                    <SelectItem key={unit.id} value={unit.id.toString()}>
+                      {unit.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                type="submit" 
+                className="bg-orange-600 hover:bg-orange-700"
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
