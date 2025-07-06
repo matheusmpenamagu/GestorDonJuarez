@@ -2646,8 +2646,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[PUBLIC STOCK UPDATE] Salvando ${validItems.length} itens válidos na contagem ${stockCount.id}`);
       console.log(`[PUBLIC STOCK UPDATE] Itens válidos:`, JSON.stringify(validItems, null, 2));
       
+      // Salvar cada item individualmente para preservar itens existentes
       if (validItems.length > 0) {
-        await storage.updateStockCountItems(stockCount.id, validItems);
+        for (const item of validItems) {
+          await storage.upsertStockCountItem(stockCount.id, item);
+        }
       }
       
       console.log("[PUBLIC STOCK UPDATE] Itens salvos com sucesso");

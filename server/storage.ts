@@ -204,6 +204,7 @@ export interface IStorage {
   // Bulk operations for stock count items
   createStockCountItems(items: InsertStockCountItem[]): Promise<StockCountItem[]>;
   updateStockCountItems(stockCountId: number, items: { productId: number; countedQuantity: string; notes?: string }[]): Promise<void>;
+  upsertStockCountItem(stockCountId: number, item: { productId: number; countedQuantity: string; notes?: string }): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1638,6 +1639,46 @@ export class DatabaseStorage implements IStorage {
     }));
 
     await this.createStockCountItems(newItems);
+  }
+
+  async upsertStockCountItem(stockCountId: number, item: { productId: number; countedQuantity: string; notes?: string }): Promise<void> {
+    // Check if item already exists
+    const existingItem = await db
+      .select()
+      .from(stockCountItems)
+      .where(
+        and(
+          eq(stockCountItems.stockCountId, stockCountId),
+          eq(stockCountItems.productId, item.productId)
+        )
+      )
+      .limit(1);
+
+    if (existingItem.length > 0) {
+      // Update existing item
+      await db
+        .update(stockCountItems)
+        .set({
+          countedQuantity: item.countedQuantity,
+          notes: item.notes,
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(stockCountItems.stockCountId, stockCountId),
+            eq(stockCountItems.productId, item.productId)
+          )
+        );
+    } else {
+      // Insert new item
+      const newItem: InsertStockCountItem = {
+        stockCountId,
+        productId: item.productId,
+        countedQuantity: item.countedQuantity,
+        notes: item.notes,
+      };
+      await this.createStockCountItems([newItem]);
+    }
   }
 
   // Product Units operations
