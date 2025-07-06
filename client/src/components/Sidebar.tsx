@@ -26,32 +26,36 @@ const menuItems = [
     icon: Beer,
     items: [
       { href: "/", icon: BarChart3, label: "Dashboard" },
-      { href: "/historico", icon: History, label: "Consumo de chopes" },
-      { href: "/co2", icon: Wind, label: "CO2" },
+      { href: "/chopes/historico", icon: History, label: "Consumo de chopes" },
+      { href: "/chopes/co2", icon: Wind, label: "CO2" },
+      { href: "/chopes/torneiras", icon: Beer, label: "Torneiras" },
+      { href: "/chopes/pontos-venda", icon: Store, label: "Pontos de venda" },
+      { href: "/chopes/estilos", icon: Beer, label: "Estilos de chopes" },
+      { href: "/chopes/dispositivos", icon: Smartphone, label: "Dispositivos" },
     ],
   },
   {
     title: "Pessoas",
     icon: Users,
     items: [
-      { href: "/colaboradores", icon: Users, label: "Colaboradores" },
-      { href: "/cargos", icon: UserCog, label: "Cargos" },
-      { href: "/freelancers", icon: Clock, label: "Freelancers" },
+      { href: "/pessoas/colaboradores", icon: Users, label: "Colaboradores" },
+      { href: "/pessoas/cargos", icon: UserCog, label: "Cargos" },
+      { href: "/pessoas/freelancers", icon: Clock, label: "Freelancers" },
     ],
   },
   {
     title: "Estoque",
     icon: Package,
     items: [
-      { href: "/produtos", icon: Package, label: "Produtos" },
-      { href: "/contagens", icon: FileText, label: "Contagens" },
+      { href: "/estoque/produtos", icon: Package, label: "Produtos" },
+      { href: "/estoque/contagens", icon: FileText, label: "Contagens" },
     ],
   },
   {
     title: "Empresa",
     icon: Building2,
     items: [
-      { href: "/unidades", icon: Building2, label: "Unidades" },
+      { href: "/empresa/unidades", icon: Building2, label: "Unidades" },
     ],
   },
 ];

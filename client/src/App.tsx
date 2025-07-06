@@ -48,48 +48,67 @@ function Router() {
               <Dashboard />
             </Layout>
           </Route>
-          <Route path="/historico">
+          {/* Chopes */}
+          <Route path="/chopes/historico">
             <Layout>
               <History />
             </Layout>
           </Route>
-          <Route path="/trocas-barril">
+          <Route path="/chopes/trocas-barril">
             <Layout>
               <KegChanges />
             </Layout>
           </Route>
-
-          <Route path="/colaboradores">
+          <Route path="/chopes/torneiras">
             <Layout>
-              <EmployeesManagement />
+              <TapsManagement />
             </Layout>
           </Route>
-          <Route path="/cargos">
+          <Route path="/chopes/pontos-venda">
             <Layout>
-              <RolesManagement />
+              <POSManagement />
             </Layout>
           </Route>
-          <Route path="/freelancers">
+          <Route path="/chopes/estilos">
             <Layout>
-              <FreelancersManagement />
+              <BeerStylesManagement />
             </Layout>
           </Route>
-          <Route path="/unidades">
+          <Route path="/chopes/dispositivos">
             <Layout>
-              <UnitsManagement />
+              <DevicesManagement />
             </Layout>
           </Route>
-          <Route path="/co2">
+          <Route path="/chopes/co2">
             <Layout>
               <Co2Management />
             </Layout>
           </Route>
-          <Route path="/produtos">
+
+          {/* Pessoas */}
+          <Route path="/pessoas/colaboradores">
+            <Layout>
+              <EmployeesManagement />
+            </Layout>
+          </Route>
+          <Route path="/pessoas/cargos">
+            <Layout>
+              <RolesManagement />
+            </Layout>
+          </Route>
+          <Route path="/pessoas/freelancers">
+            <Layout>
+              <FreelancersManagement />
+            </Layout>
+          </Route>
+
+          {/* Estoque */}
+          <Route path="/estoque/produtos">
             <Layout>
               <ProductsManagement />
             </Layout>
           </Route>
-          <Route path="/contagens">
+          <Route path="/estoque/contagens">
             <Layout>
               <StockCountsManagement />
             </Layout>
@@ -97,6 +116,13 @@ function Router() {
           <Route path="/estoque/contagens/:id">
             <Layout>
               <StockCountDetail />
+            </Layout>
+          </Route>
+
+          {/* Empresa */}
+          <Route path="/empresa/unidades">
+            <Layout>
+              <UnitsManagement />
             </Layout>
           </Route>
         </>
