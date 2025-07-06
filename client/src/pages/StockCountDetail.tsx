@@ -111,11 +111,17 @@ export default function StockCountDetail() {
   // Inicializar ordem das categorias e produtos baseado na ordem salva ou prévia
   useEffect(() => {
     if (stockCount && products.length > 0) {
+      console.log("Loading order for stock count:", stockCount.id);
+      console.log("Stock count categoryOrder:", stockCount.categoryOrder);
+      console.log("Stock count productOrder:", stockCount.productOrder);
+      
       // Verificar se há ordem salva nesta contagem
       if (stockCount.categoryOrder && stockCount.productOrder) {
         try {
           const savedCategoryOrder = JSON.parse(stockCount.categoryOrder);
           const savedProductOrder = JSON.parse(stockCount.productOrder);
+          console.log("Parsed saved categoryOrder:", savedCategoryOrder);
+          console.log("Parsed saved productOrder:", savedProductOrder);
           setCategoryOrder(savedCategoryOrder);
           setProductOrder(savedProductOrder);
         } catch (error) {
@@ -123,8 +129,11 @@ export default function StockCountDetail() {
           // Fallback para ordem anterior
           initializeFromPreviousOrder();
         }
-      } else if (previousOrder) {
-        initializeFromPreviousOrder();
+      } else {
+        console.log("No saved order found, using previous order");
+        if (previousOrder) {
+          initializeFromPreviousOrder();
+        }
       }
     }
   }, [stockCount, previousOrder, products]);
