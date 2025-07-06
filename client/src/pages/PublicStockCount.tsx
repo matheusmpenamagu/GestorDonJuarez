@@ -9,8 +9,6 @@ import {
   Calendar,
   Search,
   Building2,
-  Plus,
-  Minus,
   CheckCircle,
   Clock
 } from "lucide-react";
@@ -393,37 +391,16 @@ export default function PublicStockCount() {
                             <div className="font-medium text-lg">{product.name}</div>
                             <div className="text-sm text-gray-500">Código: {product.code}</div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                const currentValue = parseFloat(getItemQuantity(product.id)) || 0;
-                                const newValue = Math.max(0, currentValue - 1);
-                                handleQuantityChange(product.id, newValue.toString());
-                              }}
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
+                          <div className="flex items-center">
                             <Input
                               type="number"
                               min="0"
                               step="0.001"
                               value={getItemQuantity(product.id)}
                               onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                              className="w-24 text-center text-lg font-medium"
+                              className="w-32 text-center text-lg font-medium"
+                              placeholder="0.000"
                             />
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                const currentValue = parseFloat(getItemQuantity(product.id)) || 0;
-                                const newValue = currentValue + 1;
-                                handleQuantityChange(product.id, newValue.toString());
-                              }}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
                           </div>
                           <div className="text-sm text-gray-500 w-12 text-center">
                             {product.unitOfMeasure || 'UN'}
