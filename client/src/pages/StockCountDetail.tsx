@@ -473,7 +473,6 @@ export default function StockCountDetail() {
           {/* Status Timeline */}
           <div className="flex justify-center">
             <div className="w-full max-w-lg">
-              <div className="text-sm font-medium text-gray-700 mb-4 text-center">Andamento da Contagem</div>
               <div className="flex justify-center">
                 {getStatusTimeline(stockCount.status)}
               </div>
