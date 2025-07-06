@@ -59,7 +59,7 @@ import {
   type EmployeeWithRelations,
 } from "@shared/schema";
 import { db, pool } from "./db";
-import { eq, desc, and, gte, lte, lt, sql, sum } from "drizzle-orm";
+import { eq, desc, and, or, gte, lte, lt, sql, sum } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -1482,14 +1482,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async beginCounting(publicToken: string): Promise<StockCount> {
-    // Changes status from 'pronta_para_contagem' to 'em_contagem'
+    // Changes status from 'pronta_para_contagem' or 'started' to 'em_contagem'
     const [stockCount] = await db
       .update(stockCounts)
       .set({ 
         status: 'em_contagem',
         updatedAt: new Date() 
       })
-      .where(and(eq(stockCounts.publicToken, publicToken), eq(stockCounts.status, 'pronta_para_contagem')))
+      .where(and(
+        eq(stockCounts.publicToken, publicToken), 
+        or(eq(stockCounts.status, 'pronta_para_contagem'), eq(stockCounts.status, 'started'))
+      ))
       .returning();
     
     if (!stockCount) {
