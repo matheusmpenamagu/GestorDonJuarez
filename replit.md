@@ -185,7 +185,7 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - ✓ Barra de progresso fixa no topo mostrando andamento da contagem
 - ✓ Botão "Finalizar Contagem" implementado na página pública (Julho 6, 2025)
 - ✓ Endpoint /api/stock-counts/public/:token/finish criado para finalizar via token público
-- ✓ Funcionalidade completa: salvamento automático + finalização + mudança para status "contagem_finalizada"
+- ✓ Funcionalidade completa: salvamento individual + finalização + mudança para status "contagem_finalizada"
 - ✓ Correção crítica: ícone de remoção habilitado para contagens com status "rascunho"
 - ✓ Sistema permite remover produtos de contagens em edição conforme regra de negócio
 - ✓ Sistema completo de status de contagens implementado (Julho 6, 2025)
