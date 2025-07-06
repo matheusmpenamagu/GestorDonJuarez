@@ -624,37 +624,30 @@ export default function PublicStockCount() {
                                     {product.name}
                                   </span>
                                 </div>
-                                <div className="text-xs text-gray-600">
-                                  Unidade: {product.stockUnit}
+                                <div className="text-xs text-gray-600 font-medium">
+                                  {product.stockUnit}
                                 </div>
                               </div>
-                              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 flex-shrink-0">
-                                <div className="flex items-center space-x-2 w-full sm:w-auto">
-                                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-                                    Quantidade:
-                                  </label>
-                                  <div className="flex items-center space-x-1">
-                                    <Input
-                                      ref={(ref) => {
-                                        if (ref) {
-                                          inputRefs.current[`product-${product.id}`] = ref;
-                                        }
-                                      }}
-                                      type="text"
-                                      inputMode="decimal"
-                                      placeholder="0,000"
-                                      value={getItemQuantity(product.id)}
-                                      onChange={(e) => updateItemQuantity(product.id, e.target.value)}
-                                      onKeyPress={(e) => handleKeyPress(e, product.id)}
-                                      onKeyDown={(e) => handleKeyDown(e, product.id)}
-                                      className="w-24 sm:w-28 text-center text-sm focus:ring-2 focus:ring-orange-500"
-                                      autoComplete="off"
-                                    />
-                                    <span className="text-sm font-medium text-gray-600 min-w-0">
-                                      {product.stockUnit}
-                                    </span>
-                                  </div>
-                                </div>
+                              <div className="flex items-center space-x-2 flex-shrink-0">
+                                <Input
+                                  ref={(ref) => {
+                                    if (ref) {
+                                      inputRefs.current[`product-${product.id}`] = ref;
+                                    }
+                                  }}
+                                  type="text"
+                                  inputMode="decimal"
+                                  placeholder="0,000"
+                                  value={getItemQuantity(product.id)}
+                                  onChange={(e) => updateItemQuantity(product.id, e.target.value)}
+                                  onKeyPress={(e) => handleKeyPress(e, product.id)}
+                                  onKeyDown={(e) => handleKeyDown(e, product.id)}
+                                  className="w-24 sm:w-28 text-center text-sm focus:ring-2 focus:ring-orange-500"
+                                  autoComplete="off"
+                                />
+                                <span className="text-sm font-medium text-gray-600 min-w-0">
+                                  {product.stockUnit}
+                                </span>
                               </div>
                             </div>
                           ))}
