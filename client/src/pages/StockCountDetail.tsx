@@ -347,12 +347,14 @@ export default function StockCountDetail() {
 
   const statusBadgeColor = {
     draft: "secondary",
+    rascunho: "secondary",
     started: "default", 
     completed: "outline"
   } as const;
 
   const statusText = {
     draft: "Rascunho",
+    rascunho: "Rascunho",
     started: "Iniciada",
     completed: "Concluída"
   } as const;
@@ -389,7 +391,7 @@ export default function StockCountDetail() {
         </div>
         
         <div className="flex space-x-2">
-          {stockCount.status === "draft" && (
+          {(stockCount.status === "draft" || stockCount.status === "rascunho") && (
             <>
               <Button
                 variant={isEditingOrder ? "default" : "outline"}
