@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Plus, FileText, Calendar, User, CheckCircle, Clock, Pencil, Trash2, Eye, Send, Play, StopCircle, Link, MessageCircle, Edit } from "lucide-react";
@@ -76,6 +77,7 @@ export default function StockCountsManagement() {
   });
 
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
 
   const { data: stockCounts = [], isLoading: isLoadingCounts } = useQuery<StockCountWithRelations[]>({
     queryKey: ["/api/stock-counts"],
@@ -396,7 +398,7 @@ export default function StockCountsManagement() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => window.location.href = `/estoque/contagens/${id}`}
+          onClick={() => navigate(`/estoque/contagens/${id}`)}
           title="Editar produtos da contagem"
         >
           <Pencil className="h-4 w-4" />
