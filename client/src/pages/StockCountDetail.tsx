@@ -106,8 +106,8 @@ export default function StockCountDetail() {
         productId: item.productId,
         countedQuantity: item.countedQuantity || "0"
       })));
-      // Limpar produtos removidos quando os dados são recarregados
-      setRemovedProducts(new Set());
+      // Manter produtos removidos persistentes até que sejam realmente removidos da contagem
+      // Não limpar automaticamente para evitar que produtos removidos reapareçam
     }
   }, [stockCount]);
 
@@ -154,8 +154,10 @@ export default function StockCountDetail() {
     }
   };
 
-  // Agrupar produtos por categoria (mapeando para nome correto)
-  const productsByCategory = products.reduce((acc, product) => {
+  // Filtrar produtos que não foram removidos e agrupar por categoria
+  const availableProducts = products.filter(product => !removedProducts.has(product.id));
+  
+  const productsByCategory = availableProducts.reduce((acc, product) => {
     // Verificar se stockCategory é um ID numérico ou nome direto
     let categoryName = "Sem categoria";
     
@@ -251,9 +253,8 @@ export default function StockCountDetail() {
       
       const orderedProducts = getOrderedProducts(categoryName);
       const filteredProducts = orderedProducts.filter(product => 
-        !removedProducts.has(product.id) && // Filtrar produtos removidos
-        (product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.code.toLowerCase().includes(searchTerm.toLowerCase()))
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.code.toLowerCase().includes(searchTerm.toLowerCase())
       );
       
       if (filteredProducts.length > 0) {
