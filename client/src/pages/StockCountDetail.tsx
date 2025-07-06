@@ -354,10 +354,15 @@ export default function StockCountDetail() {
   // Mutation para iniciar contagem
   const startCountMutation = useMutation({
     mutationFn: async () => {
+      console.log("startCountMutation.mutationFn chamado - stockCountId:", stockCountId);
       const response = await apiRequest("POST", `/api/stock-counts/${stockCountId}/start`);
-      return await response.json();
+      console.log("Response status:", response.status);
+      const data = await response.json();
+      console.log("Response data:", data);
+      return data;
     },
     onSuccess: (data) => {
+      console.log("startCountMutation.onSuccess:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/stock-counts"] });
       toast({
         title: "Contagem iniciada",
@@ -365,7 +370,13 @@ export default function StockCountDetail() {
       });
       setIsStarting(false);
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      console.error("startCountMutation.onError:", error);
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        cause: error.cause
+      });
       toast({
         title: "Erro",
         description: error.message || "Erro ao iniciar contagem",
@@ -450,6 +461,8 @@ export default function StockCountDetail() {
   };
 
   const handleStartCount = () => {
+    console.log("handleStartCount chamado - stockCount status:", stockCount?.status);
+    console.log("stockCountId:", stockCountId);
     setIsStarting(true);
     startCountMutation.mutate();
   };

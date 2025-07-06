@@ -2378,33 +2378,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Route to start stock count (generate public token and send WhatsApp)
   app.post('/api/stock-counts/:id/start', demoAuth, async (req, res) => {
     try {
+      console.log(`[START] Starting stock count for ID: ${req.params.id}`);
       const stockCountId = parseInt(req.params.id);
       
       if (isNaN(stockCountId)) {
+        console.log(`[START] Invalid stock count ID: ${req.params.id}`);
         return res.status(400).json({ message: "Invalid stock count ID" });
       }
       
+      console.log(`[START] Generating public token for stock count ${stockCountId}`);
       // Generate random token for public access
       const crypto = await import('crypto');
       const publicToken = crypto.randomBytes(16).toString('hex');
+      console.log(`[START] Generated token: ${publicToken}`);
       
       // Update stock count with public token and status
+      console.log(`[START] Updating stock count with status 'started' and token`);
       await storage.updateStockCount(stockCountId, {
         status: 'started',
         publicToken
       });
       
       // Get stock count with responsible person
+      console.log(`[START] Fetching stock count details`);
       const stockCount = await storage.getStockCount(stockCountId);
+      console.log(`[START] Stock count data:`, {
+        id: stockCount?.id,
+        status: stockCount?.status,
+        responsibleId: stockCount?.responsibleId,
+        hasResponsible: !!stockCount?.responsible,
+        whatsapp: stockCount?.responsible?.whatsapp
+      });
       
       // Generate public URL
       const baseUrl = process.env.REPLIT_DEV_DOMAIN 
         ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
         : `https://gestor.donjuarez.com.br`;
       const publicUrl = `${baseUrl}/contagem-publica/${publicToken}`;
+      console.log(`[START] Generated public URL: ${publicUrl}`);
       
       // Send WhatsApp message to responsible person
       if (stockCount?.responsible?.whatsapp) {
+        console.log(`[START] Sending WhatsApp to ${stockCount.responsible.whatsapp}`);
         const { format } = await import("date-fns");
         const { ptBR } = await import("date-fns/locale");
         
@@ -2421,19 +2436,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const success = await sendWhatsAppMessage(stockCount.responsible.whatsapp, message);
         
         if (success) {
-          console.log(`WhatsApp sent successfully to ${stockCount.responsible.whatsapp}`);
+          console.log(`[START] WhatsApp sent successfully to ${stockCount.responsible.whatsapp}`);
         } else {
-          console.log(`Failed to send WhatsApp to ${stockCount.responsible.whatsapp}`);
+          console.log(`[START] Failed to send WhatsApp to ${stockCount.responsible.whatsapp}`);
         }
+      } else {
+        console.log(`[START] No WhatsApp number found for responsible person`);
       }
       
+      console.log(`[START] Success! Returning response`);
       res.status(200).json({ 
         message: "Stock count started successfully", 
         publicUrl,
         publicToken 
       });
     } catch (error) {
-      console.error("Error starting stock count:", error);
+      console.error("[START] Error starting stock count:", error);
+      console.error("[START] Error stack:", error.stack);
       res.status(500).json({ message: "Failed to start stock count" });
     }
   });
