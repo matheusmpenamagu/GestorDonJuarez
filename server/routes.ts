@@ -2158,7 +2158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get products by unit
+  // Get products by unit (authenticated)
   app.get('/api/products/by-unit/:unitId', demoAuth, async (req, res) => {
     try {
       const unitId = parseInt(req.params.unitId);
@@ -2173,6 +2173,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(products);
     } catch (error) {
       console.error("Error fetching products by unit:", error);
+      res.status(500).json({ message: "Failed to fetch products by unit" });
+    }
+  });
+
+  // Get products by unit (public access for stock counting)
+  app.get('/api/products/public/by-unit/:unitId', async (req, res) => {
+    try {
+      const unitId = parseInt(req.params.unitId);
+      if (isNaN(unitId)) {
+        return res.status(400).json({ message: "Invalid unit ID" });
+      }
+      
+      console.log(`Public access: Fetching products for unit ID: ${unitId}`);
+      const products = await storage.getProductsByUnit(unitId);
+      console.log(`Found ${products.length} products for unit ${unitId}`);
+      
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching products by unit (public):", error);
       res.status(500).json({ message: "Failed to fetch products by unit" });
     }
   });

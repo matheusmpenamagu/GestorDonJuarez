@@ -48,7 +48,7 @@ export default function PublicStockCount() {
 
   // Carregar produtos da unidade específica
   const { data: products = [] } = useQuery<Product[]>({
-    queryKey: ["/api/products/by-unit", stockCount?.unitId],
+    queryKey: [`/api/products/public/by-unit/${stockCount?.unitId}`],
     enabled: !!stockCount?.unitId,
   });
 
