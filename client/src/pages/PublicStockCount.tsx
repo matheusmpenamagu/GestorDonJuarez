@@ -246,7 +246,8 @@ export default function PublicStockCount() {
       updateItemsMutation.mutate([itemToSave], {
         onSuccess: () => {
           setSavedItems(prev => [...prev.filter(id => id !== productId), productId]);
-          focusNextField(productId);
+          // Não focar automaticamente no próximo campo
+          // focusNextField(productId);
         }
       });
     }
@@ -444,38 +445,38 @@ export default function PublicStockCount() {
     }
   }, [orderedData]);
 
-  // Focar no primeiro campo quando uma nova categoria é expandida
-  useEffect(() => {
-    const expandedCategoryNames = Object.keys(expandedCategories).filter(
-      key => expandedCategories[key] === true
-    );
+  // Desabilitado: Foco automático em novas categorias
+  // useEffect(() => {
+  //   const expandedCategoryNames = Object.keys(expandedCategories).filter(
+  //     key => expandedCategories[key] === true
+  //   );
     
-    if (expandedCategoryNames.length === 1) {
-      const expandedCategory = orderedData.find(item => 
-        item.category === expandedCategoryNames[0]
-      );
+  //   if (expandedCategoryNames.length === 1) {
+  //     const expandedCategory = orderedData.find(item => 
+  //       item.category === expandedCategoryNames[0]
+  //     );
       
-      if (expandedCategory) {
-        setTimeout(() => {
-          // Focar no primeiro produto não contado da categoria expandida
-          const firstUncounteProduct = expandedCategory.products.find(product => 
-            getItemQuantity(product.id) === ""
-          );
+  //     if (expandedCategory) {
+  //       setTimeout(() => {
+  //         // Focar no primeiro produto não contado da categoria expandida
+  //         const firstUncounteProduct = expandedCategory.products.find(product => 
+  //           getItemQuantity(product.id) === ""
+  //         );
           
-          if (firstUncounteProduct) {
-            const inputRef = inputRefs.current[`product-${firstUncounteProduct.id}`];
-            if (inputRef) {
-              inputRef.focus();
-              // Não fazer select no mobile para evitar problemas
-              if (!isMobile()) {
-                inputRef.select();
-              }
-            }
-          }
-        }, 400);
-      }
-    }
-  }, [expandedCategories, countItems]);
+  //         if (firstUncounteProduct) {
+  //           const inputRef = inputRefs.current[`product-${firstUncounteProduct.id}`];
+  //           if (inputRef) {
+  //             inputRef.focus();
+  //             // Não fazer select no mobile para evitar problemas
+  //             if (!isMobile()) {
+  //               inputRef.select();
+  //             }
+  //           }
+  //         }
+  //       }, 400);
+  //     }
+  //   }
+  // }, [expandedCategories, countItems]);
 
   // Focar no primeiro campo quando os produtos são carregados
   useEffect(() => {
