@@ -2356,6 +2356,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // New status transition routes
+  
+  // Start stock count (rascunho -> pronta_para_contagem)
+  app.post('/api/stock-counts/:id/fechar-contagem', demoAuth, async (req, res) => {
+    try {
+      const stockCountId = parseInt(req.params.id);
+      
+      if (isNaN(stockCountId)) {
+        return res.status(400).json({ message: "ID de contagem inválido" });
+      }
+      
+      const stockCount = await storage.startStockCount(stockCountId);
+      
+      // Get stock count with responsible person for WhatsApp
+      const fullStockCount = await storage.getStockCount(stockCountId);
+      
+      // Generate public URL
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+        : `https://gestor.donjuarez.com.br`;
+      const publicUrl = `${baseUrl}/contagem-publica/${stockCount.publicToken}`;
+      
+      // Send WhatsApp message to responsible person
+      if (fullStockCount?.responsible?.whatsapp) {
+        const { format } = await import("date-fns");
+        const { ptBR } = await import("date-fns/locale");
+        
+        const message = `🗂️ *Contagem de Estoque Pronta*\n\n` +
+          `📋 Contagem #${stockCountId}\n` +
+          `📅 ${format(new Date(fullStockCount.date), "dd/MM/yyyy", { locale: ptBR })}\n\n` +
+          `🔗 Link para contagem:\n${publicUrl}\n\n` +
+          `*Instruções:*\n` +
+          `• Acesse o link acima\n` +
+          `• Conte os produtos por categoria\n` +
+          `• Anote observações quando necessário\n` +
+          `• Os dados são salvos automaticamente`;
+        
+        const success = await sendWhatsAppMessage(fullStockCount.responsible.whatsapp, message);
+        
+        if (success) {
+          console.log(`WhatsApp sent successfully to ${fullStockCount.responsible.whatsapp}`);
+        } else {
+          console.log(`Failed to send WhatsApp to ${fullStockCount.responsible.whatsapp}`);
+        }
+      }
+      
+      res.status(200).json({ 
+        message: "Contagem fechada e enviada com sucesso", 
+        publicUrl,
+        stockCount
+      });
+    } catch (error) {
+      console.error("Error closing stock count:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Erro ao fechar contagem" 
+      });
+    }
+  });
+
+  // Begin counting via public token (pronta_para_contagem -> em_contagem)
+  app.post('/api/stock-counts/public/:token/begin', async (req, res) => {
+    try {
+      const publicToken = req.params.token;
+      
+      if (!publicToken) {
+        return res.status(400).json({ message: "Token público inválido" });
+      }
+      
+      const stockCount = await storage.beginCounting(publicToken);
+      
+      res.status(200).json({ 
+        message: "Contagem iniciada com sucesso", 
+        stockCount
+      });
+    } catch (error) {
+      console.error("Error beginning counting:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Erro ao iniciar contagem" 
+      });
+    }
+  });
+
+  // Finalize stock count (em_contagem -> contagem_finalizada)
+  app.post('/api/stock-counts/:id/finalizar', demoAuth, async (req, res) => {
+    try {
+      const stockCountId = parseInt(req.params.id);
+      
+      if (isNaN(stockCountId)) {
+        return res.status(400).json({ message: "ID de contagem inválido" });
+      }
+      
+      const stockCount = await storage.finalizeStockCount(stockCountId);
+      
+      res.status(200).json({ 
+        message: "Contagem finalizada com sucesso", 
+        stockCount
+      });
+    } catch (error) {
+      console.error("Error finalizing stock count:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Erro ao finalizar contagem" 
+      });
+    }
+  });
+
+  // Get stock count by public token (for public access)
+  app.get('/api/stock-counts/public/:token', async (req, res) => {
+    try {
+      const publicToken = req.params.token;
+      
+      if (!publicToken) {
+        return res.status(400).json({ message: "Token público inválido" });
+      }
+      
+      // Find stock count by public token
+      const allStockCounts = await storage.getStockCounts();
+      const stockCount = allStockCounts.find(sc => sc.publicToken === publicToken);
+      
+      if (!stockCount) {
+        return res.status(404).json({ message: "Contagem não encontrada" });
+      }
+      
+      res.json(stockCount);
+    } catch (error) {
+      console.error("Error fetching public stock count:", error);
+      res.status(500).json({ message: "Erro ao buscar contagem" });
+    }
+  });
+
   // Route to get previous stock count order for smart ordering
   app.get('/api/stock-counts/:id/previous-order', demoAuth, async (req, res) => {
     try {

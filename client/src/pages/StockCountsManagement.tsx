@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, FileText, Calendar, User, CheckCircle, Clock, Pencil, Trash2, Eye } from "lucide-react";
+import { Plus, FileText, Calendar, User, CheckCircle, Clock, Pencil, Trash2, Eye, Send, Play, StopCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +44,22 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { StockCountWithRelations, InsertStockCount, Product, EmployeeWithRelations, Unit } from "@shared/schema";
+
+// Function to get status badge variant and text
+function getStatusInfo(status: string) {
+  switch (status) {
+    case 'rascunho':
+      return { variant: 'secondary' as const, text: 'Rascunho', icon: Pencil };
+    case 'pronta_para_contagem':
+      return { variant: 'default' as const, text: 'Pronta para contagem', icon: Send };
+    case 'em_contagem':
+      return { variant: 'destructive' as const, text: 'Em contagem', icon: Play };
+    case 'contagem_finalizada':
+      return { variant: 'outline' as const, text: 'Finalizada', icon: CheckCircle };
+    default:
+      return { variant: 'secondary' as const, text: status, icon: Clock };
+  }
+}
 
 export default function StockCountsManagement() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -137,6 +153,49 @@ export default function StockCountsManagement() {
     },
   });
 
+  // Status transition mutations
+  const fecharContagemMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("POST", `/api/stock-counts/${id}/fechar-contagem`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stock-counts"] });
+      toast({
+        title: "Contagem fechada",
+        description: "Contagem fechada e enviada via WhatsApp com sucesso!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao fechar contagem",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const finalizarContagemMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("POST", `/api/stock-counts/${id}/finalizar`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stock-counts"] });
+      toast({
+        title: "Contagem finalizada",
+        description: "Contagem finalizada com sucesso!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao finalizar contagem",
+        variant: "destructive",
+      });
+    },
+  });
+
   const saveCountMutation = useMutation({
     mutationFn: async (data: { stockCountId: number; items: typeof countItems }) => {
       const response = await apiRequest("POST", `/api/stock-counts/${data.stockCountId}/items`, {
@@ -174,7 +233,7 @@ export default function StockCountsManagement() {
       responsibleId: parseInt(formData.responsibleId),
       unitId: parseInt(formData.unitId),
       notes: formData.notes || null,
-      status: "draft",
+      status: "rascunho",
     };
 
     createMutation.mutate(stockCountData);
@@ -232,20 +291,100 @@ export default function StockCountsManagement() {
     });
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'draft':
-        return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Rascunho</Badge>;
-      case 'completed':
-        return <Badge variant="default"><CheckCircle className="h-3 w-3 mr-1" />Concluída</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
+
 
   const getEmployeeName = (employeeId: number) => {
     const employee = employees.find((emp: any) => emp.id === employeeId);
     return employee ? `${employee.firstName} ${employee.lastName}` : 'Funcionário não encontrado';
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusInfo = getStatusInfo(status);
+    const IconComponent = statusInfo.icon;
+    
+    return (
+      <Badge variant={statusInfo.variant} className="flex items-center gap-1">
+        <IconComponent className="h-3 w-3" />
+        {statusInfo.text}
+      </Badge>
+    );
+  };
+
+  const getActionButtons = (stockCount: any) => {
+    const { status, id } = stockCount;
+    
+    return (
+      <div className="flex items-center justify-end space-x-2">
+        {/* Visualizar sempre disponível */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => window.location.href = `/estoque/contagens/${id}`}
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+
+        {/* Botões específicos por status */}
+        {status === 'rascunho' && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fecharContagemMutation.mutate(id)}
+            disabled={fecharContagemMutation.isPending}
+            className="text-blue-600 hover:text-blue-700"
+          >
+            <Send className="h-4 w-4 mr-1" />
+            Fechar contagem
+          </Button>
+        )}
+
+        {status === 'em_contagem' && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => finalizarContagemMutation.mutate(id)}
+            disabled={finalizarContagemMutation.isPending}
+            className="text-green-600 hover:text-green-700"
+          >
+            <StopCircle className="h-4 w-4 mr-1" />
+            Finalizar
+          </Button>
+        )}
+
+        {/* Editar e excluir apenas para rascunhos */}
+        {status === 'rascunho' && (
+          <>
+            <Button variant="ghost" size="sm">
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja excluir esta contagem? Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => deleteMutation.mutate(id)}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </>
+        )}
+      </div>
+    );
   };
 
   if (isLoadingCounts) {
@@ -390,39 +529,8 @@ export default function StockCountsManagement() {
                   <TableCell className="max-w-xs truncate">
                     {stockCount.notes || "-"}
                   </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.location.href = `/estoque/contagens/${stockCount.id}`}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Tem certeza que deseja excluir esta contagem?
-                            Esta ação não pode ser desfeita.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteMutation.mutate(stockCount.id)}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                  <TableCell className="text-right">
+                    {getActionButtons(stockCount)}
                   </TableCell>
                 </TableRow>
               ))

@@ -467,7 +467,7 @@ export const stockCounts = pgTable("stock_counts", {
   responsibleId: integer("responsible_id").notNull().references(() => employees.id),
   unitId: integer("unit_id").notNull().references(() => units.id),
   notes: text("notes"),
-  status: varchar("status", { length: 50 }).notNull().default("draft"), // draft, started, completed
+  status: varchar("status", { length: 50 }).notNull().default("rascunho"), // rascunho, pronta_para_contagem, em_contagem, contagem_finalizada
   publicToken: varchar("public_token", { length: 32 }).unique(), // For public access
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -521,6 +521,7 @@ export const insertStockCountSchema = createInsertSchema(stockCounts).omit({
   updatedAt: true,
 }).extend({
   unitId: z.number().min(1, "Selecione uma unidade"),
+  status: z.enum(["rascunho", "pronta_para_contagem", "em_contagem", "contagem_finalizada"]).optional(),
 });
 
 export const insertStockCountItemSchema = createInsertSchema(stockCountItems).omit({

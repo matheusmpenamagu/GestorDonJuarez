@@ -187,6 +187,11 @@ export interface IStorage {
   createStockCount(stockCount: InsertStockCount): Promise<StockCount>;
   updateStockCount(id: number, stockCount: Partial<InsertStockCount>): Promise<StockCount>;
   deleteStockCount(id: number): Promise<void>;
+  // Status transitions
+  startStockCount(id: number): Promise<StockCount>; // rascunho -> pronta_para_contagem
+  beginCounting(publicToken: string): Promise<StockCount>; // pronta_para_contagem -> em_contagem
+  finalizeStockCount(id: number): Promise<StockCount>; // em_contagem -> contagem_finalizada
+  generatePublicToken(id: number): Promise<string>;
   
   // Stock Count Items operations
   getStockCountItems(stockCountId: number): Promise<StockCountItemWithRelations[]>;
@@ -1452,6 +1457,76 @@ export class DatabaseStorage implements IStorage {
 
   async deleteStockCount(id: number): Promise<void> {
     await db.delete(stockCounts).where(eq(stockCounts.id, id));
+  }
+
+  // Status transition methods
+  async startStockCount(id: number): Promise<StockCount> {
+    // Generates public token and changes status from 'rascunho' to 'pronta_para_contagem'
+    const publicToken = this.generateRandomToken();
+    const [stockCount] = await db
+      .update(stockCounts)
+      .set({ 
+        status: 'pronta_para_contagem',
+        publicToken: publicToken,
+        updatedAt: new Date() 
+      })
+      .where(and(eq(stockCounts.id, id), eq(stockCounts.status, 'rascunho')))
+      .returning();
+    
+    if (!stockCount) {
+      throw new Error('Contagem não encontrada ou não está em status de rascunho');
+    }
+    
+    return stockCount;
+  }
+
+  async beginCounting(publicToken: string): Promise<StockCount> {
+    // Changes status from 'pronta_para_contagem' to 'em_contagem'
+    const [stockCount] = await db
+      .update(stockCounts)
+      .set({ 
+        status: 'em_contagem',
+        updatedAt: new Date() 
+      })
+      .where(and(eq(stockCounts.publicToken, publicToken), eq(stockCounts.status, 'pronta_para_contagem')))
+      .returning();
+    
+    if (!stockCount) {
+      throw new Error('Contagem não encontrada ou não está pronta para contagem');
+    }
+    
+    return stockCount;
+  }
+
+  async finalizeStockCount(id: number): Promise<StockCount> {
+    // Changes status from 'em_contagem' to 'contagem_finalizada'
+    const [stockCount] = await db
+      .update(stockCounts)
+      .set({ 
+        status: 'contagem_finalizada',
+        updatedAt: new Date() 
+      })
+      .where(and(eq(stockCounts.id, id), eq(stockCounts.status, 'em_contagem')))
+      .returning();
+    
+    if (!stockCount) {
+      throw new Error('Contagem não encontrada ou não está em contagem');
+    }
+    
+    return stockCount;
+  }
+
+  async generatePublicToken(id: number): Promise<string> {
+    const publicToken = this.generateRandomToken();
+    await db
+      .update(stockCounts)
+      .set({ publicToken, updatedAt: new Date() })
+      .where(eq(stockCounts.id, id));
+    return publicToken;
+  }
+
+  private generateRandomToken(): string {
+    return Math.random().toString(36).substring(2, 34); // 32 character token
   }
 
   // Stock Count Items operations
