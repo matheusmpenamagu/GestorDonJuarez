@@ -74,9 +74,15 @@ export default function StockCountDetail() {
     queryKey: ["/api/product-categories"],
   });
 
-  // Carregar produtos
+  // Carregar produtos da unidade da contagem
   const { data: products = [] } = useQuery<Product[]>({
-    queryKey: ["/api/products"],
+    queryKey: ["/api/products", "by-unit", stockCount?.unitId],
+    queryFn: async () => {
+      if (!stockCount?.unitId) return [];
+      const response = await apiRequest("GET", `/api/products/by-unit/${stockCount.unitId}`);
+      return await response.json();
+    },
+    enabled: !!stockCount?.unitId
   });
 
   // Carregar ordem da contagem anterior

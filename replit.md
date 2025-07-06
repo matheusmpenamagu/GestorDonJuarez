@@ -186,6 +186,10 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - ✓ Mecânica de criação filtrada por unidade implementada corretamente (Julho 6, 2025)
 - ✓ Sistema inclui apenas produtos associados à unidade da contagem
 - ✓ Teste confirmado: contagem Apollonio criada com 17 produtos específicos da unidade
+- ✓ Problema de filtro na edição de produtos corrigido (Julho 6, 2025)
+- ✓ Endpoint /api/products/by-unit/:unitId implementado para filtrar produtos por unidade
+- ✓ StockCountDetail.tsx corrigido para usar query específica em vez de carregar todos os produtos
+- ✓ Teste confirmado: tela de edição agora mostra apenas 17 produtos da unidade Apollonio
 - ✓ URLs do sistema padronizadas para estrutura consistente menu/submenu (Julho 6, 2025)
 - ✓ Implementada nova estrutura de rotas: /chopes/*, /pessoas/*, /estoque/*, /empresa/*
 - ✓ Sidebar atualizado com navegação organizada por seções expandíveis

@@ -2158,6 +2158,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get products by unit
+  app.get('/api/products/by-unit/:unitId', demoAuth, async (req, res) => {
+    try {
+      const unitId = parseInt(req.params.unitId);
+      if (isNaN(unitId)) {
+        return res.status(400).json({ message: "Invalid unit ID" });
+      }
+      
+      console.log(`Fetching products for unit ID: ${unitId}`);
+      const products = await storage.getProductsByUnit(unitId);
+      console.log(`Found ${products.length} products for unit ${unitId}`);
+      
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching products by unit:", error);
+      res.status(500).json({ message: "Failed to fetch products by unit" });
+    }
+  });
+
   // Stock Counts routes
   app.get('/api/stock-counts', demoAuth, async (req, res) => {
     try {
