@@ -1856,28 +1856,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return categories.length > 0 ? categories[0].id : null;
           }
 
+          // Function to normalize text and handle encoding issues
+          const normalizeText = (text: string): string => {
+            return text.toLowerCase().trim()
+              .replace(/[áàâãä]/g, 'a')
+              .replace(/[éèêë]/g, 'e')
+              .replace(/[íìîï]/g, 'i')
+              .replace(/[óòôõö]/g, 'o')
+              .replace(/[úùûü]/g, 'u')
+              .replace(/[ç]/g, 'c')
+              .replace(/[ñ]/g, 'n')
+              // Handle specific corrupted patterns
+              .replace(/gr�o\s*par�/g, 'grao para')
+              .replace(/gr�o/g, 'grao')
+              .replace(/par�/g, 'para')
+              .replace(/[�]/g, 'a') // Handle other corrupted characters
+              .replace(/\s+/g, ' ') // Normalize spaces
+              .trim();
+          };
+
           // Function to find best matching unit by similarity
           const findBestUnit = (unitName: string): number | null => {
             if (!unitName) return units.length > 0 ? units[0].id : null;
             
-            const normalized = unitName.toLowerCase().trim();
+            const normalized = normalizeText(unitName);
             console.log(`Finding unit for: "${unitName}" (normalized: "${normalized}")`);
             
-            // Specific mapping rules based on CSV patterns
+            // Specific mapping rules based on CSV patterns (normalized without accents)
             const specificMappings = [
               // Check for Grão Pará first (more specific than Apollonio)
               { 
-                patterns: ['grão pará', 'graopara', 'grao para', 'grão para'], 
+                patterns: [
+                  'grao para', 'graopara', 'grao par',
+                  'don juarez / grao para', 'don juarez grao para',
+                  'don juarez / grao par', 'don juarez grao par'
+                ], 
                 unitId: 1, 
                 unitName: 'Don Juarez Grão Pará' 
               },
               { 
-                patterns: ['beer truck', 'beertruck', 'truck'], 
+                patterns: [
+                  'beer truck', 'beertruck', 'truck',
+                  'don juarez / beer truck', 'don juarez beer truck'
+                ], 
                 unitId: 3, 
                 unitName: 'Beer Truck' 
               },
               { 
-                patterns: ['apollonio', 'frango na brasa', 'frango'], 
+                patterns: [
+                  'apollonio', 'frango na brasa', 'frango',
+                  'apollonio frango na brasa', 'apollonio frango'
+                ], 
                 unitId: 5, 
                 unitName: 'Apollonio' 
               },
@@ -1887,7 +1916,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 unitName: 'Chopeira' 
               },
               { 
-                patterns: ['fábrica', 'fabrica'], 
+                patterns: ['fabrica'], 
                 unitId: 2, 
                 unitName: 'Fábrica' 
               }
@@ -1903,18 +1932,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
             
-            // Try exact match on unit name
-            let match = units.find(unit => unit.name.toLowerCase().trim() === normalized);
+            // Try exact match on unit name (normalized)
+            let match = units.find(unit => normalizeText(unit.name) === normalized);
             if (match) {
               console.log(`✓ Exact match -> ${match.name} (ID ${match.id})`);
               return match.id;
             }
 
-            // Try partial match on name (fallback)
-            match = units.find(unit => 
-              unit.name.toLowerCase().includes(normalized) || 
-              normalized.includes(unit.name.toLowerCase())
-            );
+            // Try partial match on name (normalized)
+            match = units.find(unit => {
+              const normalizedUnitName = normalizeText(unit.name);
+              return normalizedUnitName.includes(normalized) || normalized.includes(normalizedUnitName);
+            });
             if (match) {
               console.log(`✓ Partial match -> ${match.name} (ID ${match.id})`);
               return match.id;

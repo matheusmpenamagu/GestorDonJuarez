@@ -204,6 +204,10 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - ✓ Caso específico Coca Cola (904) corrigido - produto agora em duas unidades (Julho 6, 2025)
 - ✓ Sistema de importação CSV funcionando perfeitamente para produtos duplicados
 - ✓ Teste confirmado: produto 904 nas unidades Apollonio e Grão Pará
+- ✓ Problema de encoding corrigido (Julho 6, 2025)
+- ✓ Sistema lida com caracteres corrompidos "GR�O PAR�" -> "grao para"
+- ✓ Normalização robusta de texto remove acentos e corrige encoding
+- ✓ Mapeamento de unidades funcionando com planilhas corrompidas
 - ✓ Upload CSV totalmente funcional: 312 produtos importados com sucesso da planilha real
 - ✓ Detecção automática de separador CSV (vírgula ou ponto-e-vírgula) implementada
 - ✓ Mapeamento inteligente de colunas: "COD.", "PRODUTO", "CATEGORIA", "VALOR ATUAL"
