@@ -547,32 +547,16 @@ export default function PublicStockCount() {
 
         {stockCount.status === 'em_contagem' && (
           <>
-            {/* Estatísticas da contagem */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900">{products.length}</div>
-                    <div className="text-sm text-gray-600">Total de produtos</div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{countItems.length}</div>
-                    <div className="text-sm text-gray-600">Produtos contados</div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">{products.length - countItems.length}</div>
-                    <div className="text-sm text-gray-600">Restantes</div>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Barra de progresso da contagem */}
+            <div className="mb-6">
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div 
+                  className="bg-orange-500 h-3 rounded-full transition-all duration-300" 
+                  style={{ 
+                    width: `${products.length > 0 ? (countItems.length / products.length) * 100 : 0}%` 
+                  }}
+                ></div>
+              </div>
             </div>
 
             {/* Barra de busca */}
