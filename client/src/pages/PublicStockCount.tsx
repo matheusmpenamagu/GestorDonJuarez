@@ -10,7 +10,9 @@ import {
   Search,
   Building2,
   CheckCircle,
-  Clock
+  Clock,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +31,7 @@ export default function PublicStockCount() {
   const [countItems, setCountItems] = useState<{ productId: number; countedQuantity: string }[]>([]);
   const [isBeginning, setIsBeginning] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
   const queryClient = useQueryClient();
 
@@ -166,6 +169,27 @@ export default function PublicStockCount() {
     return item?.countedQuantity || "0";
   };
 
+  // Função para alternar expansão de categoria
+  const toggleCategoryExpansion = (categoryName: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryName]: !prev[categoryName]
+    }));
+  };
+
+  // Verificar se todos os produtos de uma categoria foram contados
+  const isCategoryComplete = (categoryProducts: Product[]): boolean => {
+    return categoryProducts.every(product => {
+      const quantity = getItemQuantity(product.id);
+      return quantity !== "" && parseFloat(quantity) > 0;
+    });
+  };
+
+  // Verificar se categoria está expandida (padrão: expandida)
+  const isCategoryExpanded = (categoryName: string): boolean => {
+    return expandedCategories[categoryName] !== false;
+  };
+
   const handleBeginCount = () => {
     setIsBeginning(true);
     beginCountMutation.mutate();
@@ -186,6 +210,23 @@ export default function PublicStockCount() {
       return () => clearTimeout(timer);
     }
   }, [countItems, stockCount?.status]);
+
+  // Auto-colapsar categorias quando completadas
+  useEffect(() => {
+    if (products.length > 0) {
+      Object.entries(productsByCategory).forEach(([categoryName, categoryProducts]) => {
+        if (isCategoryComplete(categoryProducts) && isCategoryExpanded(categoryName)) {
+          // Colapsar categoria automaticamente após 1 segundo
+          setTimeout(() => {
+            setExpandedCategories(prev => ({
+              ...prev,
+              [categoryName]: false
+            }));
+          }, 1000);
+        }
+      });
+    }
+  }, [countItems, products]);
 
   // Agrupar produtos por categoria
   const productsByCategory = products.reduce((acc, product) => {
@@ -369,48 +410,80 @@ export default function PublicStockCount() {
 
             {/* Produtos por categoria */}
             <div className="space-y-6">
-              {orderedData.map(({ category: categoryName, products: categoryProducts }) => (
-                <Card key={categoryName}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Package className="h-6 w-6 mr-3 text-orange-600" />
-                      {categoryName}
-                      <Badge variant="outline" className="ml-3">
-                        {categoryProducts.length} itens
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid gap-3">
-                      {categoryProducts.map((product) => (
-                        <div
-                          key={product.id}
-                          className="flex items-center gap-4 p-4 border rounded-lg bg-white"
-                        >
-                          <div className="flex-1">
-                            <div className="font-medium text-lg">{product.name}</div>
-                            <div className="text-sm text-gray-500">Código: {product.code}</div>
-                          </div>
-                          <div className="flex items-center">
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.001"
-                              value={getItemQuantity(product.id)}
-                              onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                              className="w-32 text-center text-lg font-medium"
-                              placeholder="0.000"
-                            />
-                          </div>
-                          <div className="text-sm text-gray-500 w-12 text-center">
-                            {product.unitOfMeasure || 'UN'}
-                          </div>
+              {orderedData.map(({ category: categoryName, products: categoryProducts }) => {
+                const isComplete = isCategoryComplete(categoryProducts);
+                const isExpanded = isCategoryExpanded(categoryName);
+                const countedItems = categoryProducts.filter(product => {
+                  const quantity = getItemQuantity(product.id);
+                  return quantity !== "" && parseFloat(quantity) > 0;
+                }).length;
+                
+                return (
+                  <Card key={categoryName} className={isComplete ? "border-green-200 bg-green-50" : ""}>
+                    <CardHeader 
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => toggleCategoryExpansion(categoryName)}
+                    >
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          {isComplete ? (
+                            <CheckCircle className="h-6 w-6 mr-3 text-green-600" />
+                          ) : (
+                            <Package className="h-6 w-6 mr-3 text-orange-600" />
+                          )}
+                          {categoryName}
+                          <Badge variant="outline" className="ml-3">
+                            {countedItems}/{categoryProducts.length} itens
+                          </Badge>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                        <div className="flex items-center">
+                          {isComplete && (
+                            <Badge className="mr-2 bg-green-600">
+                              Completa
+                            </Badge>
+                          )}
+                          {isExpanded ? (
+                            <ChevronUp className="h-5 w-5 text-gray-500" />
+                          ) : (
+                            <ChevronDown className="h-5 w-5 text-gray-500" />
+                          )}
+                        </div>
+                      </CardTitle>
+                    </CardHeader>
+                    {isExpanded && (
+                      <CardContent>
+                        <div className="grid gap-3">
+                          {categoryProducts.map((product) => (
+                            <div
+                              key={product.id}
+                              className="flex items-center gap-4 p-4 border rounded-lg bg-white"
+                            >
+                              <div className="flex-1">
+                                <div className="font-medium text-lg">{product.name}</div>
+                                <div className="text-sm text-gray-500">Código: {product.code}</div>
+                              </div>
+                              <div className="flex items-center">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.001"
+                                  value={getItemQuantity(product.id)}
+                                  onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                                  className="w-32 text-center text-lg font-medium"
+                                  placeholder="0.000"
+                                />
+                              </div>
+                              <div className="text-sm text-gray-500 w-12 text-center">
+                                {product.unitOfMeasure || 'UN'}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    )}
+                  </Card>
+                );
+              })}
             </div>
 
             {/* Botão Finalizar Contagem */}
