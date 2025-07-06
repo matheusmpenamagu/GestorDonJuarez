@@ -183,6 +183,9 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - ✓ Campo observações removido da interface para simplificação
 - ✓ WhatsApp automático enviado ao fechar contagem com link público
 - ✓ Dialog para visualizar e copiar URL pública da contagem
+- ✓ Mecânica de criação filtrada por unidade implementada corretamente (Julho 6, 2025)
+- ✓ Sistema inclui apenas produtos associados à unidade da contagem
+- ✓ Teste confirmado: contagem Apollonio criada com 17 produtos específicos da unidade
 - ✓ URLs do sistema padronizadas para estrutura consistente menu/submenu (Julho 6, 2025)
 - ✓ Implementada nova estrutura de rotas: /chopes/*, /pessoas/*, /estoque/*, /empresa/*
 - ✓ Sidebar atualizado com navegação organizada por seções expandíveis
