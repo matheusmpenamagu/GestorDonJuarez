@@ -1,0 +1,420 @@
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRoute } from "wouter";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { 
+  Package,
+  User, 
+  Calendar,
+  Search,
+  Building2,
+  Plus,
+  Minus,
+  CheckCircle,
+  Clock
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import type { StockCountWithRelations, ProductCategory, Product } from "@shared/schema";
+
+export default function PublicStockCount() {
+  const [, params] = useRoute("/contagem-publica/:token");
+  const publicToken = params?.token || "";
+  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [countItems, setCountItems] = useState<{ productId: number; countedQuantity: string }[]>([]);
+  const [isBeginning, setIsBeginning] = useState(false);
+
+  const queryClient = useQueryClient();
+
+  // Carregar dados da contagem pública
+  const { data: stockCount, isLoading } = useQuery<StockCountWithRelations>({
+    queryKey: ["/api/stock-counts/public", publicToken],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/stock-counts/public/${publicToken}`);
+      return await response.json();
+    },
+    enabled: !!publicToken
+  });
+
+  // Carregar categorias
+  const { data: categories = [] } = useQuery<ProductCategory[]>({
+    queryKey: ["/api/product-categories"],
+  });
+
+  // Carregar produtos da unidade da contagem
+  const { data: products = [] } = useQuery<Product[]>({
+    queryKey: ["/api/products", "by-unit", stockCount?.unitId],
+    queryFn: async () => {
+      if (!stockCount?.unitId) return [];
+      const response = await apiRequest("GET", `/api/products/by-unit/${stockCount.unitId}`);
+      return await response.json();
+    },
+    enabled: !!stockCount?.unitId
+  });
+
+  // Inicializar items da contagem
+  useEffect(() => {
+    if (stockCount?.items) {
+      setCountItems(stockCount.items.map(item => ({
+        productId: item.productId,
+        countedQuantity: item.countedQuantity || "0"
+      })));
+    }
+  }, [stockCount]);
+
+  // Mutation para iniciar contagem via token público
+  const beginCountMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/stock-counts/public/${publicToken}/begin`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stock-counts/public", publicToken] });
+      toast({
+        title: "Contagem iniciada",
+        description: "Agora você pode começar a contar os produtos",
+      });
+      setIsBeginning(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao iniciar contagem",
+        variant: "destructive",
+      });
+      setIsBeginning(false);
+    },
+  });
+
+  // Mutation para salvar quantidades
+  const saveCountMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("PUT", `/api/stock-counts/public/${publicToken}/items`, {
+        items: countItems
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Quantidades salvas",
+        description: "Suas contagens foram salvas automaticamente",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao salvar quantidades",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleQuantityChange = (productId: number, quantity: string) => {
+    setCountItems(prev => {
+      const existing = prev.find(item => item.productId === productId);
+      if (existing) {
+        return prev.map(item => 
+          item.productId === productId 
+            ? { ...item, countedQuantity: quantity }
+            : item
+        );
+      } else {
+        return [...prev, { productId, countedQuantity: quantity }];
+      }
+    });
+  };
+
+  const getItemQuantity = (productId: number): string => {
+    const item = countItems.find(item => item.productId === productId);
+    return item?.countedQuantity || "0";
+  };
+
+  const handleBeginCount = () => {
+    setIsBeginning(true);
+    beginCountMutation.mutate();
+  };
+
+  // Salvar automaticamente após mudanças
+  useEffect(() => {
+    if (stockCount?.status === 'em_contagem' && countItems.length > 0) {
+      const timer = setTimeout(() => {
+        saveCountMutation.mutate();
+      }, 2000); // Salva 2 segundos após parar de digitar
+
+      return () => clearTimeout(timer);
+    }
+  }, [countItems, stockCount?.status]);
+
+  // Agrupar produtos por categoria
+  const productsByCategory = products.reduce((acc, product) => {
+    const category = categories.find(cat => cat.id === product.categoryId);
+    const categoryName = category ? category.name : 'Sem categoria';
+    
+    if (!acc[categoryName]) {
+      acc[categoryName] = [];
+    }
+    acc[categoryName].push(product);
+    return acc;
+  }, {} as Record<string, Product[]>);
+
+  // Aplicar busca e ordenação
+  const filteredAndOrderedData = Object.entries(productsByCategory)
+    .map(([categoryName, categoryProducts]) => {
+      const filteredProducts = categoryProducts.filter(product =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.code.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      
+      return {
+        category: categoryName,
+        products: filteredProducts
+      };
+    })
+    .filter(item => item.products.length > 0);
+
+  // Aplicar ordenação salva se disponível
+  let orderedData = filteredAndOrderedData;
+  if (stockCount?.categoryOrder) {
+    try {
+      const savedCategoryOrder = JSON.parse(stockCount.categoryOrder);
+      const savedProductOrder = stockCount.productOrder ? JSON.parse(stockCount.productOrder) : {};
+      
+      // Ordenar categorias
+      const orderedCategories = savedCategoryOrder.filter((cat: string) => 
+        filteredAndOrderedData.some(item => item.category === cat)
+      );
+      
+      orderedData = orderedCategories.map((categoryName: string) => {
+        const categoryData = filteredAndOrderedData.find(item => item.category === categoryName);
+        if (!categoryData) return null;
+        
+        // Ordenar produtos dentro da categoria
+        const savedOrder = savedProductOrder[categoryName] || [];
+        const orderedProducts = savedOrder.length > 0 
+          ? savedOrder.map((productName: string) => 
+              categoryData.products.find(p => p.name === productName)
+            ).filter(Boolean) as Product[]
+          : categoryData.products;
+        
+        return {
+          category: categoryName,
+          products: orderedProducts
+        };
+      }).filter(Boolean) as typeof filteredAndOrderedData;
+    } catch (error) {
+      console.error("Error parsing saved order:", error);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando contagem...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!stockCount) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Contagem não encontrada</h1>
+          <p className="text-gray-600">O link de contagem não é válido ou expirou.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Contagem de Estoque #{stockCount.id}
+            </h1>
+            <div className="flex items-center justify-center space-x-6 text-sm text-gray-600">
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-1" />
+                {format(new Date(stockCount.date), "dd/MM/yyyy", { locale: ptBR })}
+              </div>
+              <div className="flex items-center">
+                <User className="h-4 w-4 mr-1" />
+                {stockCount.responsible?.firstName} {stockCount.responsible?.lastName}
+              </div>
+              <div className="flex items-center">
+                <Building2 className="h-4 w-4 mr-1" />
+                {stockCount.unit?.name}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Status da contagem */}
+        {stockCount.status === 'pronta_para_contagem' && (
+          <Card className="border-orange-200 bg-orange-50">
+            <CardContent className="pt-6 text-center">
+              <h2 className="text-xl font-semibold text-orange-800 mb-2">
+                Contagem pronta para ser iniciada
+              </h2>
+              <p className="text-orange-700 mb-4">
+                Clique no botão abaixo para começar a contagem dos produtos.
+              </p>
+              <Button 
+                onClick={handleBeginCount} 
+                disabled={isBeginning}
+                className="bg-orange-600 hover:bg-orange-700"
+                size="lg"
+              >
+                <Clock className="h-5 w-5 mr-2" />
+                {isBeginning ? "Iniciando..." : "Iniciar Contagem"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {stockCount.status === 'em_contagem' && (
+          <>
+            {/* Resumo rápido */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-orange-600">
+                      {products.length}
+                    </div>
+                    <div className="text-sm text-gray-600">Total de Produtos</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {countItems.filter(item => parseFloat(item.countedQuantity) > 0).length}
+                    </div>
+                    <div className="text-sm text-gray-600">Produtos Contados</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {products.length > 0 ? 
+                        ((countItems.filter(item => parseFloat(item.countedQuantity) > 0).length / products.length) * 100).toFixed(1) 
+                        : "0"
+                      }%
+                    </div>
+                    <div className="text-sm text-gray-600">Progresso</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Busca */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center space-x-2">
+                  <Search className="h-5 w-5 text-gray-400" />
+                  <Input
+                    placeholder="Buscar produtos por nome ou código..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="flex-1 text-lg"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Produtos por categoria */}
+            <div className="space-y-6">
+              {orderedData.map(({ category: categoryName, products: categoryProducts }) => (
+                <Card key={categoryName}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Package className="h-6 w-6 mr-3 text-orange-600" />
+                      {categoryName}
+                      <Badge variant="outline" className="ml-3">
+                        {categoryProducts.length} itens
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-3">
+                      {categoryProducts.map((product) => (
+                        <div
+                          key={product.id}
+                          className="flex items-center gap-4 p-4 border rounded-lg bg-white"
+                        >
+                          <div className="flex-1">
+                            <div className="font-medium text-lg">{product.name}</div>
+                            <div className="text-sm text-gray-500">Código: {product.code}</div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const currentValue = parseFloat(getItemQuantity(product.id)) || 0;
+                                const newValue = Math.max(0, currentValue - 1);
+                                handleQuantityChange(product.id, newValue.toString());
+                              }}
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.001"
+                              value={getItemQuantity(product.id)}
+                              onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                              className="w-24 text-center text-lg font-medium"
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const currentValue = parseFloat(getItemQuantity(product.id)) || 0;
+                                const newValue = currentValue + 1;
+                                handleQuantityChange(product.id, newValue.toString());
+                              }}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="text-sm text-gray-500 w-12 text-center">
+                            {product.unitOfMeasure || 'UN'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
+
+        {stockCount.status === 'contagem_finalizada' && (
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="pt-6 text-center">
+              <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold text-green-800 mb-2">
+                Contagem finalizada
+              </h2>
+              <p className="text-green-700">
+                Esta contagem foi concluída e não pode mais ser alterada.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}

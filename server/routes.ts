@@ -2548,6 +2548,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update stock count items via public token
+  app.put('/api/stock-counts/public/:token/items', async (req, res) => {
+    try {
+      const publicToken = req.params.token;
+      const items = req.body.items || [];
+      
+      if (!publicToken) {
+        return res.status(400).json({ message: "Token público inválido" });
+      }
+      
+      // Find stock count by public token
+      const allStockCounts = await storage.getStockCounts();
+      const stockCount = allStockCounts.find(sc => sc.publicToken === publicToken);
+      
+      if (!stockCount) {
+        return res.status(404).json({ message: "Contagem não encontrada" });
+      }
+      
+      // Only allow updates if the count is in progress
+      if (stockCount.status !== 'em_contagem') {
+        return res.status(400).json({ message: "Contagem não está em andamento" });
+      }
+      
+      await storage.updateStockCountItems(stockCount.id, items);
+      res.status(200).json({ message: "Quantidades atualizadas com sucesso" });
+    } catch (error) {
+      console.error("Error updating public stock count items:", error);
+      res.status(500).json({ message: "Erro ao atualizar quantidades" });
+    }
+  });
+
   // Route to get previous stock count order for smart ordering
   app.get('/api/stock-counts/:id/previous-order', demoAuth, async (req, res) => {
     try {

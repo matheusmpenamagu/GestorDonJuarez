@@ -21,6 +21,7 @@ import Co2Management from "@/pages/Co2Management";
 import ProductsManagement from "@/pages/ProductsManagement";
 import StockCountsManagement from "@/pages/StockCountsManagement";
 import StockCountDetail from "@/pages/StockCountDetail";
+import PublicStockCount from "@/pages/PublicStockCount";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -39,6 +40,9 @@ function Router() {
 
   return (
     <Switch>
+      {/* Rota pública para contagem */}
+      <Route path="/contagem-publica/:token" component={PublicStockCount} />
+      
       {!isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (
