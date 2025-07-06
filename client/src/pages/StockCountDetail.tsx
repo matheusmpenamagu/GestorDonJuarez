@@ -14,7 +14,8 @@ import {
   Plus,
   Minus,
   Send,
-  GripVertical
+  GripVertical,
+  Trash2
 } from "lucide-react";
 import {
   DndContext,
@@ -337,6 +338,14 @@ export default function StockCountDetail() {
     startCountMutation.mutate();
   };
 
+  const handleDeleteProduct = (productId: number) => {
+    setCountItems(prev => prev.filter(item => item.productId !== productId));
+    toast({
+      title: "Produto removido",
+      description: "Produto removido da contagem com sucesso",
+    });
+  };
+
   if (isLoading) {
     return <div className="p-6">Carregando...</div>;
   }
@@ -455,6 +464,7 @@ export default function StockCountDetail() {
                 stockCountStatus={stockCount.status}
                 onProductDragEnd={handleProductDragEnd(categoryName)}
                 productOrder={productOrder[categoryName] || []}
+                onDeleteProduct={handleDeleteProduct}
               />
             ))}
           </div>
@@ -506,9 +516,10 @@ interface SortableProductItemProps {
   onQuantityChange: (quantity: string) => void;
   disabled: boolean;
   isEditingOrder: boolean;
+  onDelete: () => void;
 }
 
-function SortableProductItem({ product, quantity, onQuantityChange, disabled, isEditingOrder }: SortableProductItemProps) {
+function SortableProductItem({ product, quantity, onQuantityChange, disabled, isEditingOrder, onDelete }: SortableProductItemProps) {
   const {
     attributes,
     listeners,
@@ -550,6 +561,14 @@ function SortableProductItem({ product, quantity, onQuantityChange, disabled, is
         />
       </div>
       <div className="text-xs text-gray-500 w-8">{product.unitOfMeasure || 'UN'}</div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onDelete}
+        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
     </div>
   );
 }
@@ -565,6 +584,7 @@ interface SortableCategoryCardProps {
   stockCountStatus: string;
   onProductDragEnd: (event: DragEndEvent) => void;
   productOrder: string[];
+  onDeleteProduct: (productId: number) => void;
 }
 
 function SortableCategoryCard({
@@ -576,7 +596,8 @@ function SortableCategoryCard({
   handleQuantityChange,
   stockCountStatus,
   onProductDragEnd,
-  productOrder
+  productOrder,
+  onDeleteProduct
 }: SortableCategoryCardProps) {
   const {
     attributes,
@@ -642,6 +663,7 @@ function SortableCategoryCard({
                     onQuantityChange={(quantity) => handleQuantityChange(product.id, quantity)}
                     disabled={stockCountStatus !== "draft"}
                     isEditingOrder={isEditingOrder}
+                    onDelete={() => onDeleteProduct(product.id)}
                   />
                 ))}
               </div>
