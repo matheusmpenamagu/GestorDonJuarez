@@ -220,10 +220,17 @@ export default function StockCountDetail() {
 
   // Filtrar produtos baseado na busca e aplicar ordenação
   const getFilteredAndOrderedData = () => {
-    const orderedCategories = getOrderedCategories();
+    // Se estamos editando a ordem, usar categoryOrder, senão usar ordem padrão
+    const orderedCategories = isEditingOrder && categoryOrder.length > 0 
+      ? categoryOrder 
+      : getOrderedCategories();
+    
     const result: Array<{ category: string; products: Product[] }> = [];
     
     orderedCategories.forEach(categoryName => {
+      // Verificar se a categoria ainda existe nos dados atuais
+      if (!productsByCategory[categoryName]) return;
+      
       const orderedProducts = getOrderedProducts(categoryName);
       const filteredProducts = orderedProducts.filter(product => 
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -346,10 +353,20 @@ export default function StockCountDetail() {
 
     if (active.id !== over?.id) {
       setCategoryOrder((items) => {
-        const oldIndex = items.indexOf(active.id as string);
-        const newIndex = items.indexOf(over?.id as string);
+        // Se categoryOrder está vazio, inicializar com ordem das categorias
+        const workingOrder = items.length > 0 ? items : Object.keys(productsByCategory);
+        
+        const oldIndex = workingOrder.indexOf(active.id as string);
+        const newIndex = workingOrder.indexOf(over?.id as string);
 
-        return arrayMove(items, oldIndex, newIndex);
+        if (oldIndex === -1 || newIndex === -1) {
+          console.warn('Category not found in order:', { active: active.id, over: over?.id, workingOrder });
+          return workingOrder;
+        }
+
+        const newOrder = arrayMove(workingOrder, oldIndex, newIndex);
+        console.log('New category order:', newOrder);
+        return newOrder;
       });
     }
   };
@@ -493,6 +510,12 @@ export default function StockCountDetail() {
                       categoryOrder,
                       productOrder
                     });
+                  } else {
+                    // Inicializar categoryOrder com ordem atual quando começar a editar
+                    if (categoryOrder.length === 0) {
+                      const currentCategories = Object.keys(productsByCategory);
+                      setCategoryOrder(currentCategories);
+                    }
                   }
                   setIsEditingOrder(!isEditingOrder);
                 }}
@@ -587,7 +610,7 @@ export default function StockCountDetail() {
         onDragEnd={handleCategoryDragEnd}
       >
         <SortableContext
-          items={categoryOrder.length > 0 ? categoryOrder : filteredAndOrderedData.map(item => item.category)}
+          items={filteredAndOrderedData.map(item => item.category)}
           strategy={verticalListSortingStrategy}
         >
           <div className="space-y-6">
