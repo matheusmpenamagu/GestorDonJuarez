@@ -133,10 +133,13 @@ export default function PublicStockCount() {
 
   // Função para atualizar quantidade de um produto
   const updateItemQuantity = (productId: number, quantity: string) => {
+    // Aceitar vírgula como separador decimal e converter para ponto
+    const normalizedQuantity = quantity.replace(',', '.');
+    
     setCountItems(prev => {
       const updated = prev.filter(item => item.productId !== productId);
-      if (quantity !== "") {
-        updated.push({ productId, countedQuantity: quantity });
+      if (normalizedQuantity !== "") {
+        updated.push({ productId, countedQuantity: normalizedQuantity });
       }
       return updated;
     });
@@ -186,16 +189,22 @@ export default function PublicStockCount() {
     }
   };
 
-  // Função para navegar com Enter e Tab
+  // Detectar se é dispositivo móvel
+  const isMobile = () => {
+    return window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
+
+  // Função para navegar com Enter (desabilitado no mobile)
   const handleKeyPress = (e: React.KeyboardEvent, productId: number) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !isMobile()) {
       e.preventDefault();
       focusNextField(productId);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent, productId: number) => {
-    if (e.key === 'Tab' && !e.shiftKey) {
+    // Só usar Tab para navegação no desktop
+    if (e.key === 'Tab' && !e.shiftKey && !isMobile()) {
       e.preventDefault();
       focusNextField(productId);
     }
@@ -376,7 +385,7 @@ export default function PublicStockCount() {
     }
   }, [countItems, products]);
 
-  // Inicializar primeira categoria expandida e focar primeiro campo
+  // Inicializar primeira categoria expandida e focar primeiro campo (só no desktop)
   useEffect(() => {
     if (orderedData.length > 0 && Object.keys(expandedCategories).length === 0) {
       // Encontrar primeira categoria incompleta
@@ -390,23 +399,27 @@ export default function PublicStockCount() {
           [firstIncompleteCategory.category]: true
         });
 
-        // Focar no primeiro campo da primeira categoria após um pequeno delay
-        setTimeout(() => {
-          const firstProduct = firstIncompleteCategory.products[0];
-          if (firstProduct) {
-            const firstInputRef = inputRefs.current[`product-${firstProduct.id}`];
-            if (firstInputRef) {
-              firstInputRef.focus();
-              firstInputRef.select();
+        // Focar no primeiro campo apenas no desktop
+        if (!isMobile()) {
+          setTimeout(() => {
+            const firstProduct = firstIncompleteCategory.products[0];
+            if (firstProduct) {
+              const firstInputRef = inputRefs.current[`product-${firstProduct.id}`];
+              if (firstInputRef) {
+                firstInputRef.focus();
+                firstInputRef.select();
+              }
             }
-          }
-        }, 500);
+          }, 500);
+        }
       }
     }
   }, [orderedData]);
 
-  // Focar no primeiro campo quando uma nova categoria é expandida
+  // Focar no primeiro campo quando uma nova categoria é expandida (só no desktop)
   useEffect(() => {
+    if (isMobile()) return; // Não focar automaticamente no mobile
+    
     const expandedCategoryNames = Object.keys(expandedCategories).filter(
       key => expandedCategories[key] === true
     );
@@ -601,9 +614,9 @@ export default function PublicStockCount() {
                         <Separator className="mb-4" />
                         <div className="space-y-3">
                           {categoryProducts.map((product) => (
-                            <div key={product.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 rounded-lg space-y-2 sm:space-y-0">
+                            <div key={product.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 rounded-lg space-y-3 sm:space-y-0">
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center space-x-2">
+                                <div className="flex items-center space-x-2 mb-1">
                                   <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
                                     {product.code}
                                   </span>
@@ -611,27 +624,37 @@ export default function PublicStockCount() {
                                     {product.name}
                                   </span>
                                 </div>
+                                <div className="text-xs text-gray-600">
+                                  Unidade: {product.stockUnit}
+                                </div>
                               </div>
-                              <div className="flex items-center space-x-2 flex-shrink-0">
-                                <Input
-                                  ref={(ref) => {
-                                    if (ref) {
-                                      inputRefs.current[`product-${product.id}`] = ref;
-                                    }
-                                  }}
-                                  type="number"
-                                  step="0.001"
-                                  placeholder="0.000"
-                                  value={getItemQuantity(product.id)}
-                                  onChange={(e) => updateItemQuantity(product.id, e.target.value)}
-                                  onKeyPress={(e) => handleKeyPress(e, product.id)}
-                                  onKeyDown={(e) => handleKeyDown(e, product.id)}
-                                  className="w-20 sm:w-24 text-center text-sm"
-                                  autoComplete="off"
-                                />
-                                <span className="text-xs text-gray-500 w-8">
-                                  {product.stockUnit}
-                                </span>
+                              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 flex-shrink-0">
+                                <div className="flex items-center space-x-2 w-full sm:w-auto">
+                                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                                    Quantidade:
+                                  </label>
+                                  <div className="flex items-center space-x-1">
+                                    <Input
+                                      ref={(ref) => {
+                                        if (ref) {
+                                          inputRefs.current[`product-${product.id}`] = ref;
+                                        }
+                                      }}
+                                      type="text"
+                                      inputMode="decimal"
+                                      placeholder="0,000"
+                                      value={getItemQuantity(product.id)}
+                                      onChange={(e) => updateItemQuantity(product.id, e.target.value)}
+                                      onKeyPress={(e) => handleKeyPress(e, product.id)}
+                                      onKeyDown={(e) => handleKeyDown(e, product.id)}
+                                      className="w-24 sm:w-28 text-center text-sm focus:ring-2 focus:ring-orange-500"
+                                      autoComplete="off"
+                                    />
+                                    <span className="text-sm font-medium text-gray-600 min-w-0">
+                                      {product.stockUnit}
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           ))}
