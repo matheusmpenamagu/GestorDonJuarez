@@ -2229,6 +2229,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/stock-counts/:id', demoAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      // Check if stock count exists and get current status
+      const existingStockCount = await storage.getStockCount(id);
+      if (!existingStockCount) {
+        return res.status(404).json({ message: "Stock count not found" });
+      }
+      
+      // If stock count is started, only allow updating quantities, not basic info
+      if (existingStockCount.status === 'started' || existingStockCount.status === 'em_contagem' || existingStockCount.status === 'contagem_finalizada') {
+        return res.status(400).json({ 
+          message: "Contagem iniciada não pode ter informações básicas alteradas. Apenas quantidades podem ser modificadas." 
+        });
+      }
+      
       const stockCount = await storage.updateStockCount(id, req.body);
       res.json(stockCount);
     } catch (error) {
@@ -2280,6 +2294,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (isNaN(stockCountId) || isNaN(productId)) {
         return res.status(400).json({ message: "Invalid stock count ID or product ID" });
+      }
+      
+      // Check if stock count exists and get current status
+      const existingStockCount = await storage.getStockCount(stockCountId);
+      if (!existingStockCount) {
+        return res.status(404).json({ message: "Stock count not found" });
+      }
+      
+      // If stock count is started, don't allow removing products
+      if (existingStockCount.status === 'started' || existingStockCount.status === 'em_contagem' || existingStockCount.status === 'contagem_finalizada') {
+        return res.status(400).json({ 
+          message: "Não é possível remover produtos de uma contagem iniciada. Apenas quantidades podem ser alteradas." 
+        });
       }
       
       await storage.deleteStockCountItemByProduct(stockCountId, productId);

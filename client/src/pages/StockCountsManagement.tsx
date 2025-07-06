@@ -465,7 +465,10 @@ export default function StockCountsManagement() {
           variant="ghost"
           size="sm"
           onClick={() => navigate(`/estoque/contagens/${id}`)}
-          title="Editar produtos da contagem"
+          title={status === 'started' || status === 'em_contagem' || status === 'contagem_finalizada' 
+            ? "Ver contagem (somente quantidades editáveis)" 
+            : "Editar produtos da contagem"
+          }
         >
           <Pencil className="h-4 w-4" />
         </Button>
