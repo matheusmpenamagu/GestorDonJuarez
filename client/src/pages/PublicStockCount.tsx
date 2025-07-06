@@ -37,12 +37,8 @@ export default function PublicStockCount() {
 
   // Carregar dados da contagem pública
   const { data: stockCount, isLoading } = useQuery<StockCountWithRelations>({
-    queryKey: ["/api/stock-counts/public", publicToken],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/stock-counts/public/${publicToken}`);
-      return await response.json();
-    },
-    enabled: !!publicToken
+    queryKey: [`/api/stock-counts/public/${publicToken}`],
+    enabled: !!publicToken,
   });
 
   // Carregar categorias
@@ -50,132 +46,117 @@ export default function PublicStockCount() {
     queryKey: ["/api/product-categories"],
   });
 
-  // Carregar produtos da unidade da contagem
+  // Carregar produtos da unidade específica
   const { data: products = [] } = useQuery<Product[]>({
-    queryKey: ["/api/products", "by-unit", stockCount?.unitId],
-    queryFn: async () => {
-      if (!stockCount?.unitId) return [];
-      const response = await apiRequest("GET", `/api/products/by-unit/${stockCount.unitId}`);
-      return await response.json();
-    },
-    enabled: !!stockCount?.unitId
+    queryKey: ["/api/products/by-unit", stockCount?.unitId],
+    enabled: !!stockCount?.unitId,
   });
 
-  // Inicializar items da contagem
-  useEffect(() => {
-    if (stockCount?.items) {
-      setCountItems(stockCount.items.map(item => ({
-        productId: item.productId,
-        countedQuantity: item.countedQuantity || "0"
-      })));
-    }
-  }, [stockCount]);
+  // Carregar itens da contagem se já existe
+  const { data: existingItems = [] } = useQuery({
+    queryKey: ["/api/stock-counts", stockCount?.id, "items"],
+    enabled: !!stockCount?.id && stockCount?.status === 'em_contagem',
+  });
 
-  // Mutation para iniciar contagem via token público
+  // Inicializar countItems com dados existentes
+  useEffect(() => {
+    if (existingItems.length > 0) {
+      const initialItems = existingItems.map((item: any) => ({
+        productId: item.productId,
+        countedQuantity: item.countedQuantity || ""
+      }));
+      setCountItems(initialItems);
+    }
+  }, [existingItems]);
+
+  // Mutations para iniciar e finalizar contagem
   const beginCountMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/stock-counts/public/${publicToken}/begin`);
-      return await response.json();
-    },
+    mutationFn: () => apiRequest(`/api/stock-counts/public/${publicToken}/begin`, "POST"),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/stock-counts/public", publicToken] });
+      setIsBeginning(false);
+      queryClient.invalidateQueries({ queryKey: [`/api/stock-counts/public/${publicToken}`] });
       toast({
         title: "Contagem iniciada",
-        description: "Agora você pode começar a contar os produtos",
+        description: "Agora você pode contar os produtos!",
       });
-      setIsBeginning(false);
     },
-    onError: (error: Error) => {
+    onError: () => {
+      setIsBeginning(false);
       toast({
         title: "Erro",
-        description: error.message || "Erro ao iniciar contagem",
-        variant: "destructive",
-      });
-      setIsBeginning(false);
-    },
-  });
-
-  // Mutation para salvar quantidades
-  const saveCountMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("PUT", `/api/stock-counts/public/${publicToken}/items`, {
-        items: countItems
-      });
-      return await response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Quantidades salvas",
-        description: "Suas contagens foram salvas automaticamente",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao salvar quantidades",
+        description: "Não foi possível iniciar a contagem",
         variant: "destructive",
       });
     },
   });
 
-  // Mutation para finalizar a contagem
   const finishCountMutation = useMutation({
-    mutationFn: async () => {
-      // Primeiro salva as quantidades atuais
-      if (countItems.length > 0) {
-        await apiRequest("PUT", `/api/stock-counts/public/${publicToken}/items`, {
-          items: countItems
-        });
-      }
-      
-      // Depois finaliza a contagem
-      const response = await apiRequest("POST", `/api/stock-counts/public/${publicToken}/finish`);
-      return await response.json();
-    },
+    mutationFn: () => apiRequest(`/api/stock-counts/public/${publicToken}/finish`, "POST"),
     onSuccess: () => {
+      setIsFinishing(false);
+      queryClient.invalidateQueries({ queryKey: [`/api/stock-counts/public/${publicToken}`] });
       toast({
-        title: "Contagem finalizada",
-        description: "A contagem foi finalizada com sucesso",
+        title: "Contagem finalizada!",
+        description: "A contagem foi concluída com sucesso.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/stock-counts/public", publicToken] });
     },
-    onError: (error: Error) => {
+    onError: () => {
+      setIsFinishing(false);
       toast({
         title: "Erro",
-        description: error.message || "Erro ao finalizar contagem",
+        description: "Não foi possível finalizar a contagem",
         variant: "destructive",
       });
-      setIsFinishing(false);
     },
   });
 
-  const handleQuantityChange = (productId: number, quantity: string) => {
+  // Atualizar itens da contagem
+  const updateItemsMutation = useMutation({
+    mutationFn: (items: { productId: number; countedQuantity: string }[]) =>
+      apiRequest(`/api/stock-counts/public/${publicToken}/items`, "PUT", { items }),
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as alterações",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Função para obter quantidade de um produto
+  const getItemQuantity = (productId: number): string => {
+    const item = countItems.find(item => item.productId === productId);
+    return item?.countedQuantity || "";
+  };
+
+  // Função para atualizar quantidade de um produto
+  const updateItemQuantity = (productId: number, quantity: string) => {
     setCountItems(prev => {
-      const existing = prev.find(item => item.productId === productId);
-      if (existing) {
-        return prev.map(item => 
-          item.productId === productId 
-            ? { ...item, countedQuantity: quantity }
-            : item
-        );
-      } else {
-        return [...prev, { productId, countedQuantity: quantity }];
+      const updated = prev.filter(item => item.productId !== productId);
+      if (quantity !== "") {
+        updated.push({ productId, countedQuantity: quantity });
       }
+      return updated;
     });
   };
 
-  const getItemQuantity = (productId: number): string => {
-    const item = countItems.find(item => item.productId === productId);
-    return item?.countedQuantity || "0";
-  };
-
-  // Função para alternar expansão de categoria
+  // Função para colapsar/expandir categoria
   const toggleCategoryExpansion = (categoryName: string) => {
     setExpandedCategories(prev => ({
       ...prev,
       [categoryName]: !prev[categoryName]
     }));
   };
+
+  // Auto-salvar mudanças
+  useEffect(() => {
+    if (stockCount?.status === 'em_contagem' && countItems.length > 0) {
+      const timer = setTimeout(() => {
+        updateItemsMutation.mutate(countItems);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countItems, stockCount?.status]);
 
   // Verificar se todos os produtos de uma categoria foram contados
   const isCategoryComplete = (categoryProducts: Product[]): boolean => {
@@ -184,6 +165,81 @@ export default function PublicStockCount() {
       return quantity !== "" && parseFloat(quantity) > 0;
     });
   };
+
+  // Agrupar produtos por categoria
+  const productsByCategory = products.reduce((acc, product) => {
+    const category = categories.find(cat => cat.id === parseInt(product.stockCategory));
+    const categoryName = category ? category.name : 'Sem categoria';
+    
+    if (!acc[categoryName]) {
+      acc[categoryName] = [];
+    }
+    acc[categoryName].push(product);
+    return acc;
+  }, {} as Record<string, Product[]>);
+
+  // Aplicar busca e ordenação
+  const filteredAndOrderedData = Object.entries(productsByCategory)
+    .map(([categoryName, categoryProducts]) => {
+      const filteredProducts = categoryProducts.filter(product =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.code.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      
+      return {
+        category: categoryName,
+        products: filteredProducts
+      };
+    })
+    .filter(item => item.products.length > 0);
+
+  // Aplicar ordenação salva se disponível
+  let orderedData = filteredAndOrderedData;
+  if (stockCount?.categoryOrder) {
+    try {
+      const savedCategoryOrder = JSON.parse(stockCount.categoryOrder);
+      const savedProductOrder = stockCount.productOrder ? JSON.parse(stockCount.productOrder) : {};
+      
+      // Ordenar categorias
+      const orderedCategories = savedCategoryOrder.filter((cat: string) => 
+        filteredAndOrderedData.some(item => item.category === cat)
+      );
+      
+      orderedData = orderedCategories.map((categoryName: string) => {
+        const categoryData = filteredAndOrderedData.find(item => item.category === categoryName);
+        if (!categoryData) return null;
+        
+        // Ordenar produtos dentro da categoria se houver ordem salva
+        if (savedProductOrder[categoryName]) {
+          const productOrder = savedProductOrder[categoryName];
+          const orderedProducts = productOrder
+            .map((productId: number) => categoryData.products.find(p => p.id === productId))
+            .filter(Boolean);
+          
+          // Adicionar produtos não ordenados no final
+          const unorderedProducts = categoryData.products.filter(p => 
+            !productOrder.includes(p.id)
+          );
+          
+          return {
+            ...categoryData,
+            products: [...orderedProducts, ...unorderedProducts]
+          };
+        }
+        
+        return categoryData;
+      }).filter(Boolean);
+      
+      // Adicionar categorias não ordenadas no final
+      const unorderedCategories = filteredAndOrderedData.filter(item => 
+        !savedCategoryOrder.includes(item.category)
+      );
+      orderedData = [...orderedData, ...unorderedCategories];
+    } catch (error) {
+      console.error("Erro ao aplicar ordenação:", error);
+      orderedData = filteredAndOrderedData;
+    }
+  }
 
   // Verificar se categoria está expandida (navegação sequencial)
   const isCategoryExpanded = (categoryName: string): boolean => {
@@ -218,17 +274,6 @@ export default function PublicStockCount() {
     setIsFinishing(true);
     finishCountMutation.mutate();
   };
-
-  // Salvar automaticamente após mudanças
-  useEffect(() => {
-    if (stockCount?.status === 'em_contagem' && countItems.length > 0) {
-      const timer = setTimeout(() => {
-        saveCountMutation.mutate();
-      }, 2000); // Salva 2 segundos após parar de digitar
-
-      return () => clearTimeout(timer);
-    }
-  }, [countItems, stockCount?.status]);
 
   // Navegação sequencial automática entre categorias
   useEffect(() => {
@@ -286,67 +331,6 @@ export default function PublicStockCount() {
       }
     }
   }, [orderedData]);
-
-  // Agrupar produtos por categoria
-  const productsByCategory = products.reduce((acc, product) => {
-    const category = categories.find(cat => cat.id === parseInt(product.stockCategory));
-    const categoryName = category ? category.name : 'Sem categoria';
-    
-    if (!acc[categoryName]) {
-      acc[categoryName] = [];
-    }
-    acc[categoryName].push(product);
-    return acc;
-  }, {} as Record<string, Product[]>);
-
-  // Aplicar busca e ordenação
-  const filteredAndOrderedData = Object.entries(productsByCategory)
-    .map(([categoryName, categoryProducts]) => {
-      const filteredProducts = categoryProducts.filter(product =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.code.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      
-      return {
-        category: categoryName,
-        products: filteredProducts
-      };
-    })
-    .filter(item => item.products.length > 0);
-
-  // Aplicar ordenação salva se disponível
-  let orderedData = filteredAndOrderedData;
-  if (stockCount?.categoryOrder) {
-    try {
-      const savedCategoryOrder = JSON.parse(stockCount.categoryOrder);
-      const savedProductOrder = stockCount.productOrder ? JSON.parse(stockCount.productOrder) : {};
-      
-      // Ordenar categorias
-      const orderedCategories = savedCategoryOrder.filter((cat: string) => 
-        filteredAndOrderedData.some(item => item.category === cat)
-      );
-      
-      orderedData = orderedCategories.map((categoryName: string) => {
-        const categoryData = filteredAndOrderedData.find(item => item.category === categoryName);
-        if (!categoryData) return null;
-        
-        // Ordenar produtos dentro da categoria
-        const savedOrder = savedProductOrder[categoryName] || [];
-        const orderedProducts = savedOrder.length > 0 
-          ? savedOrder.map((productName: string) => 
-              categoryData.products.find(p => p.name === productName)
-            ).filter(Boolean) as Product[]
-          : categoryData.products;
-        
-        return {
-          category: categoryName,
-          products: orderedProducts
-        };
-      }).filter(Boolean) as typeof filteredAndOrderedData;
-    } catch (error) {
-      console.error("Error parsing saved order:", error);
-    }
-  }
 
   if (isLoading) {
     return (
@@ -423,62 +407,61 @@ export default function PublicStockCount() {
 
         {stockCount.status === 'em_contagem' && (
           <>
-            {/* Resumo rápido */}
-            <Card>
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-center">
-                  <div>
-                    <div className="text-2xl font-bold text-orange-600">
-                      {products.length}
-                    </div>
-                    <div className="text-sm text-gray-600">Total de Produtos</div>
+            {/* Estatísticas da contagem */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-900">{products.length}</div>
+                    <div className="text-sm text-gray-600">Total de produtos</div>
                   </div>
-                  <div>
-                    <div className="text-2xl font-bold text-green-600">
-                      {countItems.filter(item => parseFloat(item.countedQuantity) > 0).length}
-                    </div>
-                    <div className="text-sm text-gray-600">Produtos Contados</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">{countItems.length}</div>
+                    <div className="text-sm text-gray-600">Produtos contados</div>
                   </div>
-                  <div>
-                    <div className="text-2xl font-bold text-blue-600">
-                      {products.length > 0 ? 
-                        ((countItems.filter(item => parseFloat(item.countedQuantity) > 0).length / products.length) * 100).toFixed(1) 
-                        : "0"
-                      }%
-                    </div>
-                    <div className="text-sm text-gray-600">Progresso</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600">{products.length - countItems.length}</div>
+                    <div className="text-sm text-gray-600">Restantes</div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
 
-            {/* Busca */}
+            {/* Barra de busca */}
             <Card>
-              <CardContent className="pt-4 sm:pt-6">
-                <div className="flex items-center space-x-2">
-                  <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+              <CardContent className="pt-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
-                    placeholder="Buscar produtos..."
+                    placeholder="Buscar produto por nome ou código..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-1 text-base sm:text-lg"
+                    className="pl-10"
                   />
                 </div>
               </CardContent>
             </Card>
 
-            {/* Produtos por categoria */}
-            <div className="space-y-3 sm:space-y-6">
+            {/* Lista de produtos por categoria */}
+            <div className="space-y-4">
               {orderedData.map(({ category: categoryName, products: categoryProducts }) => {
-                const isComplete = isCategoryComplete(categoryProducts);
                 const isExpanded = isCategoryExpanded(categoryName);
+                const isComplete = isCategoryComplete(categoryProducts);
                 const countedItems = categoryProducts.filter(product => {
                   const quantity = getItemQuantity(product.id);
                   return quantity !== "" && parseFloat(quantity) > 0;
                 }).length;
-                
+
                 return (
-                  <Card key={categoryName} className={isComplete ? "border-green-200 bg-green-50" : ""}>
+                  <Card key={categoryName} className={isComplete ? "border-green-200" : "border-gray-200"}>
                     <CardHeader 
                       className="cursor-pointer hover:bg-gray-50"
                       onClick={() => toggleCategoryExpansion(categoryName)}
@@ -509,31 +492,35 @@ export default function PublicStockCount() {
                         </div>
                       </CardTitle>
                     </CardHeader>
+
                     {isExpanded && (
-                      <CardContent>
-                        <div className="grid gap-2 sm:gap-3">
+                      <CardContent className="pt-0">
+                        <Separator className="mb-4" />
+                        <div className="space-y-3">
                           {categoryProducts.map((product) => (
-                            <div
-                              key={product.id}
-                              className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-3 sm:p-4 border rounded-lg bg-white"
-                            >
+                            <div key={product.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 rounded-lg space-y-2 sm:space-y-0">
                               <div className="flex-1 min-w-0">
-                                <div className="font-medium text-base sm:text-lg truncate">{product.name}</div>
-                                <div className="text-xs sm:text-sm text-gray-500">Código: {product.code}</div>
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
+                                    {product.code}
+                                  </span>
+                                  <span className="font-medium text-gray-900 text-sm sm:text-base truncate">
+                                    {product.name}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2 w-full sm:w-auto">
+                              <div className="flex items-center space-x-2 flex-shrink-0">
                                 <Input
                                   type="number"
-                                  min="0"
                                   step="0.001"
-                                  value={getItemQuantity(product.id)}
-                                  onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                                  className="w-24 sm:w-32 text-center text-base sm:text-lg font-medium"
                                   placeholder="0.000"
+                                  value={getItemQuantity(product.id)}
+                                  onChange={(e) => updateItemQuantity(product.id, e.target.value)}
+                                  className="w-20 sm:w-24 text-center text-sm"
                                 />
-                                <div className="text-xs sm:text-sm text-gray-500 w-8 sm:w-12 text-center">
-                                  {product.unitOfMeasure || 'UN'}
-                                </div>
+                                <span className="text-xs text-gray-500 w-8">
+                                  {product.stockUnit}
+                                </span>
                               </div>
                             </div>
                           ))}
