@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, FileText, Calendar, User, CheckCircle, Clock, Pencil, Trash2, Eye, Send, Play, StopCircle } from "lucide-react";
+import { Plus, FileText, Calendar, User, CheckCircle, Clock, Pencil, Trash2, Eye, Send, Play, StopCircle, Link, MessageCircle, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,8 +64,10 @@ function getStatusInfo(status: string) {
 export default function StockCountsManagement() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCountDialogOpen, setIsCountDialogOpen] = useState(false);
+  const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
   const [selectedStockCount, setSelectedStockCount] = useState<StockCountWithRelations | null>(null);
   const [countItems, setCountItems] = useState<{ productId: number; countedQuantity: string; notes?: string }[]>([]);
+  const [publicUrl, setPublicUrl] = useState<string>("");
 
   const [formData, setFormData] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
@@ -189,6 +191,27 @@ export default function StockCountsManagement() {
       toast({
         title: "Erro",
         description: error.message || "Erro ao finalizar contagem",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const enviarWhatsAppMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("POST", `/api/stock-counts/${id}/fechar-contagem`);
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stock-counts"] });
+      toast({
+        title: "WhatsApp enviado",
+        description: `Link enviado com sucesso para o colaborador!`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao enviar WhatsApp",
         variant: "destructive",
       });
     },
@@ -335,77 +358,114 @@ export default function StockCountsManagement() {
   };
 
   const getActionButtons = (stockCount: any) => {
-    const { status, id } = stockCount;
+    const { status, id, publicToken } = stockCount;
     
+    const handleShowPublicUrl = () => {
+      if (publicToken) {
+        const baseUrl = window.location.origin;
+        const url = `${baseUrl}/contagem-publica/${publicToken}`;
+        setPublicUrl(url);
+        setIsUrlDialogOpen(true);
+      } else {
+        toast({
+          title: "URL não disponível",
+          description: "Esta contagem ainda não foi fechada",
+          variant: "destructive",
+        });
+      }
+    };
+
+    const handleCopyUrl = () => {
+      navigator.clipboard.writeText(publicUrl);
+      toast({
+        title: "URL copiada",
+        description: "URL copiada para a área de transferência!",
+      });
+    };
+
     return (
-      <div className="flex items-center justify-end space-x-2">
-        {/* Visualizar sempre disponível */}
+      <div className="flex items-center justify-end space-x-1">
+        {/* Editar contagem - só para rascunhos */}
+        {status === 'rascunho' && (
+          <Button variant="ghost" size="sm" title="Editar contagem">
+            <Edit className="h-4 w-4" />
+          </Button>
+        )}
+
+        {/* Editar produtos da contagem */}
         <Button
           variant="ghost"
           size="sm"
           onClick={() => window.location.href = `/estoque/contagens/${id}`}
+          title="Editar produtos da contagem"
         >
-          <Eye className="h-4 w-4" />
+          <Pencil className="h-4 w-4" />
         </Button>
 
-        {/* Botões específicos por status */}
+        {/* Visualizar URL pública */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleShowPublicUrl}
+          title="Ver URL pública"
+          disabled={!publicToken}
+        >
+          <Link className="h-4 w-4" />
+        </Button>
+
+        {/* Enviar WhatsApp */}
         {status === 'rascunho' && (
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            onClick={() => fecharContagemMutation.mutate(id)}
-            disabled={fecharContagemMutation.isPending}
-            className="text-blue-600 hover:text-blue-700"
+            onClick={() => enviarWhatsAppMutation.mutate(id)}
+            disabled={enviarWhatsAppMutation.isPending}
+            title="Enviar WhatsApp"
           >
-            <Send className="h-4 w-4 mr-1" />
-            Fechar contagem
+            <MessageCircle className="h-4 w-4" />
           </Button>
         )}
 
+        {/* Finalizar contagem */}
         {status === 'em_contagem' && (
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => finalizarContagemMutation.mutate(id)}
             disabled={finalizarContagemMutation.isPending}
+            title="Finalizar contagem"
             className="text-green-600 hover:text-green-700"
           >
-            <StopCircle className="h-4 w-4 mr-1" />
-            Finalizar
+            <CheckCircle className="h-4 w-4" />
           </Button>
         )}
 
-        {/* Editar e excluir apenas para rascunhos */}
+        {/* Excluir - só para rascunhos */}
         {status === 'rascunho' && (
-          <>
-            <Button variant="ghost" size="sm">
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Tem certeza que deseja excluir esta contagem? Esta ação não pode ser desfeita.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => deleteMutation.mutate(id)}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    Excluir
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" title="Excluir contagem">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja excluir esta contagem? Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteMutation.mutate(id)}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Excluir
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
       </div>
     );
@@ -614,6 +674,41 @@ export default function StockCountsManagement() {
             >
               {saveCountMutation.isPending ? "Salvando..." : "Salvar Contagem"}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* URL Pública Dialog */}
+      <Dialog open={isUrlDialogOpen} onOpenChange={setIsUrlDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>URL Pública da Contagem</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-3 bg-gray-100 rounded-md">
+              <p className="text-sm font-mono break-all">{publicUrl}</p>
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                onClick={() => {
+                  navigator.clipboard.writeText(publicUrl);
+                  toast({
+                    title: "URL copiada",
+                    description: "URL copiada para a área de transferência!",
+                  });
+                }}
+                className="flex-1"
+              >
+                <Link className="h-4 w-4 mr-2" />
+                Copiar URL
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsUrlDialogOpen(false)}
+              >
+                Fechar
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

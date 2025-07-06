@@ -175,6 +175,14 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Sistema completo de status de contagens implementado (Julho 6, 2025)
+- ✓ Quatro status com transições: Rascunho, Pronta para contagem, Em contagem, Contagem finalizada
+- ✓ Linha do tempo horizontal visual substituindo badges de status tradicionais
+- ✓ Status atual em laranja, concluídos em verde, pendentes em cinza com conectores visuais
+- ✓ Ações completas por contagem: Editar, Editar produtos, Ver URL pública, Enviar WhatsApp, Excluir
+- ✓ Campo observações removido da interface para simplificação
+- ✓ WhatsApp automático enviado ao fechar contagem com link público
+- ✓ Dialog para visualizar e copiar URL pública da contagem
 - ✓ URLs do sistema padronizadas para estrutura consistente menu/submenu (Julho 6, 2025)
 - ✓ Implementada nova estrutura de rotas: /chopes/*, /pessoas/*, /estoque/*, /empresa/*
 - ✓ Sidebar atualizado com navegação organizada por seções expandíveis
