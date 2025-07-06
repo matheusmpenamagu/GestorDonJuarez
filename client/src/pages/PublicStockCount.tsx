@@ -208,19 +208,19 @@ export default function PublicStockCount() {
     return window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   };
 
-  // Função para navegar com Enter (desabilitado no mobile)
+  // Função para navegar com Enter
   const handleKeyPress = (e: React.KeyboardEvent, productId: number) => {
-    if (e.key === 'Enter' && !isMobile()) {
+    if (e.key === 'Enter') {
       e.preventDefault();
-      focusNextField(productId);
+      saveIndividualItem(productId);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent, productId: number) => {
-    // Só usar Tab para navegação no desktop
-    if (e.key === 'Tab' && !e.shiftKey && !isMobile()) {
+    // Salvar com Tab também
+    if (e.key === 'Tab' && !e.shiftKey) {
       e.preventDefault();
-      focusNextField(productId);
+      saveIndividualItem(productId);
     }
   };
 
@@ -232,25 +232,27 @@ export default function PublicStockCount() {
     }));
   };
 
-  // Auto-salvar mudanças
-  useEffect(() => {
-    if (stockCount?.status === 'em_contagem' && countItems.length > 0) {
-      // Filtrar apenas itens válidos (com productId e quantidade)
-      const validItems = countItems.filter(item => 
-        item.productId && 
-        item.countedQuantity !== "" && 
-        !isNaN(parseFloat(item.countedQuantity))
-      );
+  // Estado para rastrear itens salvos
+  const [savedItems, setSavedItems] = useState<number[]>([]);
+
+  // Salvar item individual
+  const saveIndividualItem = (productId: number) => {
+    const quantity = getItemQuantity(productId);
+    if (quantity !== "" && !isNaN(parseFloat(quantity))) {
+      const itemToSave = { productId, countedQuantity: quantity };
+      console.log("Salvando item individual:", itemToSave);
       
-      if (validItems.length > 0) {
-        const timer = setTimeout(() => {
-          console.log("Salvando itens válidos:", validItems);
-          updateItemsMutation.mutate(validItems);
-        }, 1000);
-        return () => clearTimeout(timer);
-      }
+      updateItemsMutation.mutate([itemToSave], {
+        onSuccess: () => {
+          setSavedItems(prev => [...prev.filter(id => id !== productId), productId]);
+          focusNextField(productId);
+        }
+      });
     }
-  }, [countItems, stockCount?.status]);
+  };
+
+  // Verificar se item foi salvo
+  const isItemSaved = (productId: number) => savedItems.includes(productId);
 
   // Verificar se todos os produtos de uma categoria foram contados
   const isCategoryComplete = (categoryProducts: Product[]): boolean => {
@@ -656,7 +658,9 @@ export default function PublicStockCount() {
                         <Separator className="mb-4" />
                         <div className="space-y-3">
                           {categoryProducts.map((product) => (
-                            <div key={product.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 rounded-lg space-y-3 sm:space-y-0">
+                            <div key={product.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg space-y-3 sm:space-y-0 ${
+                              isItemSaved(product.id) ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
+                            }`}>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center space-x-2 mb-1">
                                   <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
@@ -665,6 +669,9 @@ export default function PublicStockCount() {
                                   <span className="font-medium text-gray-900 text-sm sm:text-base truncate">
                                     {product.name}
                                   </span>
+                                  {isItemSaved(product.id) && (
+                                    <span className="text-xs text-green-600 font-medium">✓ Salvo</span>
+                                  )}
                                 </div>
                                 <div className="text-xs text-gray-600 font-medium">
                                   {product.unitOfMeasure}
@@ -687,10 +694,19 @@ export default function PublicStockCount() {
                                   onKeyDown={(e) => handleKeyDown(e, product.id)}
                                   className="w-24 sm:w-28 text-center text-sm focus:ring-2 focus:ring-orange-500"
                                   autoComplete="off"
+                                  disabled={isItemSaved(product.id)}
                                 />
                                 <span className="text-sm font-medium text-gray-600 min-w-0">
                                   {product.unitOfMeasure}
                                 </span>
+                                <Button
+                                  size="sm"
+                                  onClick={() => saveIndividualItem(product.id)}
+                                  disabled={getItemQuantity(product.id) === "" || isItemSaved(product.id) || updateItemsMutation.isPending}
+                                  className="px-3 py-1 text-xs"
+                                >
+                                  {isItemSaved(product.id) ? "✓" : "Salvar"}
+                                </Button>
                               </div>
                             </div>
                           ))}
