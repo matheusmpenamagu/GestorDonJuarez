@@ -2601,6 +2601,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Route to save custom order for stock count
+  app.post('/api/stock-counts/:id/save-order', demoAuth, async (req, res) => {
+    try {
+      const stockCountId = parseInt(req.params.id);
+      const { categoryOrder, productOrder } = req.body;
+      
+      if (isNaN(stockCountId)) {
+        return res.status(400).json({ message: "Invalid stock count ID" });
+      }
+      
+      // Save the order data to the stock count
+      await storage.updateStockCount(stockCountId, {
+        categoryOrder: JSON.stringify(categoryOrder),
+        productOrder: JSON.stringify(productOrder)
+      });
+      
+      res.json({ 
+        message: "Order saved successfully",
+        categoryOrder,
+        productOrder
+      });
+      
+    } catch (error) {
+      console.error("Error saving stock count order:", error);
+      res.status(500).json({ message: "Failed to save stock count order" });
+    }
+  });
+
   // Product Units routes
   app.get('/api/product-units', demoAuth, async (req, res) => {
     try {

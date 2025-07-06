@@ -108,8 +108,28 @@ export default function StockCountDetail() {
     }
   }, [stockCount]);
 
-  // Inicializar ordem das categorias e produtos baseado na ordem prévia ou alfabética
+  // Inicializar ordem das categorias e produtos baseado na ordem salva ou prévia
   useEffect(() => {
+    if (stockCount && products.length > 0) {
+      // Verificar se há ordem salva nesta contagem
+      if (stockCount.categoryOrder && stockCount.productOrder) {
+        try {
+          const savedCategoryOrder = JSON.parse(stockCount.categoryOrder);
+          const savedProductOrder = JSON.parse(stockCount.productOrder);
+          setCategoryOrder(savedCategoryOrder);
+          setProductOrder(savedProductOrder);
+        } catch (error) {
+          console.error("Error parsing saved order:", error);
+          // Fallback para ordem anterior
+          initializeFromPreviousOrder();
+        }
+      } else if (previousOrder) {
+        initializeFromPreviousOrder();
+      }
+    }
+  }, [stockCount, previousOrder, products]);
+
+  const initializeFromPreviousOrder = () => {
     if (previousOrder && products.length > 0) {
       const orderedCategories = getOrderedCategories();
       setCategoryOrder(orderedCategories);
@@ -120,7 +140,7 @@ export default function StockCountDetail() {
       });
       setProductOrder(orderedProducts);
     }
-  }, [previousOrder, products]);
+  };
 
   // Agrupar produtos por categoria (mapeando para nome correto)
   const productsByCategory = products.reduce((acc, product) => {
@@ -242,6 +262,27 @@ export default function StockCountDetail() {
       toast({
         title: "Erro",
         description: error.message || "Erro ao salvar contagem",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation para salvar ordem
+  const saveOrderMutation = useMutation({
+    mutationFn: async (orderData: { categoryOrder: string[]; productOrder: Record<string, string[]> }) => {
+      const response = await apiRequest("POST", `/api/stock-counts/${stockCountId}/save-order`, orderData);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Ordem salva",
+        description: "Ordem dos produtos e categorias salva com sucesso!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao salvar ordem",
         variant: "destructive",
       });
     },
@@ -445,10 +486,23 @@ export default function StockCountDetail() {
             <>
               <Button
                 variant={isEditingOrder ? "default" : "outline"}
-                onClick={() => setIsEditingOrder(!isEditingOrder)}
+                onClick={() => {
+                  if (isEditingOrder) {
+                    // Salvar ordem antes de finalizar
+                    saveOrderMutation.mutate({
+                      categoryOrder,
+                      productOrder
+                    });
+                  }
+                  setIsEditingOrder(!isEditingOrder);
+                }}
+                disabled={saveOrderMutation.isPending}
               >
                 <GripVertical className="h-4 w-4 mr-2" />
-                {isEditingOrder ? "Finalizar Ordem" : "Editar Ordem"}
+                {isEditingOrder ? 
+                  (saveOrderMutation.isPending ? "Salvando..." : "Finalizar Ordem") : 
+                  "Editar Ordem"
+                }
               </Button>
               <Button onClick={handleSave} disabled={saveCountMutation.isPending}>
                 <Save className="h-4 w-4 mr-2" />

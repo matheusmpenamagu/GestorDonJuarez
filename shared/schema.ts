@@ -469,6 +469,8 @@ export const stockCounts = pgTable("stock_counts", {
   notes: text("notes"),
   status: varchar("status", { length: 50 }).notNull().default("rascunho"), // rascunho, pronta_para_contagem, em_contagem, contagem_finalizada
   publicToken: varchar("public_token", { length: 32 }).unique(), // For public access
+  categoryOrder: text("category_order"), // JSON string for custom category ordering
+  productOrder: text("product_order"), // JSON string for custom product ordering within categories
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
