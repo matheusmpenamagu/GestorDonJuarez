@@ -2273,6 +2273,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete('/api/stock-counts/:id/items/:productId', demoAuth, async (req, res) => {
+    try {
+      const stockCountId = parseInt(req.params.id);
+      const productId = parseInt(req.params.productId);
+      
+      if (isNaN(stockCountId) || isNaN(productId)) {
+        return res.status(400).json({ message: "Invalid stock count ID or product ID" });
+      }
+      
+      await storage.deleteStockCountItemByProduct(stockCountId, productId);
+      res.status(200).json({ message: "Item removed successfully" });
+    } catch (error) {
+      console.error("Error deleting stock count item:", error);
+      res.status(500).json({ message: "Failed to delete stock count item" });
+    }
+  });
+
   // Route to initialize stock count with all products
   app.post('/api/stock-counts/:id/initialize', demoAuth, async (req, res) => {
     try {

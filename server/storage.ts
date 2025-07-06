@@ -198,6 +198,7 @@ export interface IStorage {
   createStockCountItem(item: InsertStockCountItem): Promise<StockCountItem>;
   updateStockCountItem(id: number, item: Partial<InsertStockCountItem>): Promise<StockCountItem>;
   deleteStockCountItem(id: number): Promise<void>;
+  deleteStockCountItemByProduct(stockCountId: number, productId: number): Promise<void>;
   
   // Bulk operations for stock count items
   createStockCountItems(items: InsertStockCountItem[]): Promise<StockCountItem[]>;
@@ -1566,6 +1567,14 @@ export class DatabaseStorage implements IStorage {
 
   async deleteStockCountItem(id: number): Promise<void> {
     await db.delete(stockCountItems).where(eq(stockCountItems.id, id));
+  }
+
+  async deleteStockCountItemByProduct(stockCountId: number, productId: number): Promise<void> {
+    await db.delete(stockCountItems)
+      .where(and(
+        eq(stockCountItems.stockCountId, stockCountId),
+        eq(stockCountItems.productId, productId)
+      ));
   }
 
   // Bulk operations for stock count items

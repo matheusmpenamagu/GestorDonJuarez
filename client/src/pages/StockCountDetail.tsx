@@ -311,6 +311,28 @@ export default function StockCountDetail() {
     },
   });
 
+  // Mutation para deletar item da contagem
+  const deleteItemMutation = useMutation({
+    mutationFn: async (productId: number) => {
+      const response = await apiRequest("DELETE", `/api/stock-counts/${stockCountId}/items/${productId}`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stock-counts", stockCountId] });
+      toast({
+        title: "Produto removido",
+        description: "Produto removido da contagem com sucesso",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao remover produto",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Mutation para iniciar contagem
   const startCountMutation = useMutation({
     mutationFn: async () => {
@@ -415,11 +437,18 @@ export default function StockCountDetail() {
   };
 
   const handleDeleteProduct = (productId: number) => {
+    // Primeiro, remove das quantidades da contagem
     setCountItems(prev => prev.filter(item => item.productId !== productId));
-    toast({
-      title: "Produto removido",
-      description: "Produto removido da contagem com sucesso",
-    });
+    
+    // Depois, remover da API se já foi salvo
+    if (stockCount?.items?.some(item => item.productId === productId)) {
+      deleteItemMutation.mutate(productId);
+    } else {
+      toast({
+        title: "Produto removido",
+        description: "Produto removido da contagem com sucesso",
+      });
+    }
   };
 
   // Função para renderizar a timeline de status
