@@ -547,17 +547,20 @@ export default function PublicStockCount() {
 
         {stockCount.status === 'em_contagem' && (
           <>
-            {/* Barra de progresso da contagem */}
-            <div className="mb-6">
-              <div className="w-full bg-gray-200 rounded-full h-3">
+            {/* Barra de progresso fixa no topo */}
+            <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
+              <div className="w-full bg-gray-200 h-2">
                 <div 
-                  className="bg-orange-500 h-3 rounded-full transition-all duration-300" 
+                  className="bg-orange-500 h-2 transition-all duration-300" 
                   style={{ 
                     width: `${products.length > 0 ? (countItems.length / products.length) * 100 : 0}%` 
                   }}
                 ></div>
               </div>
             </div>
+            
+            {/* Espaçador para compensar a barra fixa */}
+            <div className="h-2 mb-6"></div>
 
             {/* Barra de busca */}
             <Card>
