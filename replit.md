@@ -175,6 +175,14 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Sistema de contagem pública totalmente funcional com persistência de dados (Julho 6, 2025)
+- ✓ Botões individuais de salvamento com ícone de check laranja implementados
+- ✓ Layout mobile otimizado para iPhone: tudo em uma linha, campos menores
+- ✓ Endpoint público /api/stock-counts/public/:token/items para carregar dados existentes
+- ✓ Dados persistem corretamente após reload da página com visual de itens salvos
+- ✓ Foco automático apenas no primeiro campo, navegação manual sem interrupções
+- ✓ Teclado numérico com suporte a vírgula e ponto como separadores decimais
+- ✓ Barra de progresso fixa no topo mostrando andamento da contagem
 - ✓ Botão "Finalizar Contagem" implementado na página pública (Julho 6, 2025)
 - ✓ Endpoint /api/stock-counts/public/:token/finish criado para finalizar via token público
 - ✓ Funcionalidade completa: salvamento automático + finalização + mudança para status "contagem_finalizada"
