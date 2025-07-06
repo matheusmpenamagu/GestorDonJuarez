@@ -409,7 +409,7 @@ export default function PublicStockCount() {
     }
   }, [countItems, products]);
 
-  // Inicializar primeira categoria expandida e focar primeiro campo (só no desktop)
+  // Inicializar primeira categoria expandida e focar primeiro campo
   useEffect(() => {
     if (orderedData.length > 0 && Object.keys(expandedCategories).length === 0) {
       // Encontrar primeira categoria incompleta
@@ -423,27 +423,26 @@ export default function PublicStockCount() {
           [firstIncompleteCategory.category]: true
         });
 
-        // Focar no primeiro campo apenas no desktop
-        if (!isMobile()) {
-          setTimeout(() => {
-            const firstProduct = firstIncompleteCategory.products[0];
-            if (firstProduct) {
-              const firstInputRef = inputRefs.current[`product-${firstProduct.id}`];
-              if (firstInputRef) {
-                firstInputRef.focus();
+        // Focar no primeiro campo sempre (desktop e mobile)
+        setTimeout(() => {
+          const firstProduct = firstIncompleteCategory.products[0];
+          if (firstProduct) {
+            const firstInputRef = inputRefs.current[`product-${firstProduct.id}`];
+            if (firstInputRef) {
+              firstInputRef.focus();
+              // Não fazer select no mobile para evitar problemas
+              if (!isMobile()) {
                 firstInputRef.select();
               }
             }
-          }, 500);
-        }
+          }
+        }, 800); // Aumentar delay para garantir que o DOM esteja pronto
       }
     }
   }, [orderedData]);
 
-  // Focar no primeiro campo quando uma nova categoria é expandida (só no desktop)
+  // Focar no primeiro campo quando uma nova categoria é expandida
   useEffect(() => {
-    if (isMobile()) return; // Não focar automaticamente no mobile
-    
     const expandedCategoryNames = Object.keys(expandedCategories).filter(
       key => expandedCategories[key] === true
     );
@@ -464,13 +463,45 @@ export default function PublicStockCount() {
             const inputRef = inputRefs.current[`product-${firstUncounteProduct.id}`];
             if (inputRef) {
               inputRef.focus();
-              inputRef.select();
+              // Não fazer select no mobile para evitar problemas
+              if (!isMobile()) {
+                inputRef.select();
+              }
             }
           }
-        }, 300);
+        }, 400);
       }
     }
   }, [expandedCategories, countItems]);
+
+  // Focar no primeiro campo quando os produtos são carregados
+  useEffect(() => {
+    if (products.length > 0 && stockCount?.status === 'em_contagem') {
+      const timer = setTimeout(() => {
+        // Encontrar primeira categoria expandida
+        const expandedCategory = Object.keys(expandedCategories).find(
+          key => expandedCategories[key] === true
+        );
+        
+        if (expandedCategory) {
+          const categoryData = orderedData.find(item => item.category === expandedCategory);
+          if (categoryData && categoryData.products.length > 0) {
+            const firstProduct = categoryData.products[0];
+            const inputRef = inputRefs.current[`product-${firstProduct.id}`];
+            if (inputRef) {
+              console.log("Focando no primeiro produto:", firstProduct.name);
+              inputRef.focus();
+              if (!isMobile()) {
+                inputRef.select();
+              }
+            }
+          }
+        }
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [products, orderedData, expandedCategories, stockCount?.status]);
 
   if (isLoading) {
     return (
@@ -648,6 +679,7 @@ export default function PublicStockCount() {
                                   }}
                                   type="text"
                                   inputMode="decimal"
+                                  pattern="[0-9]*[.,]?[0-9]*"
                                   placeholder="0,000"
                                   value={getItemQuantity(product.id)}
                                   onChange={(e) => updateItemQuantity(product.id, e.target.value)}
