@@ -878,7 +878,7 @@ function SortableCategoryCard({
                     product={product}
                     quantity={getItemQuantity(product.id)}
                     onQuantityChange={(quantity) => handleQuantityChange(product.id, quantity)}
-                    disabled={stockCountStatus !== "draft"}
+                    disabled={stockCountStatus !== "rascunho"}
                     isEditingOrder={isEditingOrder}
                     onDelete={() => onDeleteProduct(product.id)}
                   />
