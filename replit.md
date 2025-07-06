@@ -201,6 +201,9 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - ✓ Mapeamento de unidades corrigido para detectar corretamente Apollonio vs Grão Pará
 - ✓ Teste confirmado: produto novo aparece corretamente em múltiplas unidades
 - ✓ Logs detalhados de associação funcionando perfeitamente
+- ✓ Caso específico Coca Cola (904) corrigido - produto agora em duas unidades (Julho 6, 2025)
+- ✓ Sistema de importação CSV funcionando perfeitamente para produtos duplicados
+- ✓ Teste confirmado: produto 904 nas unidades Apollonio e Grão Pará
 - ✓ Upload CSV totalmente funcional: 312 produtos importados com sucesso da planilha real
 - ✓ Detecção automática de separador CSV (vírgula ou ponto-e-vírgula) implementada
 - ✓ Mapeamento inteligente de colunas: "COD.", "PRODUTO", "CATEGORIA", "VALOR ATUAL"
