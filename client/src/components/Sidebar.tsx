@@ -28,10 +28,6 @@ const menuItems = [
       { href: "/", icon: BarChart3, label: "Dashboard" },
       { href: "/chopes/historico", icon: History, label: "Consumo de chopes" },
       { href: "/chopes/co2", icon: Wind, label: "CO2" },
-      { href: "/chopes/torneiras", icon: Beer, label: "Torneiras" },
-      { href: "/chopes/pontos-venda", icon: Store, label: "Pontos de venda" },
-      { href: "/chopes/estilos", icon: Beer, label: "Estilos de chopes" },
-      { href: "/chopes/dispositivos", icon: Smartphone, label: "Dispositivos" },
     ],
   },
   {

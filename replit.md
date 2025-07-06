@@ -175,6 +175,11 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ URLs do sistema padronizadas para estrutura consistente menu/submenu (Julho 6, 2025)
+- ✓ Implementada nova estrutura de rotas: /chopes/*, /pessoas/*, /estoque/*, /empresa/*
+- ✓ Sidebar atualizado com navegação organizada por seções expandíveis
+- ✓ Submenus Torneiras, Pontos de venda, Estilos e Dispositivos removidos da navegação
+- ✓ Rotas mantidas funcionais para acesso direto via URL quando necessário
 - ✓ Formulário de produtos com seleção múltipla de unidades implementado (Julho 5, 2025)
 - ✓ Interface unificada para criação e edição com checkboxes de unidades múltiplas
 - ✓ Endpoint /api/products/multi-unit (POST e PUT) para operações com múltiplas unidades
