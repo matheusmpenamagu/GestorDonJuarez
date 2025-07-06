@@ -12,7 +12,8 @@ import {
   CheckCircle,
   Clock,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -592,9 +593,6 @@ export default function PublicStockCount() {
               </div>
             </div>
             
-            {/* Espaçador para compensar a barra fixa */}
-            <div className="h-2 mb-6"></div>
-
             {/* Barra de busca */}
             <Card>
               <CardContent className="pt-4">
@@ -703,9 +701,10 @@ export default function PublicStockCount() {
                                   size="sm"
                                   onClick={() => saveIndividualItem(product.id)}
                                   disabled={getItemQuantity(product.id) === "" || isItemSaved(product.id) || updateItemsMutation.isPending}
-                                  className="px-3 py-1 text-xs"
+                                  className="px-2 py-1 w-8 h-8"
+                                  variant={isItemSaved(product.id) ? "default" : "outline"}
                                 >
-                                  {isItemSaved(product.id) ? "✓" : "Salvar"}
+                                  <Check className={`h-4 w-4 ${isItemSaved(product.id) ? 'text-white' : 'text-gray-600'}`} />
                                 </Button>
                               </div>
                             </div>
