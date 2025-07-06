@@ -17,7 +17,9 @@ import {
   GripVertical,
   Trash2,
   Pencil,
-  CheckCircle
+  CheckCircle,
+  Building2,
+  Globe
 } from "lucide-react";
 import {
   DndContext,
@@ -626,9 +628,9 @@ export default function StockCountDetail() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
               <div className="text-2xl font-bold text-orange-600">
-                {products.length}
+                {availableProducts.length}
               </div>
-              <div className="text-sm text-gray-600">Total de Produtos</div>
+              <div className="text-sm text-gray-600">Produtos na Contagem</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-green-600">
@@ -640,14 +642,37 @@ export default function StockCountDetail() {
               <div className="text-2xl font-bold text-blue-600">
                 {filteredAndOrderedData.length}
               </div>
-              <div className="text-sm text-gray-600">Categorias</div>
+              <div className="text-sm text-gray-600">Categorias Ativas</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-purple-600">
-                {((countItems.filter(item => parseFloat(item.countedQuantity) > 0).length / products.length) * 100).toFixed(1)}%
+                {availableProducts.length > 0 ? 
+                  ((countItems.filter(item => parseFloat(item.countedQuantity) > 0).length / availableProducts.length) * 100).toFixed(1) 
+                  : "0"
+                }%
               </div>
               <div className="text-sm text-gray-600">Progresso</div>
             </div>
+          </div>
+          
+          {/* Additional info */}
+          <div className="flex justify-center items-center space-x-6 text-sm text-gray-600">
+            <div className="flex items-center">
+              <Building2 className="h-4 w-4 mr-1" />
+              {stockCount.unit?.name}
+            </div>
+            {stockCount.publicToken && (
+              <div className="flex items-center">
+                <Globe className="h-4 w-4 mr-1" />
+                Contagem Pública Ativa
+              </div>
+            )}
+            {stockCount.items && stockCount.items.length > 0 && (
+              <div className="flex items-center">
+                <Save className="h-4 w-4 mr-1" />
+                Última atualização: {format(new Date(stockCount.updatedAt || stockCount.createdAt), "dd/MM HH:mm", { locale: ptBR })}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
