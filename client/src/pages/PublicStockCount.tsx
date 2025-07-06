@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { format } from "date-fns";
@@ -32,8 +32,10 @@ export default function PublicStockCount() {
   const [isBeginning, setIsBeginning] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
+  const inputRefs = useRef<{ [key: string]: HTMLInputElement }>({});
 
   // Carregar dados da contagem pública
   const { data: stockCount, isLoading } = useQuery<StockCountWithRelations>({
@@ -138,6 +140,65 @@ export default function PublicStockCount() {
       }
       return updated;
     });
+  };
+
+  // Função para focar no próximo campo
+  const focusNextField = (currentProductId: number) => {
+    // Encontrar todos os produtos visíveis na ordem das categorias expandidas
+    const allVisibleProducts: Product[] = [];
+    
+    orderedData.forEach(({ category, products: categoryProducts }) => {
+      if (isCategoryExpanded(category)) {
+        allVisibleProducts.push(...categoryProducts);
+      }
+    });
+
+    // Encontrar o índice do produto atual
+    const currentIndex = allVisibleProducts.findIndex(p => p.id === currentProductId);
+    
+    // Focar no próximo produto
+    if (currentIndex >= 0 && currentIndex < allVisibleProducts.length - 1) {
+      const nextProduct = allVisibleProducts[currentIndex + 1];
+      const nextInputRef = inputRefs.current[`product-${nextProduct.id}`];
+      if (nextInputRef) {
+        setTimeout(() => {
+          nextInputRef.focus();
+          nextInputRef.select();
+        }, 50);
+      }
+    } else {
+      // Se chegou ao fim da categoria atual, tentar expandir próxima categoria
+      const currentCategoryIndex = orderedData.findIndex(item => 
+        item.products.some(p => p.id === currentProductId)
+      );
+      
+      if (currentCategoryIndex >= 0 && currentCategoryIndex < orderedData.length - 1) {
+        const nextCategory = orderedData[currentCategoryIndex + 1];
+        if (!isCategoryComplete(nextCategory.products)) {
+          // Expandir próxima categoria e colapsar atual
+          const currentCategory = orderedData[currentCategoryIndex];
+          setExpandedCategories({
+            [currentCategory.category]: false,
+            [nextCategory.category]: true
+          });
+        }
+      }
+    }
+  };
+
+  // Função para navegar com Enter e Tab
+  const handleKeyPress = (e: React.KeyboardEvent, productId: number) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      focusNextField(productId);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, productId: number) => {
+    if (e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault();
+      focusNextField(productId);
+    }
   };
 
   // Função para colapsar/expandir categoria
@@ -315,7 +376,7 @@ export default function PublicStockCount() {
     }
   }, [countItems, products]);
 
-  // Inicializar primeira categoria expandida
+  // Inicializar primeira categoria expandida e focar primeiro campo
   useEffect(() => {
     if (orderedData.length > 0 && Object.keys(expandedCategories).length === 0) {
       // Encontrar primeira categoria incompleta
@@ -328,9 +389,51 @@ export default function PublicStockCount() {
         setExpandedCategories({
           [firstIncompleteCategory.category]: true
         });
+
+        // Focar no primeiro campo da primeira categoria após um pequeno delay
+        setTimeout(() => {
+          const firstProduct = firstIncompleteCategory.products[0];
+          if (firstProduct) {
+            const firstInputRef = inputRefs.current[`product-${firstProduct.id}`];
+            if (firstInputRef) {
+              firstInputRef.focus();
+              firstInputRef.select();
+            }
+          }
+        }, 500);
       }
     }
   }, [orderedData]);
+
+  // Focar no primeiro campo quando uma nova categoria é expandida
+  useEffect(() => {
+    const expandedCategoryNames = Object.keys(expandedCategories).filter(
+      key => expandedCategories[key] === true
+    );
+    
+    if (expandedCategoryNames.length === 1) {
+      const expandedCategory = orderedData.find(item => 
+        item.category === expandedCategoryNames[0]
+      );
+      
+      if (expandedCategory) {
+        setTimeout(() => {
+          // Focar no primeiro produto não contado da categoria expandida
+          const firstUncounteProduct = expandedCategory.products.find(product => 
+            getItemQuantity(product.id) === ""
+          );
+          
+          if (firstUncounteProduct) {
+            const inputRef = inputRefs.current[`product-${firstUncounteProduct.id}`];
+            if (inputRef) {
+              inputRef.focus();
+              inputRef.select();
+            }
+          }
+        }, 300);
+      }
+    }
+  }, [expandedCategories, countItems]);
 
   if (isLoading) {
     return (
@@ -511,12 +614,20 @@ export default function PublicStockCount() {
                               </div>
                               <div className="flex items-center space-x-2 flex-shrink-0">
                                 <Input
+                                  ref={(ref) => {
+                                    if (ref) {
+                                      inputRefs.current[`product-${product.id}`] = ref;
+                                    }
+                                  }}
                                   type="number"
                                   step="0.001"
                                   placeholder="0.000"
                                   value={getItemQuantity(product.id)}
                                   onChange={(e) => updateItemQuantity(product.id, e.target.value)}
+                                  onKeyPress={(e) => handleKeyPress(e, product.id)}
+                                  onKeyDown={(e) => handleKeyDown(e, product.id)}
                                   className="w-20 sm:w-24 text-center text-sm"
+                                  autoComplete="off"
                                 />
                                 <span className="text-xs text-gray-500 w-8">
                                   {product.stockUnit}
