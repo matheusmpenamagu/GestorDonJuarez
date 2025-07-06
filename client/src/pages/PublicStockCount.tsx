@@ -657,23 +657,21 @@ export default function PublicStockCount() {
                         <Separator className="mb-4" />
                         <div className="space-y-3">
                           {categoryProducts.map((product) => (
-                            <div key={product.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg space-y-3 sm:space-y-0 ${
+                            <div key={product.id} className={`flex flex-row items-center justify-between p-3 rounded-lg space-x-3 ${
                               isItemSaved(product.id) ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
                             }`}>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
-                                    {product.code}
-                                  </span>
-                                  <span className="font-medium text-gray-900 text-sm sm:text-base truncate">
-                                    {product.name}
-                                  </span>
-                                  {isItemSaved(product.id) && (
-                                    <span className="text-xs text-green-600 font-medium">✓ Salvo</span>
-                                  )}
-                                </div>
+                              <div className="flex-1 min-w-0 flex items-center space-x-2">
+                                <span className="text-xs text-gray-500 bg-white px-1.5 py-0.5 rounded text-[10px] sm:text-xs">
+                                  {product.code}
+                                </span>
+                                <span className="font-medium text-gray-900 text-xs sm:text-sm truncate">
+                                  {product.name}
+                                </span>
+                                {isItemSaved(product.id) && (
+                                  <span className="text-xs text-green-600 font-medium hidden sm:inline">✓ Salvo</span>
+                                )}
                               </div>
-                              <div className="flex items-center space-x-2 flex-shrink-0">
+                              <div className="flex items-center space-x-1 flex-shrink-0">
                                 <Input
                                   ref={(ref) => {
                                     if (ref) {
@@ -688,21 +686,21 @@ export default function PublicStockCount() {
                                   onChange={(e) => updateItemQuantity(product.id, e.target.value)}
                                   onKeyPress={(e) => handleKeyPress(e, product.id)}
                                   onKeyDown={(e) => handleKeyDown(e, product.id)}
-                                  className="w-24 sm:w-28 text-center text-sm focus:ring-2 focus:ring-orange-500"
+                                  className="w-16 sm:w-24 text-center text-xs sm:text-sm focus:ring-2 focus:ring-orange-500"
                                   autoComplete="off"
                                   disabled={isItemSaved(product.id)}
                                 />
-                                <span className="text-sm font-medium text-gray-600 min-w-0">
+                                <span className="text-xs sm:text-sm font-medium text-gray-600 min-w-0">
                                   {product.unitOfMeasure}
                                 </span>
                                 <Button
                                   size="sm"
                                   onClick={() => saveIndividualItem(product.id)}
                                   disabled={getItemQuantity(product.id) === "" || isItemSaved(product.id) || updateItemsMutation.isPending}
-                                  className="px-2 py-1 w-8 h-8"
+                                  className="px-1.5 py-1 w-7 h-7 sm:w-8 sm:h-8 bg-orange-500 hover:bg-orange-600 border-orange-500"
                                   variant={isItemSaved(product.id) ? "default" : "outline"}
                                 >
-                                  <Check className={`h-4 w-4 ${isItemSaved(product.id) ? 'text-white' : 'text-gray-600'}`} />
+                                  <Check className={`h-3 w-3 sm:h-4 sm:w-4 ${isItemSaved(product.id) ? 'text-white' : 'text-orange-600'}`} />
                                 </Button>
                               </div>
                             </div>
