@@ -59,6 +59,7 @@ export default function StockCountDetail() {
   const [categoryOrder, setCategoryOrder] = useState<string[]>([]);
   const [productOrder, setProductOrder] = useState<Record<string, string[]>>({});
   const [isEditingOrder, setIsEditingOrder] = useState(false);
+  const [removedProducts, setRemovedProducts] = useState<Set<number>>(new Set());
 
   const queryClient = useQueryClient();
 
@@ -105,6 +106,8 @@ export default function StockCountDetail() {
         productId: item.productId,
         countedQuantity: item.countedQuantity || "0"
       })));
+      // Limpar produtos removidos quando os dados são recarregados
+      setRemovedProducts(new Set());
     }
   }, [stockCount]);
 
@@ -248,8 +251,9 @@ export default function StockCountDetail() {
       
       const orderedProducts = getOrderedProducts(categoryName);
       const filteredProducts = orderedProducts.filter(product => 
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.code.toLowerCase().includes(searchTerm.toLowerCase())
+        !removedProducts.has(product.id) && // Filtrar produtos removidos
+        (product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.code.toLowerCase().includes(searchTerm.toLowerCase()))
       );
       
       if (filteredProducts.length > 0) {
@@ -439,6 +443,9 @@ export default function StockCountDetail() {
   const handleDeleteProduct = (productId: number) => {
     // Primeiro, remove das quantidades da contagem
     setCountItems(prev => prev.filter(item => item.productId !== productId));
+    
+    // Adicionar ao conjunto de produtos removidos para filtrar da interface
+    setRemovedProducts(prev => new Set([...prev, productId]));
     
     // Depois, remover da API se já foi salvo
     if (stockCount?.items?.some(item => item.productId === productId)) {
