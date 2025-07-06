@@ -154,8 +154,19 @@ export default function StockCountDetail() {
     }
   };
 
-  // Filtrar produtos que não foram removidos e agrupar por categoria
-  const availableProducts = products.filter(product => !removedProducts.has(product.id));
+  // Filtrar produtos baseado no que existe na contagem atual + produtos não removidos localmente
+  const availableProducts = products.filter(product => {
+    // Se foi removido localmente, não mostrar
+    if (removedProducts.has(product.id)) return false;
+    
+    // Se a contagem tem items salvos, mostrar apenas os que estão na contagem
+    if (stockCount?.items && stockCount.items.length > 0) {
+      return stockCount.items.some(item => item.productId === product.id);
+    }
+    
+    // Se não há items salvos ainda, mostrar todos os produtos da unidade
+    return true;
+  });
   
   const productsByCategory = availableProducts.reduce((acc, product) => {
     // Verificar se stockCategory é um ID numérico ou nome direto
