@@ -481,7 +481,9 @@ export default function StockCountDetail() {
       { key: 'contagem_finalizada', label: 'Finalizada', icon: CheckCircle }
     ];
     
-    const currentIndex = statuses.findIndex(s => s.key === currentStatus);
+    // Map 'started' status to 'pronta_para_contagem' for timeline display
+    const mappedStatus = currentStatus === 'started' ? 'pronta_para_contagem' : currentStatus;
+    const currentIndex = statuses.findIndex(s => s.key === mappedStatus);
     
     return (
       <div className="flex items-center space-x-2">

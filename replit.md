@@ -175,6 +175,11 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Botão "Finalizar Contagem" implementado na página pública (Julho 6, 2025)
+- ✓ Endpoint /api/stock-counts/public/:token/finish criado para finalizar via token público
+- ✓ Funcionalidade completa: salvamento automático + finalização + mudança para status "contagem_finalizada"
+- ✓ Correção crítica: ícone de remoção habilitado para contagens com status "rascunho"
+- ✓ Sistema permite remover produtos de contagens em edição conforme regra de negócio
 - ✓ Sistema completo de status de contagens implementado (Julho 6, 2025)
 - ✓ Quatro status com transições: Rascunho, Pronta para contagem, Em contagem, Contagem finalizada
 - ✓ Linha do tempo horizontal visual substituindo badges de status tradicionais
