@@ -471,6 +471,7 @@ export const stockCounts = pgTable("stock_counts", {
   publicToken: varchar("public_token", { length: 32 }).unique(), // For public access
   categoryOrder: text("category_order"), // JSON string for custom category ordering
   productOrder: text("product_order"), // JSON string for custom product ordering within categories
+  uncountedItems: integer("uncounted_items").default(0), // Number of items with empty quantity fields
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

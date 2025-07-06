@@ -1536,11 +1536,53 @@ export class DatabaseStorage implements IStorage {
   }
 
   async finalizeStockCount(id: number): Promise<StockCount> {
-    // Changes status from 'em_contagem' to 'contagem_finalizada'
+    // Get the stock count to find the unit
+    const stockCountData = await db
+      .select({ unitId: stockCounts.unitId })
+      .from(stockCounts)
+      .where(eq(stockCounts.id, id))
+      .limit(1);
+    
+    if (stockCountData.length === 0) {
+      throw new Error('Contagem não encontrada');
+    }
+    
+    const unitId = stockCountData[0].unitId;
+    
+    // Calculate uncounted items (items with null/empty countedQuantity)
+    const allProductsForUnit = await db
+      .select({ productId: products.id })
+      .from(products)
+      .innerJoin(productUnits, eq(products.id, productUnits.productId))
+      .where(eq(productUnits.unitId, unitId));
+    
+    // Get all items that have been counted (not null and not empty)
+    const countedItems = await db
+      .select({ 
+        productId: stockCountItems.productId,
+        countedQuantity: stockCountItems.countedQuantity 
+      })
+      .from(stockCountItems)
+      .where(eq(stockCountItems.stockCountId, id));
+    
+    // Filter out items with null, empty string, or just whitespace
+    const actuallyCountedItems = countedItems.filter(item => 
+      item.countedQuantity !== null && 
+      item.countedQuantity !== undefined && 
+      item.countedQuantity.toString().trim() !== ''
+    );
+    
+    const countedProductIds = new Set(actuallyCountedItems.map(item => item.productId));
+    const uncountedCount = allProductsForUnit.filter(product => !countedProductIds.has(product.productId)).length;
+    
+    console.log(`[FINALIZE] Stock count ${id}: Total products: ${allProductsForUnit.length}, Actually counted: ${actuallyCountedItems.length}, Uncounted: ${uncountedCount}`);
+    
+    // Changes status from 'em_contagem' to 'contagem_finalizada' and store uncounted items count
     const [stockCount] = await db
       .update(stockCounts)
       .set({ 
         status: 'contagem_finalizada',
+        uncountedItems: uncountedCount,
         updatedAt: new Date() 
       })
       .where(and(eq(stockCounts.id, id), eq(stockCounts.status, 'em_contagem')))

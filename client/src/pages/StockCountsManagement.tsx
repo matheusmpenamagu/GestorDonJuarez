@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, FileText, Calendar, User, CheckCircle, Clock, Pencil, Trash2, Eye, Send, Play, StopCircle, Link, MessageCircle, Edit } from "lucide-react";
+import { Plus, FileText, Calendar, User, CheckCircle, Clock, Pencil, Trash2, Eye, Send, Play, StopCircle, Link, MessageCircle, Edit, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -645,13 +645,14 @@ export default function StockCountsManagement() {
               <TableHead>Responsável</TableHead>
               <TableHead>Unidade</TableHead>
               <TableHead>Progresso</TableHead>
+              <TableHead>Não Contados</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {stockCounts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                   Nenhuma contagem cadastrada.
                 </TableCell>
               </TableRow>
@@ -675,6 +676,25 @@ export default function StockCountsManagement() {
                   </TableCell>
                   <TableCell>
                     {getStatusTimeline(stockCount.status)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      {stockCount.status === 'contagem_finalizada' ? (
+                        stockCount.uncountedItems > 0 ? (
+                          <>
+                            <AlertTriangle className="h-4 w-4 text-red-500" />
+                            <span className="text-red-600 font-medium">{stockCount.uncountedItems}</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span className="text-green-600 font-medium">0</span>
+                          </>
+                        )
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     {getActionButtons(stockCount)}
