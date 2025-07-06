@@ -57,18 +57,23 @@ export default function PublicStockCount() {
 
   // Carregar itens da contagem se já existe
   const { data: existingItems = [] } = useQuery<any[]>({
-    queryKey: ["/api/stock-counts", stockCount?.id, "items"],
-    enabled: !!stockCount?.id && stockCount?.status === 'em_contagem',
+    queryKey: [`/api/stock-counts/public/${publicToken}/items`],
+    enabled: !!publicToken && stockCount?.status === 'em_contagem',
   });
 
   // Inicializar countItems com dados existentes
   useEffect(() => {
     if (existingItems && existingItems.length > 0) {
+      console.log("Carregando itens existentes:", existingItems);
       const initialItems = existingItems.map((item: any) => ({
         productId: item.productId,
         countedQuantity: item.countedQuantity || ""
       }));
       setCountItems(initialItems);
+      
+      // Marcar itens como salvos
+      const savedProductIds = existingItems.map((item: any) => item.productId);
+      setSavedItems(savedProductIds);
     }
   }, [existingItems]);
 

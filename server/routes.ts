@@ -2658,6 +2658,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get stock count items via public token
+  app.get('/api/stock-counts/public/:token/items', async (req, res) => {
+    try {
+      const publicToken = req.params.token;
+      
+      console.log(`[PUBLIC STOCK ITEMS] Token: ${publicToken}`);
+      
+      if (!publicToken) {
+        console.log("[PUBLIC STOCK ITEMS] Erro: Token público ausente");
+        return res.status(400).json({ message: "Token público inválido" });
+      }
+      
+      // Find stock count by public token
+      const allStockCounts = await storage.getStockCounts();
+      const stockCount = allStockCounts.find(sc => sc.publicToken === publicToken);
+      
+      console.log(`[PUBLIC STOCK ITEMS] Stock count found: ${stockCount ? 'Yes' : 'No'}`);
+      
+      if (!stockCount) {
+        console.log("[PUBLIC STOCK ITEMS] Erro: Contagem não encontrada");
+        return res.status(404).json({ message: "Contagem não encontrada" });
+      }
+      
+      const items = await storage.getStockCountItems(stockCount.id);
+      console.log(`[PUBLIC STOCK ITEMS] Retornando ${items.length} itens`);
+      
+      res.status(200).json(items);
+    } catch (error) {
+      console.error("[PUBLIC STOCK ITEMS] Error fetching stock count items:", error);
+      res.status(500).json({ message: "Erro ao buscar itens" });
+    }
+  });
+
   // Route to get previous stock count order for smart ordering
   app.get('/api/stock-counts/:id/previous-order', demoAuth, async (req, res) => {
     try {
