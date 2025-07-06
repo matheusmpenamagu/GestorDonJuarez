@@ -99,8 +99,13 @@ export default function PublicStockCount() {
   });
 
   const finishCountMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/stock-counts/public/${publicToken}/finish`, "POST"),
-    onSuccess: () => {
+    mutationFn: () => {
+      console.log("finishCountMutation.mutationFn chamado");
+      console.log("URL:", `/api/stock-counts/public/${publicToken}/finish`);
+      return apiRequest("POST", `/api/stock-counts/public/${publicToken}/finish`);
+    },
+    onSuccess: (data) => {
+      console.log("finishCountMutation.onSuccess:", data);
       setIsFinishing(false);
       queryClient.invalidateQueries({ queryKey: [`/api/stock-counts/public/${publicToken}`] });
       toast({
@@ -108,11 +113,12 @@ export default function PublicStockCount() {
         description: "A contagem foi concluída com sucesso.",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("finishCountMutation.onError:", error);
       setIsFinishing(false);
       toast({
         title: "Erro",
-        description: "Não foi possível finalizar a contagem",
+        description: `Não foi possível finalizar a contagem: ${error?.message || 'Erro desconhecido'}`,
         variant: "destructive",
       });
     },
