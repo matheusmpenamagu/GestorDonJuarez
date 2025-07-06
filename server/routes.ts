@@ -2635,8 +2635,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Contagem não está em andamento" });
       }
       
-      console.log(`[PUBLIC STOCK UPDATE] Salvando ${items.length} itens na contagem ${stockCount.id}`);
-      await storage.updateStockCountItems(stockCount.id, items);
+      // Filtrar apenas itens válidos (com productId e quantidade válida)
+      const validItems = items.filter(item => 
+        item.productId && 
+        item.countedQuantity !== "" && 
+        item.countedQuantity !== null &&
+        !isNaN(parseFloat(item.countedQuantity))
+      );
+      
+      console.log(`[PUBLIC STOCK UPDATE] Salvando ${validItems.length} itens válidos na contagem ${stockCount.id}`);
+      console.log(`[PUBLIC STOCK UPDATE] Itens válidos:`, JSON.stringify(validItems, null, 2));
+      
+      if (validItems.length > 0) {
+        await storage.updateStockCountItems(stockCount.id, validItems);
+      }
       
       console.log("[PUBLIC STOCK UPDATE] Itens salvos com sucesso");
       res.status(200).json({ message: "Quantidades atualizadas com sucesso" });

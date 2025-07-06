@@ -235,10 +235,20 @@ export default function PublicStockCount() {
   // Auto-salvar mudanças
   useEffect(() => {
     if (stockCount?.status === 'em_contagem' && countItems.length > 0) {
-      const timer = setTimeout(() => {
-        updateItemsMutation.mutate(countItems);
-      }, 1000);
-      return () => clearTimeout(timer);
+      // Filtrar apenas itens válidos (com productId e quantidade)
+      const validItems = countItems.filter(item => 
+        item.productId && 
+        item.countedQuantity !== "" && 
+        !isNaN(parseFloat(item.countedQuantity))
+      );
+      
+      if (validItems.length > 0) {
+        const timer = setTimeout(() => {
+          console.log("Salvando itens válidos:", validItems);
+          updateItemsMutation.mutate(validItems);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
     }
   }, [countItems, stockCount?.status]);
 
