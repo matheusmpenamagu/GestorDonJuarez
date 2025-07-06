@@ -2607,7 +2607,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const publicToken = req.params.token;
       const items = req.body.items || [];
       
+      console.log(`[PUBLIC STOCK UPDATE] Token: ${publicToken}, Items count: ${items.length}`);
+      console.log(`[PUBLIC STOCK UPDATE] Items data:`, JSON.stringify(items, null, 2));
+      
       if (!publicToken) {
+        console.log("[PUBLIC STOCK UPDATE] Erro: Token público ausente");
         return res.status(400).json({ message: "Token público inválido" });
       }
       
@@ -2615,19 +2619,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allStockCounts = await storage.getStockCounts();
       const stockCount = allStockCounts.find(sc => sc.publicToken === publicToken);
       
+      console.log(`[PUBLIC STOCK UPDATE] Stock count found: ${stockCount ? 'Yes' : 'No'}`);
+      if (stockCount) {
+        console.log(`[PUBLIC STOCK UPDATE] Stock count status: ${stockCount.status}`);
+      }
+      
       if (!stockCount) {
+        console.log("[PUBLIC STOCK UPDATE] Erro: Contagem não encontrada");
         return res.status(404).json({ message: "Contagem não encontrada" });
       }
       
       // Only allow updates if the count is in progress
       if (stockCount.status !== 'em_contagem') {
+        console.log(`[PUBLIC STOCK UPDATE] Erro: Status inválido (${stockCount.status}), esperado 'em_contagem'`);
         return res.status(400).json({ message: "Contagem não está em andamento" });
       }
       
+      console.log(`[PUBLIC STOCK UPDATE] Salvando ${items.length} itens na contagem ${stockCount.id}`);
       await storage.updateStockCountItems(stockCount.id, items);
+      
+      console.log("[PUBLIC STOCK UPDATE] Itens salvos com sucesso");
       res.status(200).json({ message: "Quantidades atualizadas com sucesso" });
     } catch (error) {
-      console.error("Error updating public stock count items:", error);
+      console.error("[PUBLIC STOCK UPDATE] Error updating public stock count items:", error);
       res.status(500).json({ message: "Erro ao atualizar quantidades" });
     }
   });

@@ -55,14 +55,14 @@ export default function PublicStockCount() {
   });
 
   // Carregar itens da contagem se já existe
-  const { data: existingItems = [] } = useQuery({
+  const { data: existingItems = [] } = useQuery<any[]>({
     queryKey: ["/api/stock-counts", stockCount?.id, "items"],
     enabled: !!stockCount?.id && stockCount?.status === 'em_contagem',
   });
 
   // Inicializar countItems com dados existentes
   useEffect(() => {
-    if (existingItems.length > 0) {
+    if (existingItems && existingItems.length > 0) {
       const initialItems = existingItems.map((item: any) => ({
         productId: item.productId,
         countedQuantity: item.countedQuantity || ""
@@ -114,12 +114,23 @@ export default function PublicStockCount() {
 
   // Atualizar itens da contagem
   const updateItemsMutation = useMutation({
-    mutationFn: (items: { productId: number; countedQuantity: string }[]) =>
-      apiRequest(`/api/stock-counts/public/${publicToken}/items`, "PUT", { items }),
-    onError: () => {
+    mutationFn: (items: { productId: number; countedQuantity: string }[]) => {
+      console.log("Enviando dados para salvamento:", { items, publicToken });
+      return apiRequest(`/api/stock-counts/public/${publicToken}/items`, "PUT", { items });
+    },
+    onSuccess: (data) => {
+      console.log("Dados salvos com sucesso:", data);
+      toast({
+        title: "Sucesso",
+        description: "Alterações salvas automaticamente",
+        variant: "default",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Erro ao salvar:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível salvar as alterações",
+        description: `Não foi possível salvar as alterações: ${error?.message || 'Erro desconhecido'}`,
         variant: "destructive",
       });
     },
@@ -625,7 +636,7 @@ export default function PublicStockCount() {
                                   </span>
                                 </div>
                                 <div className="text-xs text-gray-600 font-medium">
-                                  {product.stockUnit}
+                                  {product.unitOfMeasure}
                                 </div>
                               </div>
                               <div className="flex items-center space-x-2 flex-shrink-0">
@@ -646,7 +657,7 @@ export default function PublicStockCount() {
                                   autoComplete="off"
                                 />
                                 <span className="text-sm font-medium text-gray-600 min-w-0">
-                                  {product.stockUnit}
+                                  {product.unitOfMeasure}
                                 </span>
                               </div>
                             </div>
