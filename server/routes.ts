@@ -425,6 +425,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         formattedNumber = '55' + formattedNumber;
       }
       
+      console.log('[WHATSAPP] =============================================================');
+      console.log('[WHATSAPP] Preparando envio de mensagem WhatsApp');
+      console.log('[WHATSAPP] URL de destino: https://wpp.donjuarez.com.br/message/sendText/dj-ponto');
+      console.log('[WHATSAPP] Destinatário original:', remoteJid);
+      console.log('[WHATSAPP] Destinatário formatado (+55):', formattedNumber);
+      
       const body = {
         number: formattedNumber,
         text: text,
@@ -432,12 +438,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           text: text
         }
       };
-      
-      console.log('[WHATSAPP] =============================================================');
-      console.log('[WHATSAPP] Preparando envio de mensagem WhatsApp');
-      console.log('[WHATSAPP] URL de destino: https://wpp.donjuarez.com.br/message/sendText/dj-ponto');
-      console.log('[WHATSAPP] Destinatário original:', remoteJid);
-      console.log('[WHATSAPP] Destinatário formatado (+55):', formattedNumber);
       console.log('[WHATSAPP] Tamanho do texto:', text.length, 'caracteres');
       console.log('[WHATSAPP] Primeiros 200 caracteres da mensagem:');
       console.log('[WHATSAPP] "' + text.substring(0, 200) + (text.length > 200 ? '...' : '') + '"');
