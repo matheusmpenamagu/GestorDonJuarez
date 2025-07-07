@@ -2517,6 +2517,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test webhook endpoint for debugging
+  app.post('/api/stock-counts/:id/test-webhook', async (req, res) => {
+    try {
+      const stockCountId = parseInt(req.params.id);
+      
+      if (isNaN(stockCountId)) {
+        return res.status(400).json({ message: "ID de contagem inválido" });
+      }
+      
+      // Get stock count with responsible person for WhatsApp
+      const fullStockCount = await storage.getStockCount(stockCountId);
+      
+      if (!fullStockCount) {
+        return res.status(404).json({ message: "Contagem não encontrada" });
+      }
+      
+      // Generate public URL
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+        : `https://gestor.donjuarez.com.br`;
+      const publicUrl = `${baseUrl}/contagem-publica/${fullStockCount.publicToken}`;
+      
+      // Send WhatsApp message to responsible person
+      if (fullStockCount?.responsible?.whatsapp) {
+        console.log(`[TEST] ================================================`);
+        console.log(`[TEST] TESTE DE ENVIO DE WHATSAPP - CONTAGEM DE ESTOQUE`);
+        console.log(`[TEST] Destinatário: ${fullStockCount.responsible.whatsapp}`);
+        console.log(`[TEST] Nome do responsável: ${fullStockCount.responsible.firstName} ${fullStockCount.responsible.lastName}`);
+        console.log(`[TEST] Email do responsável: ${fullStockCount.responsible.email}`);
+        
+        const { format } = await import("date-fns");
+        const { ptBR } = await import("date-fns/locale");
+        
+        const message = `🗂️ *TESTE - Contagem de Estoque*\n\n` +
+          `📋 Contagem #${stockCountId}\n` +
+          `📅 ${format(new Date(fullStockCount.date), "dd/MM/yyyy", { locale: ptBR })}\n\n` +
+          `🔗 Link para contagem:\n${publicUrl}\n\n` +
+          `*Instruções:*\n` +
+          `• Acesse o link acima\n` +
+          `• Conte os produtos por categoria\n` +
+          `• Anote observações quando necessário\n` +
+          `• Os dados são salvos automaticamente\n\n` +
+          `⚠️ Esta é uma mensagem de teste do sistema`;
+        
+        console.log(`[TEST] Mensagem preparada (${message.length} caracteres):`);
+        console.log(`[TEST] "${message}"`);
+        console.log(`[TEST] Iniciando chamada sendWhatsAppMessage...`);
+        
+        const success = await sendWhatsAppMessage(fullStockCount.responsible.whatsapp, message, 'stock_count');
+        
+        if (success) {
+          console.log(`[TEST] ✅ WhatsApp enviado com SUCESSO para ${fullStockCount.responsible.whatsapp}`);
+        } else {
+          console.log(`[TEST] ❌ FALHA ao enviar WhatsApp para ${fullStockCount.responsible.whatsapp}`);
+        }
+        console.log(`[TEST] ================================================`);
+        
+        res.status(200).json({ 
+          message: "Teste de webhook enviado",
+          success: success,
+          recipient: fullStockCount.responsible.whatsapp,
+          publicUrl: publicUrl
+        });
+      } else {
+        console.log(`[TEST] ⚠️ Nenhum número de WhatsApp encontrado para o responsável`);
+        console.log(`[TEST] Dados do responsável:`, fullStockCount?.responsible || 'RESPONSIBLE NOT FOUND');
+        res.status(400).json({ message: "Responsável não tem WhatsApp configurado" });
+      }
+      
+    } catch (error) {
+      console.error("[TEST] Error testing webhook:", error);
+      res.status(500).json({ message: "Erro ao testar webhook" });
+    }
+  });
+
   // New status transition routes
   
   // Start stock count (rascunho -> pronta_para_contagem)
