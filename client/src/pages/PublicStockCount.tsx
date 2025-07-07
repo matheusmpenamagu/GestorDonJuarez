@@ -71,8 +71,10 @@ export default function PublicStockCount() {
       }));
       setCountItems(initialItems);
       
-      // Marcar itens como salvos
-      const savedProductIds = existingItems.map((item: any) => item.productId);
+      // Marcar itens como salvos apenas se tiverem quantidade > 0
+      const savedProductIds = existingItems
+        .filter((item: any) => item.countedQuantity && parseFloat(item.countedQuantity) > 0)
+        .map((item: any) => item.productId);
       setSavedItems(savedProductIds);
     }
   }, [existingItems]);
