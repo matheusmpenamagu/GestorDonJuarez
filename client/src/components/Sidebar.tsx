@@ -16,7 +16,8 @@ import {
   FileText,
   Wind,
   Clock,
-  Package
+  Package,
+  Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +53,7 @@ const menuItems = [
     icon: Building2,
     items: [
       { href: "/empresa/unidades", icon: Building2, label: "Unidades" },
+      { href: "/empresa/configuracoes", icon: Settings, label: "Configurações" },
     ],
   },
 ];

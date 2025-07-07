@@ -22,6 +22,7 @@ import ProductsManagement from "@/pages/ProductsManagement";
 import StockCountsManagement from "@/pages/StockCountsManagement";
 import StockCountDetail from "@/pages/StockCountDetail";
 import PublicStockCount from "@/pages/PublicStockCount";
+import CompanySettings from "@/pages/CompanySettings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -127,6 +128,11 @@ function Router() {
           <Route path="/empresa/unidades">
             <Layout>
               <UnitsManagement />
+            </Layout>
+          </Route>
+          <Route path="/empresa/configuracoes">
+            <Layout>
+              <CompanySettings />
             </Layout>
           </Route>
         </>

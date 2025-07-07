@@ -542,3 +542,26 @@ export type StockCountWithRelations = StockCount & {
 export type StockCountItemWithRelations = StockCountItem & {
   product?: Product;
 };
+
+// Settings table for system configurations
+export const settings = pgTable("settings", {
+  id: serial("id").primaryKey(),
+  key: varchar("key", { length: 255 }).unique().notNull(),
+  value: text("value").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
+});
+
+// Types for Settings
+export type Setting = typeof settings.$inferSelect;
+export type InsertSetting = typeof settings.$inferInsert;
+
+export const insertSettingSchema = createInsertSchema(settings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  key: z.string().min(1, "Chave é obrigatória"),
+  value: z.string().min(1, "Valor é obrigatório"),
+});

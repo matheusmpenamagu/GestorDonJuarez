@@ -16,6 +16,7 @@ import {
   productUnits,
   stockCounts,
   stockCountItems,
+  settings,
   type User,
   type UpsertUser,
   type PointOfSale,
@@ -57,6 +58,8 @@ import {
   type TapWithRelations,
   type PourEventWithRelations,
   type EmployeeWithRelations,
+  type Setting,
+  type InsertSetting,
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, desc, and, or, gte, lte, lt, sql, sum } from "drizzle-orm";
@@ -205,6 +208,12 @@ export interface IStorage {
   createStockCountItems(items: InsertStockCountItem[]): Promise<StockCountItem[]>;
   updateStockCountItems(stockCountId: number, items: { productId: number; countedQuantity: string; notes?: string }[]): Promise<void>;
   upsertStockCountItem(stockCountId: number, item: { productId: number; countedQuantity: string; notes?: string }): Promise<void>;
+  
+  // Settings operations
+  getSettings(): Promise<Setting[]>;
+  getSetting(key: string): Promise<Setting | undefined>;
+  setSetting(key: string, value: string, description?: string): Promise<Setting>;
+  updateSetting(key: string, value: string): Promise<Setting>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1808,6 +1817,37 @@ export class DatabaseStorage implements IStorage {
         eq(productUnits.unitId, unitId)
       )
     );
+  }
+
+  // Settings operations
+  async getSettings(): Promise<Setting[]> {
+    return await db.select().from(settings);
+  }
+
+  async getSetting(key: string): Promise<Setting | undefined> {
+    const [setting] = await db.select().from(settings).where(eq(settings.key, key));
+    return setting || undefined;
+  }
+
+  async setSetting(key: string, value: string, description?: string): Promise<Setting> {
+    const [setting] = await db
+      .insert(settings)
+      .values({ key, value, description })
+      .onConflictDoUpdate({
+        target: settings.key,
+        set: { value, description, updatedAt: new Date() }
+      })
+      .returning();
+    return setting;
+  }
+
+  async updateSetting(key: string, value: string): Promise<Setting> {
+    const [setting] = await db
+      .update(settings)
+      .set({ value, updatedAt: new Date() })
+      .where(eq(settings.key, key))
+      .returning();
+    return setting;
   }
 }
 

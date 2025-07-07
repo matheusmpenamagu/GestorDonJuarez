@@ -417,8 +417,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Helper function to send WhatsApp message via Evolution API
-  async function sendWhatsAppMessage(remoteJid: string, text: string): Promise<boolean> {
+  async function sendWhatsAppMessage(remoteJid: string, text: string, webhookType: 'freelancer' | 'stock_count' = 'stock_count'): Promise<boolean> {
     try {
+      // Busca URL configurada no banco de dados
+      const settingKey = webhookType === 'freelancer' ? 'freelancer_webhook_url' : 'stock_count_webhook_url';
+      const webhookSetting = await storage.getSetting(settingKey);
+      const webhookUrl = webhookSetting?.value || 'https://wpp.donjuarez.com.br/message/sendText/dj-ponto';
+      
       // Adiciona código do Brasil (+55) se não estiver presente
       let formattedNumber = remoteJid;
       if (!formattedNumber.startsWith('55')) {
@@ -427,7 +432,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('[WHATSAPP] =============================================================');
       console.log('[WHATSAPP] Preparando envio de mensagem WhatsApp');
-      console.log('[WHATSAPP] URL de destino: https://wpp.donjuarez.com.br/message/sendText/dj-ponto');
+      console.log('[WHATSAPP] Tipo de webhook:', webhookType);
+      console.log('[WHATSAPP] URL de destino:', webhookUrl);
       console.log('[WHATSAPP] Destinatário original:', remoteJid);
       console.log('[WHATSAPP] Destinatário formatado (+55):', formattedNumber);
       
@@ -447,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startTime = Date.now();
       console.log('[WHATSAPP] Iniciando requisição HTTP para Evolution API...');
 
-      const response = await fetch('https://wpp.donjuarez.com.br/message/sendText/dj-ponto', {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -579,7 +585,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (!freelancer || !freelancer.whatsapp) {
-        await sendWhatsAppMessage(remoteJid, "Hmmm.. não encontrei um usuário cadastrado neste número de whatsapp.");
+        await sendWhatsAppMessage(remoteJid, "Hmmm.. não encontrei um usuário cadastrado neste número de whatsapp.", 'freelancer');
         return res.json({ status: 'error', message: 'User not found' });
       }
 
@@ -607,7 +613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (!selectedUnit) {
           const unitsList = units.map(unit => `${unit.id} - ${unit.name}`).join('\n');
-          await sendWhatsAppMessage(remoteJid, `Unidade não encontrada. Escolha uma das opções:\n\n${unitsList}`);
+          await sendWhatsAppMessage(remoteJid, `Unidade não encontrada. Escolha uma das opções:\n\n${unitsList}`, 'freelancer');
           return res.json({ status: 'error', message: 'Unit not found' });
         }
         
@@ -637,12 +643,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         const successMessage = `Ponto de entrada registrado com sucesso! 🎉\n\nUnidade: ${selectedUnit.name}\nHorário: ${toSaoPauloTime(new Date())}\n\nBom trabalho, ${freelancer.firstName}!`;
-        await sendWhatsAppMessage(remoteJid, successMessage);
+        await sendWhatsAppMessage(remoteJid, successMessage, 'freelancer');
         return res.json({ status: 'success', message: 'Entry registered successfully', entry: timeEntry });
       }
 
       if (messageType === 'unknown') {
-        await sendWhatsAppMessage(remoteJid, 'Hmmmm... não consegui entender a mensagem para registrar seu ponto. Envie "Cheguei" para marcar sua entrada ou "Fui" para marcar sua saída.');
+        await sendWhatsAppMessage(remoteJid, 'Hmmmm... não consegui entender a mensagem para registrar seu ponto. Envie "Cheguei" para marcar sua entrada ou "Fui" para marcar sua saída.', 'freelancer');
         return res.json({ status: 'error', message: 'Message not recognized' });
       }
 
@@ -652,7 +658,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const unitsList = units.map(unit => `${unit.id} - ${unit.name}`).join('\n');
         const unitSelectionMessage = `Olá ${freelancer.firstName}! 👋\n\nEm qual unidade você está trabalhando hoje?\n\n${unitsList}\n\nResponda apenas com o número da unidade.`;
         
-        await sendWhatsAppMessage(remoteJid, unitSelectionMessage);
+        await sendWhatsAppMessage(remoteJid, unitSelectionMessage, 'freelancer');
         return res.json({ status: 'awaiting_unit', message: 'Unit selection requested', employeeId: freelancer.id });
       }
 
@@ -671,7 +677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         const exitMessage = `Ponto de saída registrado com sucesso! 👍\n\nAté mais, ${freelancer.firstName}!`;
-        await sendWhatsAppMessage(remoteJid, exitMessage);
+        await sendWhatsAppMessage(remoteJid, exitMessage, 'freelancer');
         return res.json({ status: 'success', message: 'Exit registered successfully', entry: timeEntry });
       }
 
@@ -2485,7 +2491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[START] "${message}"`);
         console.log(`[START] Iniciando chamada sendWhatsAppMessage...`);
         
-        const success = await sendWhatsAppMessage(stockCount.responsible.whatsapp, message);
+        const success = await sendWhatsAppMessage(stockCount.responsible.whatsapp, message, 'stock_count');
         
         if (success) {
           console.log(`[START] ✅ WhatsApp enviado com SUCESSO para ${stockCount.responsible.whatsapp}`);
@@ -2558,7 +2564,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[CLOSE] "${message}"`);
         console.log(`[CLOSE] Iniciando chamada sendWhatsAppMessage...`);
         
-        const success = await sendWhatsAppMessage(fullStockCount.responsible.whatsapp, message);
+        const success = await sendWhatsAppMessage(fullStockCount.responsible.whatsapp, message, 'stock_count');
         
         if (success) {
           console.log(`[CLOSE] ✅ WhatsApp enviado com SUCESSO para ${fullStockCount.responsible.whatsapp}`);
@@ -2982,6 +2988,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error populating product units:", error);
       res.status(500).json({ message: "Failed to populate product units" });
+    }
+  });
+
+  // Settings routes
+  app.get('/api/settings', demoAuth, async (req, res) => {
+    try {
+      const settings = await storage.getSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      res.status(500).json({ message: "Erro ao buscar configurações" });
+    }
+  });
+
+  app.get('/api/settings/:key', demoAuth, async (req, res) => {
+    try {
+      const { key } = req.params;
+      const setting = await storage.getSetting(key);
+      
+      if (!setting) {
+        return res.status(404).json({ message: "Configuração não encontrada" });
+      }
+      
+      res.json(setting);
+    } catch (error) {
+      console.error("Error fetching setting:", error);
+      res.status(500).json({ message: "Erro ao buscar configuração" });
+    }
+  });
+
+  app.post('/api/settings', demoAuth, async (req, res) => {
+    try {
+      const { key, value, description } = req.body;
+      
+      if (!key || !value) {
+        return res.status(400).json({ message: "Chave e valor são obrigatórios" });
+      }
+      
+      const setting = await storage.setSetting(key, value, description);
+      res.status(201).json(setting);
+    } catch (error) {
+      console.error("Error creating setting:", error);
+      res.status(500).json({ message: "Erro ao criar configuração" });
+    }
+  });
+
+  app.put('/api/settings/:key', demoAuth, async (req, res) => {
+    try {
+      const { key } = req.params;
+      const { value } = req.body;
+      
+      if (!value) {
+        return res.status(400).json({ message: "Valor é obrigatório" });
+      }
+      
+      const setting = await storage.updateSetting(key, value);
+      res.json(setting);
+    } catch (error) {
+      console.error("Error updating setting:", error);
+      res.status(500).json({ message: "Erro ao atualizar configuração" });
     }
   });
 
