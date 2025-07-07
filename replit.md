@@ -175,6 +175,13 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Sistema de logs detalhados para WhatsApp implementado (Julho 7, 2025)
+- ✓ Função sendWhatsAppMessage() com logs completos de requisição e resposta
+- ✓ Logs específicos para envio de contagem iniciada e contagem pronta
+- ✓ Separadores visuais e emojis para identificar facilmente logs de WhatsApp
+- ✓ Informações detalhadas: URL, destinatário, tamanho da mensagem, tempo de resposta
+- ✓ Headers de resposta e body completo capturados para debug
+- ✓ Logs de erro específicos com stack trace completo
 - ✓ Sistema de contagem pública totalmente funcional com persistência de dados (Julho 6, 2025)
 - ✓ Botões individuais de salvamento com ícone de check laranja implementados
 - ✓ Layout mobile otimizado para iPhone: tudo em uma linha, campos menores

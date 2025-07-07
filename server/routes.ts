@@ -427,11 +427,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
       
-      console.log('Sending WhatsApp message:', {
-        url: 'https://wpp.donjuarez.com.br/message/sendText/dj-ponto',
-        headers: { 'apikey': process.env.evoGlobalApikey?.substring(0, 10) + '...' },
-        body: body
-      });
+      console.log('[WHATSAPP] =============================================================');
+      console.log('[WHATSAPP] Preparando envio de mensagem WhatsApp');
+      console.log('[WHATSAPP] URL de destino: https://wpp.donjuarez.com.br/message/sendText/dj-ponto');
+      console.log('[WHATSAPP] Destinatário:', remoteJid);
+      console.log('[WHATSAPP] Tamanho do texto:', text.length, 'caracteres');
+      console.log('[WHATSAPP] Primeiros 200 caracteres da mensagem:');
+      console.log('[WHATSAPP] "' + text.substring(0, 200) + (text.length > 200 ? '...' : '') + '"');
+      console.log('[WHATSAPP] API Key (primeiros 10 chars):', process.env.evoGlobalApikey?.substring(0, 10) + '...');
+      console.log('[WHATSAPP] Body da requisição:', JSON.stringify(body, null, 2));
+      
+      const startTime = Date.now();
+      console.log('[WHATSAPP] Iniciando requisição HTTP para Evolution API...');
 
       const response = await fetch('https://wpp.donjuarez.com.br/message/sendText/dj-ponto', {
         method: 'POST',
@@ -442,22 +449,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         body: JSON.stringify(body)
       });
 
+      const endTime = Date.now();
+      const responseTime = endTime - startTime;
+      console.log(`[WHATSAPP] Resposta recebida em ${responseTime}ms`);
+      console.log('[WHATSAPP] Status HTTP:', response.status);
+      console.log('[WHATSAPP] Status Text:', response.statusText);
+      console.log('[WHATSAPP] Headers da resposta:');
+      
+      // Log response headers
+      for (const [key, value] of response.headers.entries()) {
+        console.log(`[WHATSAPP]   ${key}: ${value}`);
+      }
+
       const responseText = await response.text();
-      console.log('Evolution API response:', {
-        status: response.status,
-        statusText: response.statusText,
-        body: responseText
-      });
+      console.log('[WHATSAPP] Body da resposta (raw):', responseText);
+      
+      // Try to parse and beautify JSON response
+      try {
+        const responseJson = JSON.parse(responseText);
+        console.log('[WHATSAPP] Body da resposta (JSON formatado):');
+        console.log('[WHATSAPP]', JSON.stringify(responseJson, null, 2));
+      } catch (parseError) {
+        console.log('[WHATSAPP] Response não é JSON válido, exibindo como texto');
+      }
 
       if (!response.ok) {
-        console.error('Failed to send WhatsApp message:', response.status, response.statusText, responseText);
+        console.error('[WHATSAPP] ❌ FALHA NO ENVIO ❌');
+        console.error('[WHATSAPP] Status de erro:', response.status);
+        console.error('[WHATSAPP] Mensagem de erro:', response.statusText);
+        console.error('[WHATSAPP] Detalhes do erro:', responseText);
+        console.log('[WHATSAPP] =============================================================');
         return false;
       }
 
-      console.log('WhatsApp message sent successfully to:', remoteJid);
+      console.log('[WHATSAPP] ✅ SUCESSO NO ENVIO ✅');
+      console.log('[WHATSAPP] Mensagem enviada com sucesso para:', remoteJid);
+      console.log('[WHATSAPP] Tempo total de envio:', responseTime + 'ms');
+      console.log('[WHATSAPP] =============================================================');
       return true;
     } catch (error) {
-      console.error('Error sending WhatsApp message:', error);
+      console.error('[WHATSAPP] ⚠️ EXCEÇÃO DURANTE O ENVIO ⚠️');
+      console.error('[WHATSAPP] Tipo do erro:', error.constructor.name);
+      console.error('[WHATSAPP] Mensagem do erro:', error.message);
+      console.error('[WHATSAPP] Stack trace completo:');
+      console.error(error.stack);
+      console.log('[WHATSAPP] =============================================================');
       return false;
     }
   }
@@ -2419,7 +2455,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send WhatsApp message to responsible person
       if (stockCount?.responsible?.whatsapp) {
-        console.log(`[START] Sending WhatsApp to ${stockCount.responsible.whatsapp}`);
+        console.log(`[START] ================================================`);
+        console.log(`[START] ENVIANDO WHATSAPP DE CONTAGEM INICIADA`);
+        console.log(`[START] Destinatário: ${stockCount.responsible.whatsapp}`);
+        console.log(`[START] Nome do responsável: ${stockCount.responsible.firstName} ${stockCount.responsible.lastName}`);
+        console.log(`[START] Email do responsável: ${stockCount.responsible.email}`);
+        
         const { format } = await import("date-fns");
         const { ptBR } = await import("date-fns/locale");
         
@@ -2433,15 +2474,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `• Anote observações quando necessário\n` +
           `• Os dados são salvos automaticamente`;
         
+        console.log(`[START] Mensagem preparada (${message.length} caracteres):`);
+        console.log(`[START] "${message}"`);
+        console.log(`[START] Iniciando chamada sendWhatsAppMessage...`);
+        
         const success = await sendWhatsAppMessage(stockCount.responsible.whatsapp, message);
         
         if (success) {
-          console.log(`[START] WhatsApp sent successfully to ${stockCount.responsible.whatsapp}`);
+          console.log(`[START] ✅ WhatsApp enviado com SUCESSO para ${stockCount.responsible.whatsapp}`);
         } else {
-          console.log(`[START] Failed to send WhatsApp to ${stockCount.responsible.whatsapp}`);
+          console.log(`[START] ❌ FALHA ao enviar WhatsApp para ${stockCount.responsible.whatsapp}`);
         }
+        console.log(`[START] ================================================`);
       } else {
-        console.log(`[START] No WhatsApp number found for responsible person`);
+        console.log(`[START] ⚠️ Nenhum número de WhatsApp encontrado para o responsável`);
+        console.log(`[START] Dados do responsável:`, stockCount?.responsible || 'RESPONSIBLE NOT FOUND');
       }
       
       console.log(`[START] Success! Returning response`);
@@ -2481,6 +2528,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send WhatsApp message to responsible person
       if (fullStockCount?.responsible?.whatsapp) {
+        console.log(`[CLOSE] ================================================`);
+        console.log(`[CLOSE] ENVIANDO WHATSAPP DE CONTAGEM PRONTA`);
+        console.log(`[CLOSE] Destinatário: ${fullStockCount.responsible.whatsapp}`);
+        console.log(`[CLOSE] Nome do responsável: ${fullStockCount.responsible.firstName} ${fullStockCount.responsible.lastName}`);
+        console.log(`[CLOSE] Email do responsável: ${fullStockCount.responsible.email}`);
+        
         const { format } = await import("date-fns");
         const { ptBR } = await import("date-fns/locale");
         
@@ -2494,13 +2547,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `• Anote observações quando necessário\n` +
           `• Os dados são salvos automaticamente`;
         
+        console.log(`[CLOSE] Mensagem preparada (${message.length} caracteres):`);
+        console.log(`[CLOSE] "${message}"`);
+        console.log(`[CLOSE] Iniciando chamada sendWhatsAppMessage...`);
+        
         const success = await sendWhatsAppMessage(fullStockCount.responsible.whatsapp, message);
         
         if (success) {
-          console.log(`WhatsApp sent successfully to ${fullStockCount.responsible.whatsapp}`);
+          console.log(`[CLOSE] ✅ WhatsApp enviado com SUCESSO para ${fullStockCount.responsible.whatsapp}`);
         } else {
-          console.log(`Failed to send WhatsApp to ${fullStockCount.responsible.whatsapp}`);
+          console.log(`[CLOSE] ❌ FALHA ao enviar WhatsApp para ${fullStockCount.responsible.whatsapp}`);
         }
+        console.log(`[CLOSE] ================================================`);
+      } else {
+        console.log(`[CLOSE] ⚠️ Nenhum número de WhatsApp encontrado para o responsável`);
+        console.log(`[CLOSE] Dados do responsável:`, fullStockCount?.responsible || 'RESPONSIBLE NOT FOUND');
       }
       
       res.status(200).json({ 
