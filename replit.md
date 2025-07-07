@@ -175,6 +175,10 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Correção de formatação de número WhatsApp com código do Brasil (+55) implementada (Julho 7, 2025)
+- ✓ Sistema automaticamente adiciona "55" antes de números brasileiros se não estiver presente
+- ✓ Logs aprimorados mostram número original e número formatado para debug
+- ✓ Correção resolve erro "exists: false" para números válidos sem código do país
 - ✓ Sistema de logs detalhados para WhatsApp implementado (Julho 7, 2025)
 - ✓ Função sendWhatsAppMessage() com logs completos de requisição e resposta
 - ✓ Logs específicos para envio de contagem iniciada e contagem pronta
