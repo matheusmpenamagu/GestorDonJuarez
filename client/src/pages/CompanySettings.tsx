@@ -119,10 +119,7 @@ export default function CompanySettings() {
     updateUrlMutation.mutate({ key: "stock_count_webhook_url", value: stockCountUrl });
   };
 
-  const getCurrentUrl = (key: string): string => {
-    const setting = settings?.find((s: Setting) => s.key === key);
-    return setting?.value || "Não configurado";
-  };
+
 
   if (isLoading) {
     return (
@@ -183,12 +180,7 @@ export default function CompanySettings() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-600">URL Atual</Label>
-                <div className="p-3 bg-gray-50 rounded-md text-sm text-gray-700">
-                  {getCurrentUrl("freelancer_webhook_url")}
-                </div>
-              </div>
+
 
               <Button 
                 onClick={handleSaveFreelancerUrl}
@@ -235,12 +227,7 @@ export default function CompanySettings() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-600">URL Atual</Label>
-                <div className="p-3 bg-gray-50 rounded-md text-sm text-gray-700">
-                  {getCurrentUrl("stock_count_webhook_url")}
-                </div>
-              </div>
+
 
               <Button 
                 onClick={handleSaveStockCountUrl}
