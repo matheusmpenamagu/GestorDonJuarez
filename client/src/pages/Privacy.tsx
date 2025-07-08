@@ -222,7 +222,7 @@ export default function Privacy() {
               <p className="text-sm">
                 <strong>Para exercer seus direitos, entre em contato conosco:</strong><br/>
                 📧 E-mail: privacidade@donjuarez.com.br<br/>
-                📱 WhatsApp: (33) 98828-6293<br/>
+                📱 WhatsApp: (33) 3641-3517<br/>
                 📍 Endereço: Disponível mediante solicitação
               </p>
             </div>
@@ -302,7 +302,7 @@ export default function Privacy() {
               <p className="text-sm space-y-1">
                 <strong>Encarregado de Proteção de Dados (DPO):</strong> Matheus Mattos Pena<br/>
                 <strong>E-mail:</strong> privacidade@donjuarez.com.br<br/>
-                <strong>WhatsApp:</strong> (33) 98828-6293<br/>
+                <strong>WhatsApp:</strong> (33) 3641-3517<br/>
                 <strong>Horário de atendimento:</strong> Segunda a sexta, 8h às 18h
               </p>
             </div>
