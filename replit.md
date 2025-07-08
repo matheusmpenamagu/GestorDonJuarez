@@ -189,6 +189,13 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - ✓ Navegação cruzada entre páginas de privacidade e termos
 - ✓ Conformidade com Marco Civil da Internet e LGPD
 - ✓ Informações de contato atualizadas: WhatsApp (33) 3641-3517
+- ✓ Endpoint oficial WhatsApp Business Cloud implementado (Julho 8, 2025)
+- ✓ Rota /api/webhooks/whatsapp-official com GET/POST para verificação e mensagens
+- ✓ Formato oficial Meta/Facebook: entry[0].changes[0].value.messages[0]
+- ✓ Verificação automática de webhook com challenge response
+- ✓ Processamento de mensagens no formato WhatsApp Business Cloud API
+- ✓ Endpoint de teste /api/test/whatsapp-official para validação
+- ✓ Compatibilidade mantida com endpoint Evolution API (legacy)
 - ✓ Sistema de contagem pública totalmente funcional com persistência de dados (Julho 6, 2025)
 - ✓ Botões individuais de salvamento com ícone de check laranja implementados
 - ✓ Layout mobile otimizado para iPhone: tudo em uma linha, campos menores

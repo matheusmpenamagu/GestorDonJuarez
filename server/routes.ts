@@ -87,6 +87,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(200).json({ message: "Test endpoint working", body: req.body });
   });
 
+  // Test endpoint for WhatsApp Business Cloud API webhook
+  app.post('/api/test/whatsapp-official', async (req, res) => {
+    console.log('Test WhatsApp Business Cloud API webhook called');
+    
+    // Simulate WhatsApp Business Cloud API webhook format
+    const testMessage = req.body.message || "cheguei";
+    const testPhone = req.body.phone || "5533988286293";
+    
+    const whatsappPayload = {
+      entry: [{
+        id: "123456789",
+        changes: [{
+          value: {
+            messaging_product: "whatsapp",
+            metadata: {
+              display_phone_number: "15550559999",
+              phone_number_id: "123456789"
+            },
+            contacts: [{
+              profile: {
+                name: "Test User"
+              },
+              wa_id: testPhone
+            }],
+            messages: [{
+              from: testPhone,
+              id: "wamid.test123",
+              timestamp: Math.floor(Date.now() / 1000).toString(),
+              text: {
+                body: testMessage
+              },
+              type: "text"
+            }]
+          }
+        }]
+      }]
+    };
+    
+    console.log('Simulating WhatsApp Business Cloud API webhook with payload:', JSON.stringify(whatsappPayload, null, 2));
+    
+    try {
+      // Call our webhook endpoint internally
+      const response = await fetch(`http://localhost:${process.env.PORT || 5000}/api/webhooks/whatsapp-official`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(whatsappPayload),
+      });
+      
+      const result = await response.json();
+      res.json({ 
+        message: "Test WhatsApp Business Cloud API webhook processed", 
+        result,
+        status: response.status 
+      });
+    } catch (error) {
+      console.error('Error testing WhatsApp Business Cloud API webhook:', error);
+      res.status(500).json({ message: "Error testing webhook", error: error.message });
+    }
+  });
+
   // Test endpoint for Evolution API webhook
   app.post('/api/test/evolution', async (req, res) => {
     console.log('Test Evolution API webhook called');
@@ -513,7 +575,177 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
-  // WhatsApp webhook for freelancer time tracking (Evolution API)
+  // WhatsApp webhook for freelancer time tracking (Official Business Cloud API)
+  app.get('/api/webhooks/whatsapp-official', (req, res) => {
+    // Webhook verification for Meta/Facebook
+    const mode = req.query['hub.mode'];
+    const token = req.query['hub.verify_token'];
+    const challenge = req.query['hub.challenge'];
+    
+    console.log('WhatsApp webhook verification requested');
+    console.log('Mode:', mode);
+    console.log('Token:', token);
+    
+    if (mode === 'subscribe' && token === process.env.webhook_token) {
+      console.log('Webhook verified successfully');
+      res.status(200).send(challenge);
+    } else {
+      console.log('Webhook verification failed');
+      res.status(403).send('Verification failed');
+    }
+  });
+
+  app.post('/api/webhooks/whatsapp-official', async (req, res) => {
+    try {
+      console.log('WhatsApp Business Cloud API webhook received:', JSON.stringify(req.body, null, 2));
+      
+      // Extract data from WhatsApp Business Cloud API format
+      const { entry } = req.body;
+      if (!entry || !entry.length) {
+        return res.status(400).json({ message: "Invalid webhook format - no entry" });
+      }
+
+      const changes = entry[0].changes;
+      if (!changes || !changes.length) {
+        return res.status(400).json({ message: "Invalid webhook format - no changes" });
+      }
+
+      const messageData = changes[0].value;
+      if (!messageData || !messageData.messages || !messageData.messages.length) {
+        console.log('No messages in webhook, might be status update');
+        return res.status(200).json({ message: "No messages to process" });
+      }
+
+      const message = messageData.messages[0];
+      const contacts = messageData.contacts || [];
+      const contact = contacts[0];
+      
+      if (!message.from || !message.text) {
+        return res.status(400).json({ message: "Missing phone number or message text" });
+      }
+
+      const phoneNumber = message.from;
+      const messageText = message.text.body;
+      
+      console.log(`Processing message from phone: ${phoneNumber}, text: "${messageText}"`);
+      
+      // Clean and normalize phone number for comparison
+      const cleanPhoneNumber = phoneNumber.replace(/\D/g, '');
+      console.log(`Cleaned phone number: ${cleanPhoneNumber}`);
+      
+      // Find freelancer by phone number
+      const freelancers = await storage.getEmployees();
+      const freelancer = freelancers.find(emp => {
+        if (!emp.whatsapp) return false;
+        
+        const cleanEmployeePhone = emp.whatsapp.replace(/\D/g, '');
+        
+        // Compare last 8 digits for maximum compatibility
+        const last8Employee = cleanEmployeePhone.slice(-8);
+        const last8Received = cleanPhoneNumber.slice(-8);
+        
+        console.log(`Comparing employee ${emp.id} phone last 8 digits: ${last8Employee} vs received: ${last8Received}`);
+        
+        const isMatch = last8Employee === last8Received;
+        console.log(`Employee ${emp.id} (${emp.firstName} ${emp.lastName}) match: ${isMatch}`);
+        
+        return isMatch;
+      });
+
+      if (!freelancer || !freelancer.whatsapp) {
+        await sendWhatsAppMessage(phoneNumber, "Usuário não encontrado neste número de WhatsApp.", 'freelancer');
+        return res.json({ status: 'error', message: 'User not found' });
+      }
+
+      // Analyze message content
+      const normalizedMessage = messageText.toLowerCase().trim();
+      let messageType: 'entrada' | 'saida' | 'unit_response' | 'unknown';
+      
+      // Check if it's a unit selection response (just a number)
+      const unitNumberMatch = messageText.trim().match(/^(\d+)$/);
+      if (unitNumberMatch) {
+        messageType = 'unit_response';
+      } else if (normalizedMessage.includes('cheguei') || normalizedMessage.includes('entrada')) {
+        messageType = 'entrada';
+      } else if (normalizedMessage.includes('fui') || normalizedMessage.includes('saida') || normalizedMessage.includes('saída')) {
+        messageType = 'saida';
+      } else {
+        messageType = 'unknown';
+      }
+
+      // Handle unit selection response
+      if (messageType === 'unit_response') {
+        const unitId = parseInt(unitNumberMatch[1]);
+        const units = await storage.getUnits();
+        const selectedUnit = units.find(u => u.id === unitId);
+        
+        if (!selectedUnit) {
+          const unitsList = units.map(unit => `${unit.id} - ${unit.name}`).join('\n');
+          await sendWhatsAppMessage(phoneNumber, `Unidade não encontrada. Escolha uma das opções:\n\n${unitsList}`, 'freelancer');
+          return res.json({ status: 'error', message: 'Unit not found' });
+        }
+        
+        // Register entrada with selected unit
+        const timeEntry = await storage.createFreelancerTimeEntry({
+          employeeId: freelancer.id,
+          freelancerPhone: freelancer.whatsapp,
+          freelancerName: `${freelancer.firstName} ${freelancer.lastName || ''}`.trim(),
+          unitId: selectedUnit.id,
+          entryType: 'entrada',
+          message: 'Cheguei',
+          timestamp: new Date(),
+          isManualEntry: false,
+          notes: 'Via WhatsApp - Business Cloud API',
+        });
+
+        const successMessage = `Ponto de entrada registrado com sucesso! 🎉\n\nUnidade: ${selectedUnit.name}\nHorário: ${toSaoPauloTime(new Date())}\n\nBom trabalho, ${freelancer.firstName}!`;
+        await sendWhatsAppMessage(phoneNumber, successMessage, 'freelancer');
+        return res.json({ status: 'success', message: 'Entry registered successfully', entry: timeEntry });
+      }
+
+      if (messageType === 'unknown') {
+        await sendWhatsAppMessage(phoneNumber, 'Não consegui entender a mensagem. Envie "Cheguei" para marcar entrada ou "Fui" para marcar saída.', 'freelancer');
+        return res.json({ status: 'error', message: 'Message not recognized' });
+      }
+
+      // If it's an entrada (check-in), request unit selection
+      if (messageType === 'entrada') {
+        const units = await storage.getUnits();
+        const unitsList = units.map(unit => `${unit.id} - ${unit.name}`).join('\n');
+        const unitSelectionMessage = `Olá ${freelancer.firstName}! 👋\n\nEm qual unidade você está trabalhando hoje?\n\n${unitsList}\n\nResponda apenas com o número da unidade.`;
+        
+        await sendWhatsAppMessage(phoneNumber, unitSelectionMessage, 'freelancer');
+        return res.json({ status: 'awaiting_unit', message: 'Unit selection requested', employeeId: freelancer.id });
+      }
+
+      // If it's a saida (check-out), register immediately
+      if (messageType === 'saida') {
+        const timeEntry = await storage.createFreelancerTimeEntry({
+          employeeId: freelancer.id,
+          freelancerPhone: freelancer.whatsapp,
+          freelancerName: `${freelancer.firstName} ${freelancer.lastName || ''}`.trim(),
+          unitId: null, // Will be set based on last entry
+          entryType: 'saida',
+          message: 'Fui',
+          timestamp: new Date(),
+          isManualEntry: false,
+          notes: 'Via WhatsApp - Business Cloud API',
+        });
+
+        const exitMessage = `Ponto de saída registrado com sucesso! 👍\n\nAté mais, ${freelancer.firstName}!`;
+        await sendWhatsAppMessage(phoneNumber, exitMessage, 'freelancer');
+        return res.json({ status: 'success', message: 'Exit registered successfully', entry: timeEntry });
+      }
+
+      res.json({ message: "Message processed" });
+      
+    } catch (error) {
+      console.error("Error processing WhatsApp Business Cloud API webhook:", error);
+      res.status(500).json({ message: "Error processing WhatsApp message" });
+    }
+  });
+
+  // WhatsApp webhook for freelancer time tracking (Evolution API - Legacy)
   app.post('/api/webhooks/evolution-whatsapp', async (req, res) => {
     try {
       console.log('Evolution API webhook received:', JSON.stringify(req.body, null, 2));
