@@ -416,14 +416,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Helper function to send WhatsApp message via Evolution API
+  // Helper function to send WhatsApp message via Official Business Cloud API
   async function sendWhatsAppMessage(remoteJid: string, text: string, webhookType: 'freelancer' | 'stock_count' = 'stock_count'): Promise<boolean> {
     try {
-      // Busca URL configurada no banco de dados
-      const settingKey = webhookType === 'freelancer' ? 'freelancer_webhook_url' : 'stock_count_webhook_url';
-      const webhookSetting = await storage.getSetting(settingKey);
-      const webhookUrl = webhookSetting?.value || 'https://wpp.donjuarez.com.br/message/sendText/dj-ponto';
-      
       // Adiciona código do Brasil (+55) se não estiver presente
       let formattedNumber = remoteJid;
       if (!formattedNumber.startsWith('55')) {
@@ -431,33 +426,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log('[WHATSAPP] =============================================================');
-      console.log('[WHATSAPP] Preparando envio de mensagem WhatsApp');
+      console.log('[WHATSAPP] Preparando envio de mensagem WhatsApp Business Cloud API');
       console.log('[WHATSAPP] Tipo de webhook:', webhookType);
-      console.log('[WHATSAPP] URL de destino:', webhookUrl);
       console.log('[WHATSAPP] Destinatário original:', remoteJid);
       console.log('[WHATSAPP] Destinatário formatado (+55):', formattedNumber);
       
+      // Preparação da mensagem para WhatsApp Business Cloud API
       const body = {
-        number: formattedNumber,
-        text: text,
-        textMessage: {
-          text: text
+        messaging_product: "whatsapp",
+        to: formattedNumber,
+        type: "text",
+        text: {
+          body: text
         }
       };
+      
       console.log('[WHATSAPP] Tamanho do texto:', text.length, 'caracteres');
       console.log('[WHATSAPP] Primeiros 200 caracteres da mensagem:');
       console.log('[WHATSAPP] "' + text.substring(0, 200) + (text.length > 200 ? '...' : '') + '"');
-      console.log('[WHATSAPP] API Key (primeiros 10 chars):', process.env.evoGlobalApikey?.substring(0, 10) + '...');
+      console.log('[WHATSAPP] Phone Number ID:', process.env.META_PHONE_NUMBER_ID);
+      console.log('[WHATSAPP] Access Token (primeiros 10 chars):', process.env.META_ACCESS_TOKEN?.substring(0, 10) + '...');
       console.log('[WHATSAPP] Body da requisição:', JSON.stringify(body, null, 2));
       
+      // URL da API oficial do WhatsApp Business Cloud
+      const whatsappApiUrl = `https://graph.facebook.com/v18.0/${process.env.META_PHONE_NUMBER_ID}/messages`;
+      
       const startTime = Date.now();
-      console.log('[WHATSAPP] Iniciando requisição HTTP para Evolution API...');
+      console.log('[WHATSAPP] Iniciando requisição HTTP para WhatsApp Business Cloud API...');
+      console.log('[WHATSAPP] URL:', whatsappApiUrl);
 
-      const response = await fetch(webhookUrl, {
+      const response = await fetch(whatsappApiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': process.env.evoGlobalApikey!,
+          'Authorization': `Bearer ${process.env.META_ACCESS_TOKEN}`
         },
         body: JSON.stringify(body)
       });
@@ -496,7 +498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log('[WHATSAPP] ✅ SUCESSO NO ENVIO ✅');
-      console.log('[WHATSAPP] Mensagem enviada com sucesso para:', remoteJid);
+      console.log('[WHATSAPP] Mensagem enviada com sucesso via API oficial para:', remoteJid);
       console.log('[WHATSAPP] Tempo total de envio:', responseTime + 'ms');
       console.log('[WHATSAPP] =============================================================');
       return true;
@@ -3049,6 +3051,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating setting:", error);
       res.status(500).json({ message: "Erro ao atualizar configuração" });
+    }
+  });
+
+  // Test endpoint for WhatsApp Business Cloud API
+  app.post('/api/test-whatsapp', async (req, res) => {
+    try {
+      const { phone, message } = req.body;
+      
+      if (!phone || !message) {
+        return res.status(400).json({ message: "Phone and message are required" });
+      }
+      
+      console.log('Testing WhatsApp Business Cloud API...');
+      
+      const testMessage = `🧪 Teste da API oficial do WhatsApp Business Cloud
+      
+${message}
+
+⏰ Enviado em: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`;
+      
+      const success = await sendWhatsAppMessage(phone, testMessage, 'stock_count');
+      
+      res.json({ 
+        success, 
+        message: success ? "Message sent successfully via WhatsApp Business Cloud API" : "Failed to send message",
+        phoneNumber: phone,
+        messageLength: testMessage.length,
+        apiType: "WhatsApp Business Cloud API",
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      console.error('Test WhatsApp API error:', error);
+      res.status(500).json({ message: "Error testing WhatsApp API", error: error.message });
     }
   });
 

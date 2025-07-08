@@ -175,17 +175,20 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
-- ✓ Correção de formatação de número WhatsApp com código do Brasil (+55) implementada (Julho 7, 2025)
-- ✓ Sistema automaticamente adiciona "55" antes de números brasileiros se não estiver presente
-- ✓ Logs aprimorados mostram número original e número formatado para debug
-- ✓ Correção resolve erro "exists: false" para números válidos sem código do país
-- ✓ Sistema de logs detalhados para WhatsApp implementado (Julho 7, 2025)
-- ✓ Função sendWhatsAppMessage() com logs completos de requisição e resposta
-- ✓ Logs específicos para envio de contagem iniciada e contagem pronta
-- ✓ Separadores visuais e emojis para identificar facilmente logs de WhatsApp
-- ✓ Informações detalhadas: URL, destinatário, tamanho da mensagem, tempo de resposta
-- ✓ Headers de resposta e body completo capturados para debug
-- ✓ Logs de erro específicos com stack trace completo
+- ✓ Migração para WhatsApp Business Cloud API oficial implementada (Julho 8, 2025)
+- ✓ Substituição completa do Evolution API pela API oficial do Meta/Facebook
+- ✓ Secrets configurados: META_ACCESS_TOKEN, META_PHONE_NUMBER_ID, META_WHATSAPP_BUSINESS_ACCOUNT_ID, webhook_token
+- ✓ Função sendWhatsAppMessage() atualizada para usar graph.facebook.com/v18.0
+- ✓ Formato de mensagem adaptado para WhatsApp Business Cloud (messaging_product, to, type, text.body)
+- ✓ Endpoint de teste /api/test-whatsapp criado para validar a nova implementação
+- ✓ Sistema mantém compatibilidade com formatação de números brasileiros (+55)
+- ✓ Logs detalhados específicos para API oficial implementados
+- ✓ Maior confiabilidade e estabilidade do que Evolution API
+- ✓ Páginas de Termos de Uso e Política de Privacidade criadas (Julho 8, 2025)
+- ✓ Rota pública /termos-de-uso implementada com 14 seções legais completas
+- ✓ Navegação cruzada entre páginas de privacidade e termos
+- ✓ Conformidade com Marco Civil da Internet e LGPD
+- ✓ Informações de contato atualizadas: WhatsApp (33) 3641-3517
 - ✓ Sistema de contagem pública totalmente funcional com persistência de dados (Julho 6, 2025)
 - ✓ Botões individuais de salvamento com ícone de check laranja implementados
 - ✓ Layout mobile otimizado para iPhone: tudo em uma linha, campos menores
