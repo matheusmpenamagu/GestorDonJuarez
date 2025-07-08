@@ -23,6 +23,7 @@ import StockCountsManagement from "@/pages/StockCountsManagement";
 import StockCountDetail from "@/pages/StockCountDetail";
 import PublicStockCount from "@/pages/PublicStockCount";
 import CompanySettings from "@/pages/CompanySettings";
+import Privacy from "@/pages/Privacy";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -41,8 +42,9 @@ function Router() {
 
   return (
     <Switch>
-      {/* Rota pública para contagem */}
+      {/* Rotas públicas */}
       <Route path="/contagem-publica/:token" component={PublicStockCount} />
+      <Route path="/privacidade" component={Privacy} />
       
       {!isAuthenticated ? (
         <Route path="/" component={Landing} />
