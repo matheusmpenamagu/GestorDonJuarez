@@ -24,6 +24,7 @@ import StockCountDetail from "@/pages/StockCountDetail";
 import PublicStockCount from "@/pages/PublicStockCount";
 import CompanySettings from "@/pages/CompanySettings";
 import Privacy from "@/pages/Privacy";
+import TermsOfUse from "@/pages/TermsOfUse";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -45,6 +46,7 @@ function Router() {
       {/* Rotas públicas */}
       <Route path="/contagem-publica/:token" component={PublicStockCount} />
       <Route path="/privacidade" component={Privacy} />
+      <Route path="/termos-de-uso" component={TermsOfUse} />
       
       {!isAuthenticated ? (
         <Route path="/" component={Landing} />
