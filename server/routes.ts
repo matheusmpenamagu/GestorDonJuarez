@@ -2743,10 +2743,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         whatsapp: stockCount?.responsible?.whatsapp
       });
       
-      // Generate public URL
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-        : `https://gestor.donjuarez.com.br`;
+      // Generate public URL - sempre usar produção
+      const baseUrl = `https://gestor.donjuarez.com.br`;
       const publicUrl = `${baseUrl}/contagem-publica/${publicToken}`;
       console.log(`[START] Generated public URL: ${publicUrl}`);
       
