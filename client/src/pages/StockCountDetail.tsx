@@ -466,9 +466,8 @@ export default function StockCountDetail() {
   const handleStartEditingQuantities = () => {
     // Inicializar com quantidades atuais
     const currentQuantities: Record<number, string> = {};
-    console.log("Total items in stock count:", stockCount.items?.length);
     
-    stockCount.items?.forEach((item, index) => {
+    stockCount.items?.forEach(item => {
       // Para edição, queremos mostrar valores que foram realmente inseridos
       // Isso inclui "0.000" se foi explicitamente contado como zero
       // Verificamos se updatedAt > createdAt para identificar itens realmente contados
@@ -477,16 +476,11 @@ export default function StockCountDetail() {
       const wasActuallyCounted = updatedAt > createdAt || 
                                 (item.countedQuantity && item.countedQuantity !== "0.000");
       
-      if (index < 5) { // Log apenas os primeiros 5 para debug
-        console.log(`Item ${index + 1} - ProductId: ${item.productId}, Quantity: ${item.countedQuantity}, Created: ${item.createdAt}, Updated: ${item.updatedAt}, WasCounted: ${wasActuallyCounted}`);
-      }
-      
       if (wasActuallyCounted && item.countedQuantity !== null) {
         currentQuantities[item.productId] = item.countedQuantity;
       }
     });
-    console.log("Initialized editing quantities:", currentQuantities);
-    console.log("Number of quantities loaded:", Object.keys(currentQuantities).length);
+    
     setEditedQuantities(currentQuantities);
     setIsEditingQuantities(true);
   };
@@ -520,14 +514,7 @@ export default function StockCountDetail() {
     const wasActuallyCounted = updatedAt > createdAt || 
                               (item.countedQuantity && item.countedQuantity !== "0.000");
     
-    const result = wasActuallyCounted && item.countedQuantity !== null ? item.countedQuantity : "";
-    
-    // Debug apenas para produtos com quantidades não-zero
-    if (item.countedQuantity && item.countedQuantity !== "0.000") {
-      console.log(`getProductQuantity(${productId}): quantity=${item.countedQuantity}, created=${item.createdAt}, updated=${item.updatedAt}, wasCounted=${wasActuallyCounted}, result=${result}`);
-    }
-    
-    return result;
+    return wasActuallyCounted && item.countedQuantity !== null ? item.countedQuantity : "";
   };
 
   // Função para renderizar a timeline de status
