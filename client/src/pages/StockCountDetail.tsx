@@ -61,6 +61,8 @@ export default function StockCountDetail() {
   const [productOrder, setProductOrder] = useState<Record<string, string[]>>({});
   const [isEditingOrder, setIsEditingOrder] = useState(false);
   const [removedProducts, setRemovedProducts] = useState<Set<number>>(new Set());
+  const [isEditingQuantities, setIsEditingQuantities] = useState(false);
+  const [editedQuantities, setEditedQuantities] = useState<Record<number, string>>({});
 
   const queryClient = useQueryClient();
 
@@ -296,6 +298,35 @@ export default function StockCountDetail() {
     },
   });
 
+  // Mutation para salvar quantidades editadas
+  const saveQuantitiesMutation = useMutation({
+    mutationFn: async (quantities: Record<number, string>) => {
+      const items = Object.entries(quantities).map(([productId, quantity]) => ({
+        productId: parseInt(productId),
+        countedQuantity: quantity
+      }));
+      
+      const response = await apiRequest("PUT", `/api/stock-counts/${stockCountId}/items`, { items });
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Quantidades atualizadas",
+        description: "As quantidades foram salvas com sucesso!",
+      });
+      setIsEditingQuantities(false);
+      setEditedQuantities({});
+      queryClient.invalidateQueries({ queryKey: ["/api/stock-counts", stockCountId] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao salvar quantidades",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Mutation para deletar item da contagem
   const deleteItemMutation = useMutation({
     mutationFn: async (productId: number) => {
@@ -429,6 +460,43 @@ export default function StockCountDetail() {
         description: "Produto removido da contagem com sucesso",
       });
     }
+  };
+
+  // Funções para edição de quantidades
+  const handleStartEditingQuantities = () => {
+    // Inicializar com quantidades atuais
+    const currentQuantities: Record<number, string> = {};
+    stockCount.items?.forEach(item => {
+      if (item.countedQuantity && item.countedQuantity !== "0.000") {
+        currentQuantities[item.productId] = item.countedQuantity;
+      }
+    });
+    setEditedQuantities(currentQuantities);
+    setIsEditingQuantities(true);
+  };
+
+  const handleCancelEditingQuantities = () => {
+    setIsEditingQuantities(false);
+    setEditedQuantities({});
+  };
+
+  const handleSaveQuantities = () => {
+    saveQuantitiesMutation.mutate(editedQuantities);
+  };
+
+  const handleQuantityChange = (productId: number, quantity: string) => {
+    setEditedQuantities(prev => ({
+      ...prev,
+      [productId]: quantity
+    }));
+  };
+
+  const getProductQuantity = (productId: number) => {
+    if (isEditingQuantities) {
+      return editedQuantities[productId] || "";
+    }
+    const item = stockCount.items?.find(item => item.productId === productId);
+    return item?.countedQuantity && item.countedQuantity !== "0.000" ? item.countedQuantity : "";
   };
 
   // Função para renderizar a timeline de status
@@ -565,6 +633,37 @@ export default function StockCountDetail() {
               </Button>
             </>
           )}
+          {stockCount.status === "contagem_finalizada" && (
+            <>
+              {isEditingQuantities ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelEditingQuantities}
+                    disabled={saveQuantitiesMutation.isPending}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleSaveQuantities}
+                    disabled={saveQuantitiesMutation.isPending}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {saveQuantitiesMutation.isPending ? "Salvando..." : "Salvar Quantidades"}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={handleStartEditingQuantities}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Editar Quantidades
+                </Button>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -664,11 +763,14 @@ export default function StockCountDetail() {
                 categoryName={categoryName}
                 categoryProducts={categoryProducts}
                 isEditingOrder={isEditingOrder}
+                isEditingQuantities={isEditingQuantities}
                 previousOrder={previousOrder}
                 stockCountStatus={stockCount.status}
                 onProductDragEnd={handleProductDragEnd(categoryName)}
                 productOrder={productOrder[categoryName] || []}
                 onDeleteProduct={handleDeleteProduct}
+                getProductQuantity={getProductQuantity}
+                onQuantityChange={handleQuantityChange}
               />
             ))}
           </div>
@@ -683,10 +785,21 @@ interface SortableProductItemProps {
   product: Product;
   disabled: boolean;
   isEditingOrder: boolean;
+  isEditingQuantities: boolean;
+  quantity: string;
   onDelete: () => void;
+  onQuantityChange: (quantity: string) => void;
 }
 
-function SortableProductItem({ product, disabled, isEditingOrder, onDelete }: SortableProductItemProps) {
+function SortableProductItem({ 
+  product, 
+  disabled, 
+  isEditingOrder, 
+  isEditingQuantities, 
+  quantity, 
+  onDelete, 
+  onQuantityChange 
+}: SortableProductItemProps) {
   const {
     attributes,
     listeners,
@@ -715,7 +828,23 @@ function SortableProductItem({ product, disabled, isEditingOrder, onDelete }: So
       )}
       <div className="flex-1 font-medium text-sm">{product.name}</div>
       <div className="text-xs text-gray-500 w-20">{product.code}</div>
-      <div className="text-xs text-gray-500 w-12">{product.unitOfMeasure || 'UN'}</div>
+      <div className="text-xs text-gray-500 w-16">{product.unitOfMeasure || 'UN'}</div>
+      
+      {/* Campo de quantidade */}
+      {isEditingQuantities ? (
+        <Input
+          type="text"
+          value={quantity}
+          onChange={(e) => onQuantityChange(e.target.value)}
+          placeholder="0"
+          className="w-24 h-8 text-sm"
+        />
+      ) : (
+        <div className="w-24 text-sm text-center font-medium">
+          {quantity || "-"}
+        </div>
+      )}
+      
       <Button
         variant="ghost"
         size="sm"
@@ -734,22 +863,28 @@ interface SortableCategoryCardProps {
   categoryName: string;
   categoryProducts: Product[];
   isEditingOrder: boolean;
+  isEditingQuantities: boolean;
   previousOrder: any;
   stockCountStatus: string;
   onProductDragEnd: (event: DragEndEvent) => void;
   productOrder: string[];
   onDeleteProduct: (productId: number) => void;
+  getProductQuantity: (productId: number) => string;
+  onQuantityChange: (productId: number, quantity: string) => void;
 }
 
 function SortableCategoryCard({
   categoryName,
   categoryProducts,
   isEditingOrder,
+  isEditingQuantities,
   previousOrder,
   stockCountStatus,
   onProductDragEnd,
   productOrder,
-  onDeleteProduct
+  onDeleteProduct,
+  getProductQuantity,
+  onQuantityChange
 }: SortableCategoryCardProps) {
   const {
     attributes,
@@ -813,7 +948,10 @@ function SortableCategoryCard({
                     product={product}
                     disabled={stockCountStatus !== "rascunho"}
                     isEditingOrder={isEditingOrder}
+                    isEditingQuantities={isEditingQuantities}
+                    quantity={getProductQuantity(product.id)}
                     onDelete={() => onDeleteProduct(product.id)}
+                    onQuantityChange={(quantity) => onQuantityChange(product.id, quantity)}
                   />
                 ))}
               </div>

@@ -2639,6 +2639,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update quantities in finalized stock counts
+  app.put('/api/stock-counts/:id/items', demoAuth, async (req, res) => {
+    try {
+      const stockCountId = parseInt(req.params.id);
+      const items = req.body.items || [];
+      
+      console.log(`[UPDATE QUANTITIES] Updating stock count ${stockCountId} with ${items.length} items`);
+      
+      // Verify stock count exists and is finalized
+      const stockCount = await storage.getStockCount(stockCountId);
+      if (!stockCount) {
+        return res.status(404).json({ message: "Contagem não encontrada" });
+      }
+      
+      if (stockCount.status !== 'contagem_finalizada') {
+        return res.status(400).json({ message: "Só é possível editar quantidades em contagens finalizadas" });
+      }
+      
+      // Filter valid items
+      const validItems = items.filter(item => 
+        item.productId && 
+        item.countedQuantity !== null &&
+        item.countedQuantity !== undefined
+      );
+      
+      console.log(`[UPDATE QUANTITIES] Processing ${validItems.length} valid items`);
+      
+      // Update each item
+      for (const item of validItems) {
+        await storage.upsertStockCountItem(stockCountId, item);
+      }
+      
+      console.log(`[UPDATE QUANTITIES] Successfully updated quantities for stock count ${stockCountId}`);
+      res.status(200).json({ message: "Quantidades atualizadas com sucesso" });
+    } catch (error) {
+      console.error("Error updating stock count quantities:", error);
+      res.status(500).json({ message: "Erro ao atualizar quantidades" });
+    }
+  });
+
   app.delete('/api/stock-counts/:id/items/:productId', demoAuth, async (req, res) => {
     try {
       const stockCountId = parseInt(req.params.id);
