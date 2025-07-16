@@ -466,18 +466,27 @@ export default function StockCountDetail() {
   const handleStartEditingQuantities = () => {
     // Inicializar com quantidades atuais
     const currentQuantities: Record<number, string> = {};
-    stockCount.items?.forEach(item => {
+    console.log("Total items in stock count:", stockCount.items?.length);
+    
+    stockCount.items?.forEach((item, index) => {
       // Para edição, queremos mostrar valores que foram realmente inseridos
       // Isso inclui "0.000" se foi explicitamente contado como zero
       // Verificamos se updatedAt > createdAt para identificar itens realmente contados
-      const wasActuallyCounted = new Date(item.updatedAt) > new Date(item.createdAt) || 
+      const createdAt = new Date(item.createdAt);
+      const updatedAt = new Date(item.updatedAt);
+      const wasActuallyCounted = updatedAt > createdAt || 
                                 (item.countedQuantity && item.countedQuantity !== "0.000");
+      
+      if (index < 5) { // Log apenas os primeiros 5 para debug
+        console.log(`Item ${index + 1} - ProductId: ${item.productId}, Quantity: ${item.countedQuantity}, Created: ${item.createdAt}, Updated: ${item.updatedAt}, WasCounted: ${wasActuallyCounted}`);
+      }
       
       if (wasActuallyCounted && item.countedQuantity !== null) {
         currentQuantities[item.productId] = item.countedQuantity;
       }
     });
     console.log("Initialized editing quantities:", currentQuantities);
+    console.log("Number of quantities loaded:", Object.keys(currentQuantities).length);
     setEditedQuantities(currentQuantities);
     setIsEditingQuantities(true);
   };
