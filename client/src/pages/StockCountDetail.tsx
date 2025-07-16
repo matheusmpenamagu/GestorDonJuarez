@@ -467,10 +467,17 @@ export default function StockCountDetail() {
     // Inicializar com quantidades atuais
     const currentQuantities: Record<number, string> = {};
     stockCount.items?.forEach(item => {
-      if (item.countedQuantity && item.countedQuantity !== "0.000") {
+      // Para edição, queremos mostrar valores que foram realmente inseridos
+      // Isso inclui "0.000" se foi explicitamente contado como zero
+      // Verificamos se updatedAt > createdAt para identificar itens realmente contados
+      const wasActuallyCounted = new Date(item.updatedAt) > new Date(item.createdAt) || 
+                                (item.countedQuantity && item.countedQuantity !== "0.000");
+      
+      if (wasActuallyCounted && item.countedQuantity !== null) {
         currentQuantities[item.productId] = item.countedQuantity;
       }
     });
+    console.log("Initialized editing quantities:", currentQuantities);
     setEditedQuantities(currentQuantities);
     setIsEditingQuantities(true);
   };
@@ -496,7 +503,13 @@ export default function StockCountDetail() {
       return editedQuantities[productId] || "";
     }
     const item = stockCount.items?.find(item => item.productId === productId);
-    return item?.countedQuantity && item.countedQuantity !== "0.000" ? item.countedQuantity : "";
+    if (!item) return "";
+    
+    // Mostrar quantidade se foi realmente contada (updatedAt > createdAt ou valor diferente de "0.000")
+    const wasActuallyCounted = new Date(item.updatedAt) > new Date(item.createdAt) || 
+                              (item.countedQuantity && item.countedQuantity !== "0.000");
+    
+    return wasActuallyCounted && item.countedQuantity !== null ? item.countedQuantity : "";
   };
 
   // Função para renderizar a timeline de status
