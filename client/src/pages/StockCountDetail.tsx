@@ -468,15 +468,7 @@ export default function StockCountDetail() {
     const currentQuantities: Record<number, string> = {};
     
     stockCount.items?.forEach(item => {
-      // Para edição, queremos mostrar valores que foram realmente inseridos
-      // Isso inclui "0.000" se foi explicitamente contado como zero
-      // Verificamos se updatedAt > createdAt para identificar itens realmente contados
-      const createdAt = new Date(item.createdAt);
-      const updatedAt = new Date(item.updatedAt);
-      const wasActuallyCounted = updatedAt > createdAt || 
-                                (item.countedQuantity && item.countedQuantity !== "0.000");
-      
-      if (wasActuallyCounted && item.countedQuantity !== null) {
+      if (wasItemActuallyCounted(item) && item.countedQuantity !== null) {
         currentQuantities[item.productId] = item.countedQuantity;
       }
     });
@@ -501,6 +493,13 @@ export default function StockCountDetail() {
     }));
   };
 
+  // Helper function to check if an item was actually counted by the operator
+  const wasItemActuallyCounted = (item: any) => {
+    const createdAt = new Date(item.createdAt);
+    const updatedAt = new Date(item.updatedAt);
+    return updatedAt > createdAt || (item.countedQuantity && item.countedQuantity !== "0.000");
+  };
+
   const getProductQuantity = (productId: number) => {
     if (isEditingQuantities) {
       return editedQuantities[productId] || "";
@@ -508,13 +507,7 @@ export default function StockCountDetail() {
     const item = stockCount.items?.find(item => item.productId === productId);
     if (!item) return "";
     
-    // Mostrar quantidade se foi realmente contada (updatedAt > createdAt ou valor diferente de "0.000")
-    const createdAt = new Date(item.createdAt);
-    const updatedAt = new Date(item.updatedAt);
-    const wasActuallyCounted = updatedAt > createdAt || 
-                              (item.countedQuantity && item.countedQuantity !== "0.000");
-    
-    return wasActuallyCounted && item.countedQuantity !== null ? item.countedQuantity : "";
+    return wasItemActuallyCounted(item) && item.countedQuantity !== null ? item.countedQuantity : "";
   };
 
   // Função para renderizar a timeline de status
@@ -709,7 +702,7 @@ export default function StockCountDetail() {
             </div>
             <div>
               <div className="text-2xl font-bold text-green-600">
-                {stockCount?.items?.filter(item => item.countedQuantity && item.countedQuantity !== "0").length || 0}
+                {stockCount?.items?.filter(wasItemActuallyCounted).length || 0}
               </div>
               <div className="text-sm text-gray-600">Produtos Contados</div>
             </div>
@@ -721,7 +714,7 @@ export default function StockCountDetail() {
             </div>
             <div>
               <div className="text-2xl font-bold text-red-600">
-                {(stockCount?.items?.length || 0) - (stockCount?.items?.filter(item => item.countedQuantity && item.countedQuantity !== "0").length || 0)}
+                {(stockCount?.items?.length || 0) - (stockCount?.items?.filter(wasItemActuallyCounted).length || 0)}
               </div>
               <div className="text-sm text-gray-600">Não Contados</div>
             </div>
