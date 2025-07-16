@@ -184,6 +184,11 @@ export interface IStorage {
   deleteProduct(id: number): Promise<void>;
   upsertProductByCode(product: InsertProduct): Promise<Product>;
   
+  // Bulk cleanup operations
+  clearAllProducts(): Promise<void>;
+  clearAllProductUnits(): Promise<void>;
+  clearAllStockCountItems(): Promise<void>;
+  
   // Stock Counts operations
   getStockCounts(): Promise<StockCountWithRelations[]>;
   getStockCount(id: number): Promise<StockCountWithRelations | undefined>;
@@ -1857,6 +1862,19 @@ export class DatabaseStorage implements IStorage {
       .where(eq(settings.key, key))
       .returning();
     return setting;
+  }
+
+  // Bulk cleanup operations
+  async clearAllProducts(): Promise<void> {
+    await db.delete(products);
+  }
+
+  async clearAllProductUnits(): Promise<void> {
+    await db.delete(productUnits);
+  }
+
+  async clearAllStockCountItems(): Promise<void> {
+    await db.delete(stockCountItems);
   }
 }
 

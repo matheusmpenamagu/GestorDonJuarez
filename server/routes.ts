@@ -2000,6 +2000,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clear all products and related data
+  app.delete('/api/products/clear-all', demoAuth, async (req, res) => {
+    try {
+      console.log("=== Clearing all products and related data ===");
+      
+      // First, delete all product-unit associations
+      await storage.clearAllProductUnits();
+      console.log("Cleared all product-unit associations");
+      
+      // Then, delete all stock count items that reference products
+      await storage.clearAllStockCountItems();
+      console.log("Cleared all stock count items");
+      
+      // Finally, delete all products
+      await storage.clearAllProducts();
+      console.log("Cleared all products");
+      
+      res.json({ 
+        message: "Todos os produtos e dados relacionados foram removidos com sucesso",
+        cleared: {
+          products: true,
+          productUnits: true,
+          stockCountItems: true
+        }
+      });
+    } catch (error) {
+      console.error("Error clearing products:", error);
+      res.status(500).json({ message: "Erro ao limpar produtos" });
+    }
+  });
+
   // Bulk import/update products by code
   app.post('/api/products/import', demoAuth, async (req, res) => {
     try {

@@ -278,6 +278,37 @@ function ProductsManagementContent() {
     },
   });
 
+  const clearDatabaseMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/products/clear-all', {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    onSuccess: (result) => {
+      console.log("Clear successful:", result);
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      
+      toast({
+        title: "Base de dados limpa",
+        description: result.message,
+      });
+    },
+    onError: (error: Error) => {
+      console.error("Clear error:", error);
+      toast({
+        title: "Erro ao limpar",
+        description: error.message || "Erro ao limpar a base de dados",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -449,6 +480,19 @@ function ProductsManagementContent() {
             onChange={handleFileUpload}
             className="hidden"
           />
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (confirm("Tem certeza que deseja limpar todos os produtos? Esta ação não pode ser desfeita.")) {
+                clearDatabaseMutation.mutate();
+              }
+            }}
+            disabled={clearDatabaseMutation.isPending}
+            className="border-red-200 hover:bg-red-50 text-red-600"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {clearDatabaseMutation.isPending ? "Limpando..." : "Limpar Base"}
+          </Button>
           <Button
             variant="outline"
             onClick={() => fileInputRef.current?.click()}
