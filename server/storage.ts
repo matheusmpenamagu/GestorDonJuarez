@@ -1579,28 +1579,37 @@ export class DatabaseStorage implements IStorage {
     
     const unitId = stockCountData[0].unitId;
     
-    // Calculate uncounted items (items with null/empty countedQuantity)
+    // Calculate uncounted items based on which products were actually processed via public interface
     const allProductsForUnit = await db
       .select({ productId: products.id })
       .from(products)
       .innerJoin(productUnits, eq(products.id, productUnits.productId))
       .where(eq(productUnits.unitId, unitId));
     
-    // Get all items that have been counted (not null and not empty)
-    const countedItems = await db
+    // Get all items that exist in stock count items table
+    const stockCountItemsInDb = await db
       .select({ 
         productId: stockCountItems.productId,
-        countedQuantity: stockCountItems.countedQuantity 
+        countedQuantity: stockCountItems.countedQuantity,
+        updatedAt: stockCountItems.updatedAt,
+        createdAt: stockCountItems.createdAt
       })
       .from(stockCountItems)
       .where(eq(stockCountItems.stockCountId, id));
     
-    // Filter out items with null, empty string, or just whitespace
-    const actuallyCountedItems = countedItems.filter(item => 
-      item.countedQuantity !== null && 
-      item.countedQuantity !== undefined && 
-      item.countedQuantity.toString().trim() !== ''
-    );
+    // Items are considered "actually counted" if:
+    // 1. They were updated after creation (updatedAt > createdAt), OR
+    // 2. They have a non-zero quantity (meaning someone actively set it)
+    const actuallyCountedItems = stockCountItemsInDb.filter(item => {
+      // If updated after creation, it was touched by user
+      if (item.updatedAt && item.createdAt && item.updatedAt > item.createdAt) {
+        return true;
+      }
+      
+      // If quantity is not "0.000" or "0", it was actively counted
+      const quantity = parseFloat(item.countedQuantity || "0");
+      return quantity > 0;
+    });
     
     const countedProductIds = new Set(actuallyCountedItems.map(item => item.productId));
     const uncountedCount = allProductsForUnit.filter(product => !countedProductIds.has(product.productId)).length;
