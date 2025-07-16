@@ -273,29 +273,7 @@ export default function StockCountDetail() {
 
   const filteredAndOrderedData = getFilteredAndOrderedData();
 
-  // Mutation para salvar contagem
-  const saveCountMutation = useMutation({
-    mutationFn: async (items: typeof countItems) => {
-      const response = await apiRequest("POST", `/api/stock-counts/${stockCountId}/items`, {
-        items
-      });
-      return await response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/stock-counts"] });
-      toast({
-        title: "Contagem salva",
-        description: "Dados salvos com sucesso!",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao salvar contagem",
-        variant: "destructive",
-      });
-    },
-  });
+
 
   // Mutation para salvar ordem
   const saveOrderMutation = useMutation({
@@ -428,7 +406,7 @@ export default function StockCountDetail() {
   };
 
   const handleSave = () => {
-    saveCountMutation.mutate(countItems);
+    // Função removida - quantidades não são mais editadas nesta tela
   };
 
   const handleStartCount = () => {
@@ -439,13 +417,10 @@ export default function StockCountDetail() {
   };
 
   const handleDeleteProduct = (productId: number) => {
-    // Primeiro, remove das quantidades da contagem
-    setCountItems(prev => prev.filter(item => item.productId !== productId));
-    
     // Adicionar ao conjunto de produtos removidos para filtrar da interface
     setRemovedProducts(prev => new Set([...prev, productId]));
     
-    // Depois, remover da API se já foi salvo
+    // Remover da API se já foi salvo
     if (stockCount?.items?.some(item => item.productId === productId)) {
       deleteItemMutation.mutate(productId);
     } else {
@@ -620,10 +595,7 @@ export default function StockCountDetail() {
             </div>
             <div>
               <div className="text-2xl font-bold text-green-600">
-                {availableProducts.filter(product => {
-                  const item = countItems.find(item => item.productId === product.id);
-                  return item && item.countedQuantity !== "";
-                }).length}
+                {stockCount?.items?.filter(item => item.countedQuantity && item.countedQuantity !== "0").length || 0}
               </div>
               <div className="text-sm text-gray-600">Produtos Contados</div>
             </div>
@@ -635,10 +607,7 @@ export default function StockCountDetail() {
             </div>
             <div>
               <div className="text-2xl font-bold text-red-600">
-                {availableProducts.filter(product => {
-                  const item = countItems.find(item => item.productId === product.id);
-                  return !item || item.countedQuantity === "";
-                }).length}
+                {(stockCount?.items?.length || 0) - (stockCount?.items?.filter(item => item.countedQuantity && item.countedQuantity !== "0").length || 0)}
               </div>
               <div className="text-sm text-gray-600">Não Contados</div>
             </div>
