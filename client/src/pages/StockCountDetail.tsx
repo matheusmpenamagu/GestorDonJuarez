@@ -56,7 +56,6 @@ export default function StockCountDetail() {
   const stockCountId = parseInt(params?.id || "0");
   
   const [searchTerm, setSearchTerm] = useState("");
-  const [countItems, setCountItems] = useState<{ productId: number; countedQuantity: string }[]>([]);
   const [isStarting, setIsStarting] = useState(false);
   const [categoryOrder, setCategoryOrder] = useState<string[]>([]);
   const [productOrder, setProductOrder] = useState<Record<string, string[]>>({});
@@ -101,17 +100,7 @@ export default function StockCountDetail() {
     enabled: !!stockCountId
   });
 
-  // Inicializar items da contagem
-  useEffect(() => {
-    if (stockCount?.items) {
-      setCountItems(stockCount.items.map(item => ({
-        productId: item.productId,
-        countedQuantity: item.countedQuantity || "0"
-      })));
-      // Manter produtos removidos persistentes até que sejam realmente removidos da contagem
-      // Não limpar automaticamente para evitar que produtos removidos reapareçam
-    }
-  }, [stockCount]);
+
 
   // Inicializar ordem das categorias e produtos baseado na ordem salva ou prévia
   useEffect(() => {
@@ -386,25 +375,7 @@ export default function StockCountDetail() {
     },
   });
 
-  const handleQuantityChange = (productId: number, quantity: string) => {
-    setCountItems(prev => {
-      const existing = prev.find(item => item.productId === productId);
-      if (existing) {
-        return prev.map(item => 
-          item.productId === productId 
-            ? { ...item, countedQuantity: quantity }
-            : item
-        );
-      } else {
-        return [...prev, { productId, countedQuantity: quantity }];
-      }
-    });
-  };
 
-  const getItemQuantity = (productId: number) => {
-    const item = countItems.find(item => item.productId === productId);
-    return item?.countedQuantity || "0";
-  };
 
   // Configurar sensores para drag-and-drop
   const sensors = useSensors(
@@ -728,8 +699,6 @@ export default function StockCountDetail() {
                 categoryProducts={categoryProducts}
                 isEditingOrder={isEditingOrder}
                 previousOrder={previousOrder}
-                getItemQuantity={getItemQuantity}
-                handleQuantityChange={handleQuantityChange}
                 stockCountStatus={stockCount.status}
                 onProductDragEnd={handleProductDragEnd(categoryName)}
                 productOrder={productOrder[categoryName] || []}
@@ -746,14 +715,12 @@ export default function StockCountDetail() {
 // Componente para item sortable de produto
 interface SortableProductItemProps {
   product: Product;
-  quantity: string;
-  onQuantityChange: (quantity: string) => void;
   disabled: boolean;
   isEditingOrder: boolean;
   onDelete: () => void;
 }
 
-function SortableProductItem({ product, quantity, onQuantityChange, disabled, isEditingOrder, onDelete }: SortableProductItemProps) {
+function SortableProductItem({ product, disabled, isEditingOrder, onDelete }: SortableProductItemProps) {
   const {
     attributes,
     listeners,
@@ -782,19 +749,7 @@ function SortableProductItem({ product, quantity, onQuantityChange, disabled, is
       )}
       <div className="flex-1 font-medium text-sm">{product.name}</div>
       <div className="text-xs text-gray-500 w-20">{product.code}</div>
-      <div className="w-24">
-        <Input
-          type="number"
-          min="0"
-          step="0.001"
-          value={quantity}
-          onChange={(e) => onQuantityChange(e.target.value)}
-          placeholder="0"
-          disabled={disabled}
-          className="h-8 text-sm"
-        />
-      </div>
-      <div className="text-xs text-gray-500 w-8">{product.unitOfMeasure || 'UN'}</div>
+      <div className="text-xs text-gray-500 w-12">{product.unitOfMeasure || 'UN'}</div>
       <Button
         variant="ghost"
         size="sm"
@@ -814,8 +769,6 @@ interface SortableCategoryCardProps {
   categoryProducts: Product[];
   isEditingOrder: boolean;
   previousOrder: any;
-  getItemQuantity: (productId: number) => string;
-  handleQuantityChange: (productId: number, quantity: string) => void;
   stockCountStatus: string;
   onProductDragEnd: (event: DragEndEvent) => void;
   productOrder: string[];
@@ -827,8 +780,6 @@ function SortableCategoryCard({
   categoryProducts,
   isEditingOrder,
   previousOrder,
-  getItemQuantity,
-  handleQuantityChange,
   stockCountStatus,
   onProductDragEnd,
   productOrder,
@@ -894,8 +845,6 @@ function SortableCategoryCard({
                   <SortableProductItem
                     key={product.id}
                     product={product}
-                    quantity={getItemQuantity(product.id)}
-                    onQuantityChange={(quantity) => handleQuantityChange(product.id, quantity)}
                     disabled={stockCountStatus !== "rascunho"}
                     isEditingOrder={isEditingOrder}
                     onDelete={() => onDeleteProduct(product.id)}
