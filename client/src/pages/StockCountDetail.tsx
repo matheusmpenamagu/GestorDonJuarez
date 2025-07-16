@@ -554,10 +554,7 @@ export default function StockCountDetail() {
                   "Editar Ordem"
                 }
               </Button>
-              <Button onClick={handleSave} disabled={saveCountMutation.isPending}>
-                <Save className="h-4 w-4 mr-2" />
-                {saveCountMutation.isPending ? "Salvando..." : "Salvar"}
-              </Button>
+              {/* Botão de salvar removido - quantidades não são mais editadas aqui */}
               <Button 
                 onClick={handleStartCount} 
                 disabled={isStarting}
