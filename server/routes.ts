@@ -2123,19 +2123,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (!categoryName) return categories.length > 0 ? categories[0].id : null;
             
             const normalized = categoryName.toLowerCase().trim();
+            console.log(`Finding category for: "${categoryName}" (normalized: "${normalized}")`);
             
-            // Try exact match first
+            // Specific mapping rules for known category variations
+            const categoryMappings = {
+              'embalagem': 'Embalagens',
+              'embalagens': 'Embalagens',
+              'materia prima': 'Matéria prima',
+              'matéria prima': 'Matéria prima',
+              'materiaprima': 'Matéria prima',
+              'bartender': 'Bartender',
+              'bar': 'Bartender',
+              'cozinha apollonio': 'Cozinha Apollonio',
+              'apollonio': 'Cozinha Apollonio',
+              'cozinha finalizacao': 'Cozinha finalização',
+              'cozinha finalização': 'Cozinha finalização',
+              'finalizacao': 'Cozinha finalização',
+              'finalização': 'Cozinha finalização',
+              'cozinha pre preparo': 'Cozinha pre preparo',
+              'prepreparo': 'Cozinha pre preparo',
+              'pre preparo': 'Cozinha pre preparo',
+              'revenda': 'Revenda'
+            };
+
+            // Check specific mappings first
+            if (categoryMappings[normalized]) {
+              const targetCategoryName = categoryMappings[normalized];
+              const match = categories.find(cat => cat.name === targetCategoryName);
+              if (match) {
+                console.log(`✓ Specific mapping: "${categoryName}" -> ${match.name} (ID ${match.id})`);
+                return match.id;
+              }
+            }
+            
+            // Try exact match
             let match = categories.find(cat => cat.name.toLowerCase() === normalized);
-            if (match) return match.id;
+            if (match) {
+              console.log(`✓ Exact match: "${categoryName}" -> ${match.name} (ID ${match.id})`);
+              return match.id;
+            }
 
             // Try partial match (contains)
             match = categories.find(cat => 
               cat.name.toLowerCase().includes(normalized) || 
               normalized.includes(cat.name.toLowerCase())
             );
-            if (match) return match.id;
+            if (match) {
+              console.log(`✓ Partial match: "${categoryName}" -> ${match.name} (ID ${match.id})`);
+              return match.id;
+            }
 
             // Default to first category if no match
+            const defaultCategory = categories[0];
+            console.log(`⚠ No match found for "${categoryName}", using default: ${defaultCategory?.name} (ID ${defaultCategory?.id})`);
             return categories.length > 0 ? categories[0].id : null;
           }
 
@@ -2302,8 +2342,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           for (const productData of products) {
             try {
-              // Map common CSV column names (Portuguese and English)
-              const rawCode = productData.codigo || productData.code || productData.Codigo || productData.Code || productData.CODIGO || productData["COD."] || "";
+              // Map common CSV column names (Portuguese and English) 
+              const rawCode = productData.codigo || productData.code || productData.Codigo || productData.Code || productData.CODIGO || productData.COD || productData["COD."] || "";
               const rawName = productData.produto || productData.product || productData.nome || productData.name || productData.Produto || productData.Product || productData.NOME || productData.PRODUTO || "";
               const rawCategory = productData.categoria || productData.category || productData.Categoria || productData.Category || productData.CATEGORIA || "";
               const rawUnit = productData.unidade || productData.unit || productData.Unidade || productData.Unit || productData.UNIDADE || "";
@@ -2329,21 +2369,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const stockCategoryId = findBestCategory(rawCategory);
               const unitId = findBestUnit(rawUnit);
 
+              // Get category name instead of ID for stock_category field
+              const categoryName = stockCategoryId 
+                ? categories.find(cat => cat.id === stockCategoryId)?.name || ""
+                : "";
+
+              // Get unit name instead of ID for unit field
+              const unitName = unitId 
+                ? units.find(unit => unit.id === unitId)?.name || ""
+                : "";
+
               // Use extracted unit from name, or raw unit measure, or extracted unit
               const finalUnitOfMeasure = rawUnitMeasure || extractedUnit || "";
 
               const productInfo = {
                 code: rawCode.toString(),
                 name: name,
-                stockCategory: stockCategoryId?.toString() || "",
-                unit: unitId?.toString() || "",
+                stockCategory: categoryName,
+                unit: unitName,
                 unitOfMeasure: finalUnitOfMeasure,
                 currentValue: parseFloat(rawValue) || 0,
               };
 
               console.log(`Processing product: ${productInfo.code} - ${productInfo.name}`);
-              console.log(`Category mapping: "${rawCategory}" -> ID ${stockCategoryId}`);
-              console.log(`Unit mapping: "${rawUnit}" -> ID ${unitId}`);
+              console.log(`Category mapping: "${rawCategory}" -> ID ${stockCategoryId} (${categoryName})`);
+              console.log(`Unit mapping: "${rawUnit}" -> ID ${unitId} (${unitName})`);
               console.log(`Unit of measure: "${finalUnitOfMeasure}"`);
 
               // Check if product already exists by code
