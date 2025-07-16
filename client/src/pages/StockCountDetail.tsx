@@ -515,10 +515,19 @@ export default function StockCountDetail() {
     if (!item) return "";
     
     // Mostrar quantidade se foi realmente contada (updatedAt > createdAt ou valor diferente de "0.000")
-    const wasActuallyCounted = new Date(item.updatedAt) > new Date(item.createdAt) || 
+    const createdAt = new Date(item.createdAt);
+    const updatedAt = new Date(item.updatedAt);
+    const wasActuallyCounted = updatedAt > createdAt || 
                               (item.countedQuantity && item.countedQuantity !== "0.000");
     
-    return wasActuallyCounted && item.countedQuantity !== null ? item.countedQuantity : "";
+    const result = wasActuallyCounted && item.countedQuantity !== null ? item.countedQuantity : "";
+    
+    // Debug apenas para produtos com quantidades não-zero
+    if (item.countedQuantity && item.countedQuantity !== "0.000") {
+      console.log(`getProductQuantity(${productId}): quantity=${item.countedQuantity}, created=${item.createdAt}, updated=${item.updatedAt}, wasCounted=${wasActuallyCounted}, result=${result}`);
+    }
+    
+    return result;
   };
 
   // Função para renderizar a timeline de status
