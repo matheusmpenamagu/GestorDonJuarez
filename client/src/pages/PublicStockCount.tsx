@@ -61,21 +61,33 @@ export default function PublicStockCount() {
     enabled: !!publicToken && stockCount?.status === 'em_contagem',
   });
 
-  // Inicializar countItems com dados existentes
+  // Inicializar countItems com dados existentes (apenas os que têm quantidade > 0)
   useEffect(() => {
     if (existingItems && existingItems.length > 0) {
       console.log("Carregando itens existentes:", existingItems);
-      const initialItems = existingItems.map((item: any) => ({
+      
+      // Filtrar apenas itens com quantidade significativa (> 0)
+      const validItems = existingItems.filter((item: any) => {
+        const quantity = parseFloat(item.countedQuantity || "0");
+        return quantity > 0;
+      });
+      
+      const initialItems = validItems.map((item: any) => ({
         productId: item.productId,
-        countedQuantity: item.countedQuantity || ""
+        countedQuantity: item.countedQuantity
       }));
+      
       setCountItems(initialItems);
       
-      // Marcar itens como salvos apenas se tiverem quantidade > 0
-      const savedProductIds = existingItems
-        .filter((item: any) => item.countedQuantity && parseFloat(item.countedQuantity) > 0)
-        .map((item: any) => item.productId);
+      // Marcar itens válidos como salvos
+      const savedProductIds = validItems.map((item: any) => item.productId);
       setSavedItems(savedProductIds);
+      
+      console.log("Itens carregados:", {
+        total: existingItems.length,
+        validos: validItems.length,
+        salvos: savedProductIds.length
+      });
     }
   }, [existingItems]);
 
