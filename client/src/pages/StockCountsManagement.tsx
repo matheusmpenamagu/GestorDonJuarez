@@ -427,7 +427,8 @@ export default function StockCountsManagement() {
     
     const handleShowPublicUrl = () => {
       if (publicToken) {
-        const baseUrl = window.location.origin;
+        // Use production URL for public links
+        const baseUrl = "https://gestor.donjuarez.com.br";
         const url = `${baseUrl}/contagem-publica/${publicToken}`;
         setPublicUrl(url);
         setIsUrlDialogOpen(true);
