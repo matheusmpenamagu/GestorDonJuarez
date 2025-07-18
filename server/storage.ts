@@ -1102,13 +1102,16 @@ export class DatabaseStorage implements IStorage {
       (acc, pour) => acc + (pour.totalVolumeMl / 1000), 0
     );
 
-    // Calcular kg de CO2 por litro
+    // Calcular kg de CO2 líquido (recargas - retiradas) por litro
+    const netCo2Last30Days = last30DaysTotal.kg - last30DaysWithdrawals.kg;
+    const netCo2Previous30Days = previous30DaysTotal.kg - previous30DaysWithdrawals.kg;
+
     const kgPerLiterLast30Days = last30DaysVolumeLiters > 0 
-      ? last30DaysTotal.kg / last30DaysVolumeLiters 
+      ? netCo2Last30Days / last30DaysVolumeLiters 
       : 0;
 
     const kgPerLiterPrevious30Days = previous30DaysVolumeLiters > 0 
-      ? previous30DaysTotal.kg / previous30DaysVolumeLiters 
+      ? netCo2Previous30Days / previous30DaysVolumeLiters 
       : 0;
 
     // Calcular mudança na eficiência

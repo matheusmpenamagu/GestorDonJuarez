@@ -286,7 +286,7 @@ export default function Co2Management() {
                 {stats.kgPerLiterLast30Days.toFixed(3)} kg/L
               </div>
               <div className="text-sm text-muted-foreground mb-2">
-                CO2 por litro de chope
+                CO2 líquido por litro de chope
               </div>
               {stats.kgPerLiterPrevious30Days > 0 && (
                 <div className="text-xs text-muted-foreground mb-1">
