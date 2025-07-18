@@ -988,8 +988,8 @@ export class DatabaseStorage implements IStorage {
     const last30Days = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
     const previous60Days = new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-    // IDs das unidades para considerar: Don Juarez Grão Pará (1) e Beer Truck (3)
-    const targetUnits = [1, 3];
+    // IDs das unidades para considerar: Don Juarez Grão Pará (1), Beer Truck (3) e Chopeira (4)
+    const targetUnits = [1, 3, 4];
 
     // Recargas dos últimos 30 dias (apenas unidades específicas e apenas entradas)
     const last30DaysRefills = await db
