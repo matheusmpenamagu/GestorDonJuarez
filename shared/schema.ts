@@ -148,6 +148,7 @@ export const co2Refills = pgTable("co2_refills", {
   kilosRefilled: decimal("kilos_refilled", { precision: 5, scale: 2 }).notNull(),
   valuePaid: decimal("value_paid", { precision: 10, scale: 2 }).notNull(),
   unitId: integer("unit_id").references(() => units.id).notNull(),
+  transactionType: varchar("transaction_type", { length: 10 }).notNull().default("entrada"), // 'entrada' or 'saida'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -375,6 +376,7 @@ export const insertCo2RefillSchema = createInsertSchema(co2Refills).omit({
 }).extend({
   kilosRefilled: z.number().min(0.01),
   valuePaid: z.number().min(0),
+  transactionType: z.enum(["entrada", "saida"]).default("entrada"),
 });
 
 export const insertFreelancerTimeEntrySchema = createInsertSchema(freelancerTimeEntries).omit({

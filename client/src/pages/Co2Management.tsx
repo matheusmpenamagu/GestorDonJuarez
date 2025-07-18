@@ -33,6 +33,7 @@ interface Co2Stats {
 
 export default function Co2Management() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isWithdrawalDialogOpen, setIsWithdrawalDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingRefill, setEditingRefill] = useState<Co2RefillWithRelations | null>(null);
   const { toast } = useToast();
@@ -58,6 +59,18 @@ export default function Co2Management() {
       kilosRefilled: 0,
       valuePaid: 0,
       unitId: 0,
+    },
+  });
+
+  const withdrawalForm = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      date: new Date().toISOString().split('T')[0],
+      supplier: "",
+      kilosRefilled: 0,
+      valuePaid: 0,
+      unitId: 0,
+      transactionType: "saida" as const,
     },
   });
 
@@ -94,6 +107,34 @@ export default function Co2Management() {
       toast({
         title: "Erro",
         description: "Falha ao criar recarga de CO2.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const withdrawalMutation = useMutation({
+    mutationFn: async (data: FormData) => {
+      const withdrawalData = {
+        ...data,
+        date: new Date(data.date),
+        transactionType: "saida" as const,
+      };
+      return await apiRequest("POST", "/api/co2-refills", withdrawalData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/co2-refills"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/co2-stats"] });
+      setIsWithdrawalDialogOpen(false);
+      withdrawalForm.reset();
+      toast({
+        title: "Retirada registrada",
+        description: "Retirada de CO2 registrada com sucesso.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: "Falha ao registrar retirada de CO2.",
         variant: "destructive",
       });
     },
@@ -269,19 +310,34 @@ export default function Co2Management() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Wind className="h-6 w-6 text-primary" />
-          <h1 className="text-3xl font-bold">Recargas de CO2</h1>
+          <h1 className="text-3xl font-bold">Gestão de CO2</h1>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Recarga
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Nova Recarga de CO2</DialogTitle>
-            </DialogHeader>
+        <div className="flex gap-2">
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Recarga
+              </Button>
+            </DialogTrigger>
+          </Dialog>
+          <Dialog open={isWithdrawalDialogOpen} onOpenChange={setIsWithdrawalDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="h-4 w-4 mr-2" />
+                Retirada
+              </Button>
+            </DialogTrigger>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Dialog para Nova Recarga */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nova Recarga de CO2</DialogTitle>
+          </DialogHeader>
             <Form {...createForm}>
               <form
                 onSubmit={createForm.handleSubmit((data) => createMutation.mutate(data))}
@@ -391,13 +447,110 @@ export default function Co2Management() {
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
+
+      {/* Dialog para Retirada de CO2 */}
+      <Dialog open={isWithdrawalDialogOpen} onOpenChange={setIsWithdrawalDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Retirada de CO2</DialogTitle>
+          </DialogHeader>
+          <Form {...withdrawalForm}>
+            <form
+              onSubmit={withdrawalForm.handleSubmit((data) => withdrawalMutation.mutate(data))}
+              className="space-y-4"
+            >
+              <FormField
+                control={withdrawalForm.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={withdrawalForm.control}
+                name="supplier"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Observações</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Observações da retirada" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={withdrawalForm.control}
+                name="kilosRefilled"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Kilos de CO2 retirados</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        {...field}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={withdrawalForm.control}
+                name="unitId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unidade</FormLabel>
+                    <Select onValueChange={(value) => field.onChange(parseInt(value))}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a unidade" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {units.map((unit) => (
+                          <SelectItem key={unit.id} value={unit.id.toString()}>
+                            {unit.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsWithdrawalDialogOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={withdrawalMutation.isPending}>
+                  {withdrawalMutation.isPending ? "Registrando..." : "Registrar Retirada"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
       <div className="border rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Data</TableHead>
+              <TableHead>Tipo</TableHead>
               <TableHead>Fornecedor</TableHead>
               <TableHead>Kilos CO2</TableHead>
               <TableHead>Valor Pago</TableHead>
@@ -408,14 +561,19 @@ export default function Co2Management() {
           <TableBody>
             {refills.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  Nenhuma recarga cadastrada
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  Nenhuma transação cadastrada
                 </TableCell>
               </TableRow>
             ) : (
               refills.map((refill) => (
                 <TableRow key={refill.id}>
                   <TableCell>{formatDate(refill.date)}</TableCell>
+                  <TableCell>
+                    <Badge variant={refill.transactionType === 'entrada' ? 'default' : 'destructive'}>
+                      {refill.transactionType === 'entrada' ? 'Recarga' : 'Retirada'}
+                    </Badge>
+                  </TableCell>
                   <TableCell>{refill.supplier}</TableCell>
                   <TableCell>{refill.kilosRefilled} kg</TableCell>
                   <TableCell>{formatCurrency(refill.valuePaid)}</TableCell>

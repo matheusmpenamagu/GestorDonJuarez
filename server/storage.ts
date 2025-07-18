@@ -987,22 +987,24 @@ export class DatabaseStorage implements IStorage {
     // IDs das unidades para considerar: Don Juarez Grão Pará (1) e Beer Truck (3)
     const targetUnits = [1, 3];
 
-    // Recargas dos últimos 30 dias (apenas unidades específicas)
+    // Recargas dos últimos 30 dias (apenas unidades específicas e apenas entradas)
     const last30DaysRefills = await db
       .select()
       .from(co2Refills)
       .where(and(
         gte(co2Refills.date, last30Days),
+        eq(co2Refills.transactionType, 'entrada'),
         sql`${co2Refills.unitId} IN (${sql.join(targetUnits, sql`, `)})`
       ));
 
-    // Recargas dos 30 dias anteriores (30-60 dias atrás, apenas unidades específicas)
+    // Recargas dos 30 dias anteriores (30-60 dias atrás, apenas unidades específicas e apenas entradas)
     const previous30DaysRefills = await db
       .select()
       .from(co2Refills)
       .where(and(
         gte(co2Refills.date, previous60Days),
         lt(co2Refills.date, last30Days),
+        eq(co2Refills.transactionType, 'entrada'),
         sql`${co2Refills.unitId} IN (${sql.join(targetUnits, sql`, `)})`
       ));
 
