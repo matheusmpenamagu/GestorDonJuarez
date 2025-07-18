@@ -29,6 +29,9 @@ interface Co2Stats {
   kgPerLiterLast30Days: number;
   kgPerLiterPrevious30Days: number;
   efficiencyChange: number;
+  last30DaysWithdrawals: { kg: number; cost: number };
+  previous30DaysWithdrawals: { kg: number; cost: number };
+  withdrawalPercentageChange: number;
 }
 
 export default function Co2Management() {
@@ -233,7 +236,7 @@ export default function Co2Management() {
     <div className="p-6 space-y-6">
       {/* Cards de estatísticas */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Card 1: Total de recargas dos últimos 30 dias */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -299,6 +302,44 @@ export default function Co2Management() {
                   )}
                   <Badge variant={stats.efficiencyChange > 0 ? "destructive" : "secondary"} className="text-xs">
                     {formatPercentage(stats.efficiencyChange).value}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground ml-2">
+                    vs período anterior
+                  </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Card 3: Total de retiradas dos últimos 30 dias */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Retiradas - Últimos 30 dias
+              </CardTitle>
+              <TrendingDown className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {stats.last30DaysWithdrawals.kg.toFixed(1)} kg
+              </div>
+              <div className="text-sm text-muted-foreground mb-2">
+                CO2 retirado do estoque
+              </div>
+              {stats.previous30DaysWithdrawals.kg > 0 && (
+                <div className="text-xs text-muted-foreground mb-1">
+                  Período anterior: {stats.previous30DaysWithdrawals.kg.toFixed(1)} kg
+                </div>
+              )}
+              {stats.withdrawalPercentageChange !== 0 && (
+                <div className="flex items-center">
+                  {stats.withdrawalPercentageChange > 0 ? (
+                    <TrendingUp className="h-4 w-4 text-red-500 mr-1" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-green-500 mr-1" />
+                  )}
+                  <Badge variant={stats.withdrawalPercentageChange > 0 ? "destructive" : "secondary"} className="text-xs">
+                    {formatPercentage(stats.withdrawalPercentageChange).value}
                   </Badge>
                   <span className="text-sm text-muted-foreground ml-2">
                     vs período anterior

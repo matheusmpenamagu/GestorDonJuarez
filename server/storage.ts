@@ -980,6 +980,9 @@ export class DatabaseStorage implements IStorage {
     kgPerLiterLast30Days: number;
     kgPerLiterPrevious30Days: number;
     efficiencyChange: number;
+    last30DaysWithdrawals: { kg: number; cost: number };
+    previous30DaysWithdrawals: { kg: number; cost: number };
+    withdrawalPercentageChange: number;
   }> {
     const today = new Date();
     const last30Days = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -1009,6 +1012,27 @@ export class DatabaseStorage implements IStorage {
         sql`${co2Refills.unitId} IN (${sql.join(targetUnits, sql`, `)})`
       ));
 
+    // Retiradas dos últimos 30 dias (apenas unidades específicas e apenas saídas)
+    const last30DaysWithdrawalsData = await db
+      .select()
+      .from(co2Refills)
+      .where(and(
+        gte(co2Refills.date, last30Days),
+        eq(co2Refills.transactionType, 'saida'),
+        sql`${co2Refills.unitId} IN (${sql.join(targetUnits, sql`, `)})`
+      ));
+
+    // Retiradas dos 30 dias anteriores (30-60 dias atrás, apenas unidades específicas e apenas saídas)
+    const previous30DaysWithdrawalsData = await db
+      .select()
+      .from(co2Refills)
+      .where(and(
+        gte(co2Refills.date, previous60Days),
+        lt(co2Refills.date, last30Days),
+        eq(co2Refills.transactionType, 'saida'),
+        sql`${co2Refills.unitId} IN (${sql.join(targetUnits, sql`, `)})`
+      ));
+
     // Calcular totais dos últimos 30 dias
     const last30DaysTotal = last30DaysRefills.reduce(
       (acc, refill) => ({
@@ -1027,9 +1051,32 @@ export class DatabaseStorage implements IStorage {
       { kg: 0, cost: 0 }
     );
 
+    // Calcular totais de retiradas dos últimos 30 dias
+    const last30DaysWithdrawals = last30DaysWithdrawalsData.reduce(
+      (acc, withdrawal) => ({
+        kg: acc.kg + parseFloat(withdrawal.kilosRefilled),
+        cost: acc.cost + parseFloat(withdrawal.valuePaid)
+      }),
+      { kg: 0, cost: 0 }
+    );
+
+    // Calcular totais de retiradas dos 30 dias anteriores
+    const previous30DaysWithdrawals = previous30DaysWithdrawalsData.reduce(
+      (acc, withdrawal) => ({
+        kg: acc.kg + parseFloat(withdrawal.kilosRefilled),
+        cost: acc.cost + parseFloat(withdrawal.valuePaid)
+      }),
+      { kg: 0, cost: 0 }
+    );
+
     // Calcular porcentagem de mudança
     const percentageChange = previous30DaysTotal.cost > 0 
       ? ((last30DaysTotal.cost - previous30DaysTotal.cost) / previous30DaysTotal.cost) * 100
+      : 0;
+
+    // Calcular porcentagem de mudança para retiradas
+    const withdrawalPercentageChange = previous30DaysWithdrawals.kg > 0 
+      ? ((last30DaysWithdrawals.kg - previous30DaysWithdrawals.kg) / previous30DaysWithdrawals.kg) * 100
       : 0;
 
     // Calcular consumo de chope dos últimos 30 dias
@@ -1075,7 +1122,10 @@ export class DatabaseStorage implements IStorage {
       percentageChange,
       kgPerLiterLast30Days,
       kgPerLiterPrevious30Days,
-      efficiencyChange
+      efficiencyChange,
+      last30DaysWithdrawals,
+      previous30DaysWithdrawals,
+      withdrawalPercentageChange
     };
   }
 
