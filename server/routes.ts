@@ -1497,7 +1497,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         supplier: req.body.supplier,
         kilosRefilled: parseFloat(req.body.kilosRefilled),
         valuePaid: parseFloat(req.body.valuePaid),
-        unitId: parseInt(req.body.unitId)
+        unitId: parseInt(req.body.unitId),
+        transactionType: req.body.transactionType || 'entrada'
       };
       const refill = await storage.createCo2Refill(refillData);
       await broadcastUpdate('stats_updated');

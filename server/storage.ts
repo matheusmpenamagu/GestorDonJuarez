@@ -944,6 +944,7 @@ export class DatabaseStorage implements IStorage {
         kilosRefilled: refillData.kilosRefilled.toString(),
         valuePaid: refillData.valuePaid.toString(),
         unitId: refillData.unitId,
+        transactionType: refillData.transactionType || 'entrada',
       })
       .returning();
     return refill;
