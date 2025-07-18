@@ -115,8 +115,11 @@ export default function Co2Management() {
   const withdrawalMutation = useMutation({
     mutationFn: async (data: FormData) => {
       const withdrawalData = {
-        ...data,
         date: new Date(data.date),
+        supplier: data.supplier,
+        kilosRefilled: data.kilosRefilled,
+        valuePaid: data.valuePaid,
+        unitId: data.unitId,
         transactionType: "saida" as const,
       };
       return await apiRequest("POST", "/api/co2-refills", withdrawalData);
