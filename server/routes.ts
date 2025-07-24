@@ -3712,7 +3712,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .trim();
         
         console.log('Extracted PDF text (first 1000 chars):', extractedText.substring(0, 1000));
-        console.log('Date patterns found:', datePatterns.concat(utf8DatePatterns));
+        console.log('Date patterns found:', [...datePatterns, ...utf8DatePatterns]);
         console.log('Caixa matches found:', caixaMatches);
         
         // Always try to parse, even if text seems garbled
