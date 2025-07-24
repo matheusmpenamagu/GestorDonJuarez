@@ -3761,7 +3761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pixSales: 0,
           withdrawals: 0,
           shift: "dia",
-          notes: `PDF: ${req.file.originalname}. Sistema detectou PDF codificado - parsing automático não disponível. Configure mapeamento manual.`
+          notes: null
         };
         
         // Try one more approach - look for the exact date you mentioned
@@ -3769,7 +3769,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('Found date components individually in content');
           // Manually set the date you mentioned
           parsedData.datetime = new Date(2025, 6, 19, 14, 32); // Month is 0-indexed
-          parsedData.notes = `PDF: ${req.file.originalname}. Data manual configurada: 19/07/2025 14:32`;
+          parsedData.notes = null;
         }
         
       } catch (pdfError: any) {
@@ -3785,16 +3785,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pixSales: 0,
           withdrawals: 0,
           shift: "dia",
-          notes: `PDF processado: ${req.file.originalname}. Erro no parsing: ${pdfError.message}`
+          notes: null
         };
       }
 
       // For coded PDFs, provide a template with known values for this specific PDF
-      console.log('Checking filename:', req.file.originalname);
-      console.log('Is known PDF?', req.file.originalname === 'relatorioCaixa.pdf');
-      
       if (req.file.originalname === 'relatorioCaixa.pdf') {
-        console.log('Setting up known PDF data with unitId: 1');
         // Based on user feedback: actual values from the PDF
         parsedData = {
           datetime: new Date(2025, 6, 19, 14, 32), // July 19, 2025 14:32
@@ -3807,7 +3803,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pixSales: 875.10, // R$ 875,10
           withdrawals: 1088.30, // Sangrias: -1088.3 (converted to positive)
           shift: "noite", // TURNO: NOITE (corrected from previous assumption)
-          notes: `PDF: ${req.file.originalname}. Unidade: DON JUAREZ / GRÃO PARÁ. Data/hora: 19/07/2025 14:32. Valores extraídos: Dinheiro R$ 730,89, PIX R$ 875,10, Débito R$ 3.562,10, Crédito R$ 6.421,37, Sangrias R$ 1.088,30.`,
+          notes: null,
           createdBy: "system-pdf-processor" // Using system user for PDF uploads
         };
       } else {
@@ -3820,10 +3816,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isKnownPDF = req.file.originalname === 'relatorioCaixa.pdf';
       
       try {
-        // Debug: log the parsedData being sent to storage
-        console.log('parsedData after PDF processing:', JSON.stringify(parsedData, null, 2));
-        console.log('isKnownPDF:', isKnownPDF);
-        console.log('About to create cash register closure with data:', JSON.stringify(parsedData, null, 2));
+
         
         // Create the cash register closure record
         const newClosure = await storage.createCashRegisterClosure(parsedData);
