@@ -35,6 +35,11 @@ function toSaoPauloTime(date: Date): string {
 
 // Helper function to parse dates from São Paulo timezone
 function fromSaoPauloTime(dateString: string): Date {
+  // Handle ISO datetime format (2025-07-24T15:30:00)
+  if (dateString.includes('T')) {
+    return new Date(dateString);
+  }
+  
   // Parse date in YYYY-MM-DD format and set to São Paulo timezone
   // For start dates, use 00:00:00
   // For end dates, use 23:59:59
@@ -503,7 +508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/webhooks/keg-change', validateWebhookToken, async (req, res) => {
     try {
       // Support both device_id (ESP32) and tap_id (direct) formats
-      const { device_id, tap_id, datetime } = req.body;
+      const { device_id, tap_id, datetime, beer_style_id } = req.body;
       
       if (!datetime) {
         return res.status(400).json({ 
@@ -544,6 +549,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Validate beer style if provided
+      if (beer_style_id) {
+        const beerStyleIdNum = parseInt(beer_style_id);
+        if (isNaN(beerStyleIdNum)) {
+          return res.status(400).json({ 
+            message: "Invalid beer_style_id. Must be a valid number." 
+          });
+        }
+
+        // Check if beer style exists
+        const beerStyle = await storage.getBeerStyle(beerStyleIdNum);
+        if (!beerStyle) {
+          return res.status(404).json({ 
+            message: `Beer style with ID ${beerStyleIdNum} not found.` 
+          });
+        }
+
+        // Update the tap with the new beer style
+        await storage.updateTap(targetTapId, { 
+          currentBeerStyleId: beerStyleIdNum 
+        });
+        
+        console.log(`Updated tap ${targetTapId} with beer style ${beerStyleIdNum} (${beerStyle.name})`);
+      }
+
       // Get current tap info to record previous volume
       const tap = await storage.getTap(targetTapId);
       const previousVolumeMl = tap ? tap.currentVolumeAvailableMl : null;
@@ -564,9 +594,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Broadcast update via WebSocket
       await broadcastUpdate('keg_change', kegChangeEvent);
       
-      console.log(`Keg change event created: Tap ${targetTapId} with ${capacity}L capacity at ${toSaoPauloTime(changeDate)}`);
+      const beerStyleInfo = beer_style_id ? ` with beer style ID ${beer_style_id}` : '';
+      console.log(`Keg change event created: Tap ${targetTapId} with ${capacity}L capacity${beerStyleInfo} at ${toSaoPauloTime(changeDate)}`);
       
-      res.json({ success: true, event: kegChangeEvent });
+      res.json({ success: true, event: kegChangeEvent, tapUpdated: !!beer_style_id });
     } catch (error) {
       console.error("Error processing keg change webhook:", error);
       res.status(500).json({ message: "Error processing keg change event" });

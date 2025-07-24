@@ -122,6 +122,20 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - Keg changes: `https://gestor.donjuarez.com.br/api/webhooks/keg-change`
 - Heartbeat: `https://gestor.donjuarez.com.br/api/webhooks/heartbeat`
 
+**Keg Change Webhook Format:**
+```json
+{
+  "datetime": "2025-07-24T14:30:00",
+  "tap_id": 1,
+  "keg_capacity_liters": 30,
+  "beer_style_id": 5
+}
+```
+- `datetime`: Data/hora da troca (obrigatório)
+- `tap_id` ou `device_id`: Identificação da torneira (obrigatório)
+- `keg_capacity_liters`: Capacidade do barril em litros - 30 ou 50 (opcional, padrão: 30)
+- `beer_style_id`: ID do estilo de cerveja para atualizar na torneira (opcional)
+
 **Webhook URLs (Development):**
 - Replace domain with: `https://ea3123c5-9f03-4f32-844a-fe4c8cdd0203-00-1inaocwyrymso.worf.replit.dev`
 
