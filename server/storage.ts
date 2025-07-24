@@ -1968,7 +1968,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCashRegisterClosure(id: number): Promise<void> {
-    await db.delete(cashRegisterClosures).where(eq(cashRegisterClosures.id, id));
+    console.log(`Storage: Attempting to delete cash register closure with ID: ${id}`);
+    const result = await db.delete(cashRegisterClosures).where(eq(cashRegisterClosures.id, id));
+    console.log(`Storage: Delete operation completed for ID: ${id}`, result);
   }
 }
 

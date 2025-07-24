@@ -3645,10 +3645,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/cash-register-closures/:id', demoAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      console.log(`Attempting to delete cash register closure with ID: ${id}`);
+      
+      if (isNaN(id)) {
+        console.error(`Invalid ID provided: ${req.params.id}`);
+        return res.status(400).json({ message: "Invalid ID provided" });
+      }
+      
       await storage.deleteCashRegisterClosure(id);
+      console.log(`Successfully deleted cash register closure with ID: ${id}`);
       res.json({ success: true });
     } catch (error) {
       console.error("Error deleting cash register closure:", error);
+      console.error("Error details:", error.message, error.stack);
       res.status(500).json({ message: "Error deleting cash register closure" });
     }
   });

@@ -546,7 +546,7 @@ export default function CashRegisterManagement() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/cash-register-closures/${id}`, 'DELETE'),
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/cash-register-closures/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/cash-register-closures'] });
       toast({
@@ -554,7 +554,8 @@ export default function CashRegisterManagement() {
         description: "O fechamento de caixa foi excluído com sucesso.",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Delete mutation error:", error);
       toast({
         title: "Erro",
         description: "Não foi possível excluir o fechamento de caixa.",
