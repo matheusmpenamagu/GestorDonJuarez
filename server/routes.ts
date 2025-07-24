@@ -3701,6 +3701,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const utf8DatePatterns = rawText.match(/\d{1,2}\/\d{1,2}\/\d{4}\s*\d{1,2}:\d{2}/g) || [];
         allContent += utf8DatePatterns.join(' ') + ' ';
         
+        // Approach 3: Binary search for the specific date pattern "19/07/2025 14:32"
+        const binarySearch = req.file.buffer.toString('binary');
+        const specificDateMatch = binarySearch.match(/19\/07\/2025\s*14:32/g) || [];
+        allContent += specificDateMatch.join(' ') + ' ';
+        
+        // Approach 4: ASCII search for any date-like patterns
+        const asciiText = req.file.buffer.toString('ascii');
+        const asciiDatePatterns = asciiText.match(/\d{1,2}\/\d{1,2}\/\d{4}\s*\d{1,2}:\d{2}/g) || [];
+        allContent += asciiDatePatterns.join(' ') + ' ';
+        
+        // Approach 5: Search for numeric patterns that could be dates
+        // Look for sequences like "19 07 2025 14 32" or "19/07/2025/14/32"
+        const numericPatterns = [];
+        
+        // Search in different encodings for the specific date components
+        [pdfString, rawText, binarySearch, asciiText].forEach((text, index) => {
+          const encodingName = ['latin1', 'utf8', 'binary', 'ascii'][index];
+          
+          // Look for "19" followed by something, then "07", then "2025", etc.
+          const dateComponents = text.match(/19[\s\S]{0,3}07[\s\S]{0,3}2025[\s\S]{0,5}14[\s\S]{0,3}32/g) || [];
+          if (dateComponents.length > 0) {
+            console.log(`Found date components in ${encodingName}:`, dateComponents);
+            numericPatterns.push(...dateComponents);
+          }
+        });
+        
         // Look for "Caixa" and "abertura" words specifically
         const caixaMatches = pdfString.match(/[Cc]aixa[\s\S]{0,50}[Aa]bertura[\s\S]{0,50}/g) || [];
         allContent += caixaMatches.join(' ') + ' ';
@@ -3712,11 +3738,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .trim();
         
         console.log('Extracted PDF text (first 1000 chars):', extractedText.substring(0, 1000));
-        console.log('Date patterns found:', [...datePatterns, ...utf8DatePatterns]);
+        console.log('Latin1 date patterns:', datePatterns);
+        console.log('UTF8 date patterns:', utf8DatePatterns);
+        console.log('Binary specific date matches:', specificDateMatch);
+        console.log('ASCII date patterns:', asciiDatePatterns);
         console.log('Caixa matches found:', caixaMatches);
+        console.log('All combined patterns:', [...datePatterns, ...utf8DatePatterns, ...specificDateMatch, ...asciiDatePatterns]);
+        console.log('Numeric patterns found:', numericPatterns);
+        
+        // Add numeric patterns to content for parsing
+        allContent += ' ' + numericPatterns.join(' ') + ' ';
         
         // Always try to parse, even if text seems garbled
-        parsedData = parsePDFContent(extractedText + ' ' + rawText.substring(0, 1000));
+        parsedData = parsePDFContent(allContent + ' ' + rawText.substring(0, 1000));
         
       } catch (pdfError: any) {
         console.error('Error parsing PDF:', pdfError);
