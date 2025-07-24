@@ -28,6 +28,10 @@ const AVAILABLE_PERMISSIONS = [
   { id: 'devices', name: 'Dispositivos', description: 'Gerenciar dispositivos ESP32' },
   { id: 'employees', name: 'Colaboradores', description: 'Gerenciar funcionários' },
   { id: 'roles', name: 'Cargos', description: 'Gerenciar cargos e permissões' },
+  { id: 'freelancer_tracking', name: 'Controle de Ponto', description: 'Acessar controle de ponto de freelancers' },
+  { id: 'products', name: 'Produtos', description: 'Gerenciar produtos e catálogo' },
+  { id: 'stock_counts', name: 'Contagens de Estoque', description: 'Criar e gerenciar contagens de estoque' },
+  { id: 'co2_management', name: 'Gestão de CO2', description: 'Gerenciar recargas e retiradas de CO2' },
 ];
 
 export default function RolesManagement() {
