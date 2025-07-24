@@ -64,6 +64,7 @@ export const devices = pgTable("devices", {
   code: varchar("code", { length: 5 }).notNull().unique(), // Alphanumeric 5-digit identifier
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
+  deviceType: varchar("device_type", { length: 50 }).notNull().default("Fluxo"), // Tela, Fluxo, Temperatura
   isActive: boolean("is_active").default(true),
   lastHeartbeat: timestamp("last_heartbeat"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -327,6 +328,8 @@ export const insertDeviceSchema = createInsertSchema(devices).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  deviceType: z.enum(["Tela", "Fluxo", "Temperatura"]).default("Fluxo"),
 });
 
 export const insertTapSchema = createInsertSchema(taps).omit({

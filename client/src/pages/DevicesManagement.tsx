@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, Trash2, Smartphone } from "lucide-react";
 import { insertDeviceSchema } from "@shared/schema";
 import { z } from "zod";
@@ -19,6 +20,7 @@ interface Device {
   code: string;
   name: string;
   description?: string;
+  deviceType: string;
   isActive: boolean;
   lastHeartbeat?: string | null;
   createdAt: string;
@@ -29,6 +31,7 @@ interface DeviceFormData {
   code: string;
   name: string;
   description: string;
+  deviceType: string;
   isActive: boolean;
 }
 
@@ -50,6 +53,7 @@ export default function DevicesManagement() {
     code: "",
     name: "",
     description: "",
+    deviceType: "Fluxo",
     isActive: true,
   });
 
@@ -136,6 +140,7 @@ export default function DevicesManagement() {
       code: "",
       name: "",
       description: "",
+      deviceType: "Fluxo",
       isActive: true,
     });
   };
@@ -174,6 +179,7 @@ export default function DevicesManagement() {
       code: device.code,
       name: device.name,
       description: device.description || "",
+      deviceType: device.deviceType || "Fluxo",
       isActive: device.isActive,
     });
     setIsDialogOpen(true);
@@ -240,7 +246,12 @@ export default function DevicesManagement() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <h3 className="font-semibold">{device.name}</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">{device.name}</h3>
+                  <Badge variant="outline" className="text-xs">
+                    {device.deviceType}
+                  </Badge>
+                </div>
                 {device.description && (
                   <p className="text-sm text-muted-foreground">{device.description}</p>
                 )}
@@ -329,6 +340,23 @@ export default function DevicesManagement() {
                 placeholder="Descrição do dispositivo e sua localização"
                 rows={3}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="deviceType">Tipo de Dispositivo</Label>
+              <Select
+                value={formData.deviceType}
+                onValueChange={(value) => setFormData({ ...formData, deviceType: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Fluxo">Fluxo</SelectItem>
+                  <SelectItem value="Tela">Tela</SelectItem>
+                  <SelectItem value="Temperatura">Temperatura</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex items-center space-x-2">
