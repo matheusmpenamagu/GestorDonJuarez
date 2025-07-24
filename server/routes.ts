@@ -3816,7 +3816,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Add notes with raw parsing info
-      extractedData.notes = `Dados extraídos automaticamente do PDF. Data/hora base: ${dateTimeMatch?.[1] || 'não encontrada'}`;
+      extractedData.notes = `Dados extraídos automaticamente do PDF. ${foundDateTime ? 'Data/hora encontrada' : 'Data/hora não encontrada'}`;
 
       console.log('Parsed data:', extractedData);
       return extractedData;
