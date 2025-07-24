@@ -185,6 +185,11 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - ✓ Sistema totalmente funcional com inserção direta no banco de dados
 - ✓ Teste confirmado: PDF processado com sucesso e registro criado automaticamente
 - ✓ Observações automáticas removidas - campo notes fica vazio para processamento limpo
+- ✓ Tabela avançada implementada para lista de fechamentos de caixa (Julho 24, 2025)
+- ✓ Sistema de ordenação clicável em colunas: Data/Hora, Unidade, Operação, Turno, Vendas
+- ✓ Filtros avançados: busca por texto, filtro por unidade e operação
+- ✓ Design responsivo com scroll horizontal para visualização em dispositivos móveis
+- ✓ Interface substituiu formato de cards por tabela mais eficiente
 - ✓ Migração para WhatsApp Business Cloud API oficial implementada (Julho 8, 2025)
 - ✓ Substituição completa do Evolution API pela API oficial do Meta/Facebook
 - ✓ Secrets configurados: META_ACCESS_TOKEN, META_PHONE_NUMBER_ID, META_WHATSAPP_BUSINESS_ACCOUNT_ID, webhook_token
