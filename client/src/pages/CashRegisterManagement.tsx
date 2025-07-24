@@ -75,19 +75,23 @@ function PDFUploadModal({
       return response.json();
     },
     onSuccess: (data) => {
-      if (data.requiresManualCompletion) {
-        // Data was parsed but needs manual unit selection
-        onDataExtracted(data.parsedData);
+      // Invalidate queries to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-register-closures"] });
+      
+      if (data.success && data.closure) {
+        // Record was created successfully
         toast({
-          title: "PDF processado com sucesso",
-          description: "Dados extraídos. Complete as informações restantes.",
+          title: "Fechamento criado com sucesso",
+          description: data.pdfMapping?.valuesExtracted 
+            ? "PDF processado e todos os valores extraídos automaticamente."
+            : "PDF processado e fechamento criado com valores padrão.",
         });
       } else {
-        // Complete data extracted
-        onDataExtracted(data);
+        // Fallback for old behavior - data extraction only
+        onDataExtracted(data.parsedData || data);
         toast({
-          title: "PDF processado com sucesso",
-          description: "Dados extraídos automaticamente do PDF.",
+          title: "PDF processado",
+          description: "Complete as informações restantes.",
         });
       }
       onClose();

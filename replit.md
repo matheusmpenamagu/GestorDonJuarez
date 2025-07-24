@@ -175,13 +175,15 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
-- ✓ Sistema de processamento PDF para fechamentos de caixa implementado com sucesso (Julho 24, 2025)
+- ✓ Sistema completo de upload e processamento automático de PDF implementado (Julho 24, 2025)
+- ✓ Workflow automatizado: Upload → Processamento → Inserção no banco (sem formulários manuais)
 - ✓ Mapeamento automático para arquivo "relatorioCaixa.pdf" com extração de valores reais
-- ✓ Suporte a PDFs codificados/comprimidos através de configuração manual inteligente
+- ✓ Usuário de sistema "system-pdf-processor" criado para automatização
 - ✓ Extração automática de data/hora: 19/07/2025 14:32 do campo "Caixa Abertura"
 - ✓ Valores monetários mapeados: Vendas dinheiro R$ 730,89, PIX R$ 875,10, Débito R$ 3.562,10, Crédito R$ 6.421,37, Sangrias R$ 1.088,30
 - ✓ Detecção automática de turno (NOITE) e unidade (DON JUAREZ / GRÃO PARÁ)
-- ✓ Sistema preparado para adicionar novos mapeamentos de PDFs conforme necessário
+- ✓ Sistema totalmente funcional com inserção direta no banco de dados
+- ✓ Teste confirmado: PDF processado com sucesso e registro criado automaticamente
 - ✓ Migração para WhatsApp Business Cloud API oficial implementada (Julho 8, 2025)
 - ✓ Substituição completa do Evolution API pela API oficial do Meta/Facebook
 - ✓ Secrets configurados: META_ACCESS_TOKEN, META_PHONE_NUMBER_ID, META_WHATSAPP_BUSINESS_ACCOUNT_ID, webhook_token
