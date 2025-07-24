@@ -3678,33 +3678,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let parsedData: any = {};
       
       try {
-        // Extract text from PDF buffer using string search
+        // Try multiple approaches to extract text from PDF
+        let allContent = '';
+        
+        // Approach 1: Latin1 encoding for better text extraction
         const pdfString = req.file.buffer.toString('latin1');
         
-        // Look for text streams in PDF (simple text extraction)
+        // Look for text content between parentheses (PDF text objects)
+        const textInParens = pdfString.match(/\([^)]*\)/g) || [];
+        allContent += textInParens.map(match => match.slice(1, -1)).join(' ') + ' ';
+        
+        // Look for text streams
         const textMatches = pdfString.match(/BT[\s\S]*?ET/g) || [];
-        const streamMatches = pdfString.match(/stream[\s\S]*?endstream/g) || [];
+        allContent += textMatches.join(' ') + ' ';
         
-        // Combine all potential text content
-        let allContent = textMatches.join(' ') + ' ' + streamMatches.join(' ');
+        // Look for specific patterns that might contain dates
+        const datePatterns = pdfString.match(/\d{1,2}\/\d{1,2}\/\d{4}\s*\d{1,2}:\d{2}/g) || [];
+        allContent += datePatterns.join(' ') + ' ';
         
-        // Clean up the extracted content to get readable text
+        // Approach 2: UTF-8 raw search for specific text
+        const rawText = req.file.buffer.toString('utf8');
+        const utf8DatePatterns = rawText.match(/\d{1,2}\/\d{1,2}\/\d{4}\s*\d{1,2}:\d{2}/g) || [];
+        allContent += utf8DatePatterns.join(' ') + ' ';
+        
+        // Look for "Caixa" and "abertura" words specifically
+        const caixaMatches = pdfString.match(/[Cc]aixa[\s\S]{0,50}[Aa]bertura[\s\S]{0,50}/g) || [];
+        allContent += caixaMatches.join(' ') + ' ';
+        
+        // Clean up the extracted content
         extractedText = allContent
-          .replace(/[^\x20-\x7E\u00C0-\u00FF]/g, ' ') // Keep printable chars and accented chars
+          .replace(/[^\x20-\x7E\u00C0-\u00FF\/\:]/g, ' ') // Keep printable chars, slashes, and colons
           .replace(/\s+/g, ' ')
           .trim();
         
-        console.log('Extracted PDF text (first 500 chars):', extractedText.substring(0, 500));
+        console.log('Extracted PDF text (first 1000 chars):', extractedText.substring(0, 1000));
+        console.log('Date patterns found:', datePatterns.concat(utf8DatePatterns));
+        console.log('Caixa matches found:', caixaMatches);
         
-        // If we got some text, try to parse it
-        if (extractedText.length > 50) {
-          parsedData = parsePDFContent(extractedText);
-        } else {
-          // Fallback: try to find any date-like patterns in raw buffer
-          const rawText = req.file.buffer.toString('utf8', 0, Math.min(2000, req.file.buffer.length));
-          console.log('Raw buffer text sample:', rawText.substring(0, 300));
-          parsedData = parsePDFContent(rawText);
-        }
+        // Always try to parse, even if text seems garbled
+        parsedData = parsePDFContent(extractedText + ' ' + rawText.substring(0, 1000));
         
       } catch (pdfError: any) {
         console.error('Error parsing PDF:', pdfError);
@@ -3761,13 +3773,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
 
     try {
-      // Extract date and time from "Caixa Abertura" with more flexible patterns
+      // Extract date and time with specific pattern: "19/07/2025 14:32"
       const dateTimePatterns = [
-        /Caixa\s+Abertura[:\s]*([\d\/\s\:]+)/i,
-        /Abertura[:\s]*([\d\/\s\:]+)/i,
-        /Data[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
-        /(\d{1,2}\/\d{1,2}\/\d{4}\s+\d{1,2}:\d{2}:\d{2})/i,
-        /(\d{1,2}\/\d{1,2}\/\d{4})/i
+        /Caixa\s+abertura[:\s]*(\d{1,2}\/\d{1,2}\/\d{4}\s+\d{1,2}:\d{2})/i,
+        /abertura[:\s]*(\d{1,2}\/\d{1,2}\/\d{4}\s+\d{1,2}:\d{2})/i,
+        /(\d{1,2}\/\d{1,2}\/\d{4}\s+\d{1,2}:\d{2})/,
+        /Caixa\s+Abertura[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
+        /Data[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i
       ];
       
       let foundDateTime = false;
@@ -3832,28 +3844,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Remove extra spaces and normalize
       const cleaned = dateStr.replace(/\s+/g, ' ').trim();
+      console.log('Attempting to parse date:', cleaned);
       
-      // Try DD/MM/YYYY HH:MM:SS format
-      const ddmmyyyyMatch = cleaned.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})/);
-      if (ddmmyyyyMatch) {
-        const [, day, month, year, hour, minute, second] = ddmmyyyyMatch;
-        return new Date(
+      // Try DD/MM/YYYY HH:MM format (like "19/07/2025 14:32")
+      const ddmmyyyyHHMM = cleaned.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/);
+      if (ddmmyyyyHHMM) {
+        const [, day, month, year, hour, minute] = ddmmyyyyHHMM;
+        const parsedDate = new Date(
           parseInt(year),
           parseInt(month) - 1, // Month is 0-indexed
           parseInt(day),
           parseInt(hour),
           parseInt(minute),
+          0 // seconds
+        );
+        console.log('Successfully parsed DD/MM/YYYY HH:MM:', parsedDate);
+        return parsedDate;
+      }
+      
+      // Try DD/MM/YYYY HH:MM:SS format
+      const ddmmyyyyHHMMSS = cleaned.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})/);
+      if (ddmmyyyyHHMMSS) {
+        const [, day, month, year, hour, minute, second] = ddmmyyyyHHMMSS;
+        const parsedDate = new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+          parseInt(hour),
+          parseInt(minute),
           parseInt(second)
         );
+        console.log('Successfully parsed DD/MM/YYYY HH:MM:SS:', parsedDate);
+        return parsedDate;
       }
 
-      // Try DD/MM/YYYY format
+      // Try DD/MM/YYYY format only
       const ddmmyyyy = cleaned.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
       if (ddmmyyyy) {
         const [, day, month, year] = ddmmyyyy;
-        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        const parsedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        console.log('Successfully parsed DD/MM/YYYY:', parsedDate);
+        return parsedDate;
       }
 
+      console.log('No date pattern matched for:', cleaned);
       return null;
     } catch (error) {
       console.error('Error parsing date:', error);
