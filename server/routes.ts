@@ -3672,8 +3672,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let data;
       
       try {
-        // Try to use pdf-parse with proper import handling
-        const pdfParse = require('pdf-parse');
+        // Use dynamic import for pdf-parse in ESM context
+        const { default: pdfParse } = await import('pdf-parse');
         data = await pdfParse(pdfBuffer);
       } catch (importError: any) {
         console.error('Error importing pdf-parse:', importError);
