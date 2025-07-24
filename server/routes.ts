@@ -604,8 +604,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public endpoint to get active taps for a unit - used by external devices
-  app.get('/api/public/taps/:unitId', async (req, res) => {
+  // Public endpoint to get active tap numbers for a unit - used by external devices
+  app.get('/api/public/taps/:unitId', validateWebhookToken, async (req, res) => {
     try {
       const unitId = parseInt(req.params.unitId);
       
@@ -615,7 +615,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get all active taps with their associated information
+      // Get all active taps
       const taps = await storage.getTaps();
       const activeTaps = taps.filter(tap => tap.isActive);
 
@@ -629,59 +629,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Filter taps by unit (through point of sale)
-      const unitTaps = activeTaps.filter(tap => 
-        unitPOS.some(pos => pos.id === tap.posId)
-      );
+      // Filter taps by unit and get only the tap numbers
+      const unitTapNumbers = activeTaps
+        .filter(tap => unitPOS.some(pos => pos.id === tap.posId))
+        .map(tap => tap.id);
 
-      // Get beer styles and devices for enriched response
-      const beerStyles = await storage.getBeerStyles();
-      const devices = await storage.getDevices();
-
-      // Enrich tap data with related information
-      const enrichedTaps = unitTaps.map(tap => {
-        const pos = unitPOS.find(p => p.id === tap.posId);
-        const beerStyle = beerStyles.find(bs => bs.id === tap.currentBeerStyleId);
-        const device = devices.find(d => d.id === tap.deviceId);
-
-        return {
-          id: tap.id,
-          name: tap.name,
-          isActive: tap.isActive,
-          currentVolumeAvailableMl: tap.currentVolumeAvailableMl,
-          pointOfSale: pos ? {
-            id: pos.id,
-            name: pos.name,
-            address: pos.address
-          } : null,
-          beerStyle: beerStyle ? {
-            id: beerStyle.id,
-            name: beerStyle.name,
-            description: beerStyle.description,
-            ebcColor: beerStyle.ebcColor
-          } : null,
-          device: device ? {
-            id: device.id,
-            code: device.code,
-            name: device.name,
-            isActive: device.isActive,
-            lastHeartbeat: device.lastHeartbeat
-          } : null
-        };
-      });
-
-      console.log(`Public API: Retrieved ${enrichedTaps.length} active taps for unit ${unitId}`);
+      console.log(`Public API: Retrieved ${unitTapNumbers.length} active tap numbers for unit ${unitId}: [${unitTapNumbers.join(', ')}]`);
       
       res.json({
         unitId,
-        unitName: unitPOS[0]?.name || `Unit ${unitId}`,
-        totalActiveTaps: enrichedTaps.length,
-        taps: enrichedTaps
+        activeTaps: unitTapNumbers
       });
     } catch (error) {
-      console.error("Error retrieving taps for unit:", error);
+      console.error("Error retrieving tap numbers for unit:", error);
       res.status(500).json({ 
-        message: "Error retrieving taps information",
+        message: "Error retrieving tap numbers",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }

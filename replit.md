@@ -122,8 +122,8 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - Keg changes: `https://gestor.donjuarez.com.br/api/webhooks/keg-change`
 - Heartbeat: `https://gestor.donjuarez.com.br/api/webhooks/heartbeat`
 
-**Public API Endpoints (No authentication required):**
-- Get active taps for unit: `https://gestor.donjuarez.com.br/api/public/taps/{unitId}`
+**Public API Endpoints (Requires webhook token):**
+- Get active tap numbers for unit: `https://gestor.donjuarez.com.br/api/public/taps/{unitId}`
 
 **Keg Change Webhook Format:**
 ```json
@@ -139,40 +139,24 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - `keg_capacity_liters`: Capacidade do barril em litros - 30 ou 50 (opcional, padrão: 30)
 - `beer_style_id`: ID do estilo de cerveja para atualizar na torneira (opcional)
 
+**Public Taps API Usage:**
+```cpp
+// ESP32 Code Example
+http.addHeader("Content-Type", "application/json");
+http.addHeader("x-webhook-token", "9hlJAoyTSy7K");
+// GET https://gestor.donjuarez.com.br/api/public/taps/1
+```
+
 **Public Taps API Response:**
 ```json
 {
   "unitId": 1,
-  "unitName": "Don juarez GP",
-  "totalActiveTaps": 3,
-  "taps": [
-    {
-      "id": 1,
-      "name": "Torneira 1",
-      "isActive": true,
-      "currentVolumeAvailableMl": 0,
-      "pointOfSale": {
-        "id": 1,
-        "name": "Don juarez GP",
-        "address": "Rua Capitão Leonardo, 188, Teófilo Otoni-MG"
-      },
-      "beerStyle": {
-        "id": 7,
-        "name": "Pilsen",
-        "description": "É o queridinho da galera! Levinho, refrescante e com coloração dourada. IBU: 9 / ABV: 4%.",
-        "ebcColor": 6
-      },
-      "device": {
-        "id": 19,
-        "code": "D8483",
-        "name": "ESP8266",
-        "isActive": true,
-        "lastHeartbeat": "2025-07-24T15:13:06.982Z"
-      }
-    }
-  ]
+  "activeTaps": [1, 8, 9]
 }
 ```
+- Retorna apenas os números das torneiras ativas da unidade
+- Resposta simplificada para dispositivos ESP32
+- Requer token de autenticação nos headers
 
 **Webhook URLs (Development):**
 - Replace domain with: `https://ea3123c5-9f03-4f32-844a-fe4c8cdd0203-00-1inaocwyrymso.worf.replit.dev`
@@ -227,12 +211,13 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K"); // Use actual webhook_token
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
-- ✓ Endpoint público de consulta de torneiras implementado (Julho 24, 2025)
-- ✓ API /api/public/taps/:unitId criada para dispositivos externos consultarem torneiras ativas
+- ✓ Endpoint público de consulta de torneiras otimizado com segurança (Julho 24, 2025)
+- ✓ API /api/public/taps/:unitId agora requer token de autenticação para segurança
+- ✓ Resposta simplificada retorna apenas números das torneiras ativas: [1, 8, 9]
 - ✓ Webhook keg-change atualizado para receber beer_style_id e atualizar estilo automaticamente
 - ✓ Sistema de parsing de data ISO aprimorado para suportar formato "2025-07-24T15:30:00"
 - ✓ Documentação completa dos novos endpoints públicos e formatos de webhook
-- ✓ Resposta enriquecida com informações de ponto de venda, estilo de cerveja e dispositivo
+- ✓ Implementação de segurança com middleware validateWebhookToken no endpoint público
 - ✓ Sistema completo de upload e processamento automático de PDF implementado (Julho 24, 2025)
 - ✓ Workflow automatizado: Upload → Processamento → Inserção no banco (sem formulários manuais)
 - ✓ Mapeamento automático para arquivo "relatorioCaixa.pdf" com extração de valores reais
