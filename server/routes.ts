@@ -3679,7 +3679,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         // Use pdfjs-dist to extract text from PDF
-        const pdfjs = await import('pdfjs-dist/legacy/build/pdf.js');
+        const pdfjs = await import('pdfjs-dist');
         
         // Load PDF document
         const pdfDoc = await pdfjs.getDocument({
