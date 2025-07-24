@@ -604,6 +604,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public endpoint to get active taps for a unit - used by external devices
+  app.get('/api/public/taps/:unitId', async (req, res) => {
+    try {
+      const unitId = parseInt(req.params.unitId);
+      
+      if (isNaN(unitId)) {
+        return res.status(400).json({ 
+          message: "Invalid unit ID. Must be a valid number." 
+        });
+      }
+
+      // Get all active taps with their associated information
+      const taps = await storage.getTaps();
+      const activeTaps = taps.filter(tap => tap.isActive);
+
+      // Get points of sale to filter by unit
+      const pointsOfSale = await storage.getPointsOfSale();
+      const unitPOS = pointsOfSale.filter(pos => pos.id === unitId);
+      
+      if (unitPOS.length === 0) {
+        return res.status(404).json({ 
+          message: `Unit with ID ${unitId} not found.` 
+        });
+      }
+
+      // Filter taps by unit (through point of sale)
+      const unitTaps = activeTaps.filter(tap => 
+        unitPOS.some(pos => pos.id === tap.posId)
+      );
+
+      // Get beer styles and devices for enriched response
+      const beerStyles = await storage.getBeerStyles();
+      const devices = await storage.getDevices();
+
+      // Enrich tap data with related information
+      const enrichedTaps = unitTaps.map(tap => {
+        const pos = unitPOS.find(p => p.id === tap.posId);
+        const beerStyle = beerStyles.find(bs => bs.id === tap.currentBeerStyleId);
+        const device = devices.find(d => d.id === tap.deviceId);
+
+        return {
+          id: tap.id,
+          name: tap.name,
+          isActive: tap.isActive,
+          currentVolumeAvailableMl: tap.currentVolumeAvailableMl,
+          pointOfSale: pos ? {
+            id: pos.id,
+            name: pos.name,
+            address: pos.address
+          } : null,
+          beerStyle: beerStyle ? {
+            id: beerStyle.id,
+            name: beerStyle.name,
+            description: beerStyle.description,
+            ebcColor: beerStyle.ebcColor
+          } : null,
+          device: device ? {
+            id: device.id,
+            code: device.code,
+            name: device.name,
+            isActive: device.isActive,
+            lastHeartbeat: device.lastHeartbeat
+          } : null
+        };
+      });
+
+      console.log(`Public API: Retrieved ${enrichedTaps.length} active taps for unit ${unitId}`);
+      
+      res.json({
+        unitId,
+        unitName: unitPOS[0]?.name || `Unit ${unitId}`,
+        totalActiveTaps: enrichedTaps.length,
+        taps: enrichedTaps
+      });
+    } catch (error) {
+      console.error("Error retrieving taps for unit:", error);
+      res.status(500).json({ 
+        message: "Error retrieving taps information",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Device heartbeat webhook - receives device status updates from ESP32
   app.post('/api/webhooks/heartbeat', validateWebhookToken, async (req, res) => {
     try {
