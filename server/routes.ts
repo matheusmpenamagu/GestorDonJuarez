@@ -8,8 +8,24 @@ import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, ins
 import { z } from "zod";
 import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
+import multer from "multer";
 
 const SAO_PAULO_TZ = "America/Sao_Paulo";
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed'));
+    }
+  },
+});
 
 // Helper function to convert dates to São Paulo timezone
 function toSaoPauloTime(date: Date): string {
@@ -24,6 +40,158 @@ function fromSaoPauloTime(dateString: string): Date {
   // For end dates, use 23:59:59
   const [year, month, day] = dateString.split('-').map(Number);
   return new Date(year, month - 1, day, 0, 0, 0, 0);
+}
+
+// PDF parsing function for cash register closure data
+function parsePDFContent(text: string): any {
+  console.log('Parsing PDF content...');
+  
+  const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+  console.log('PDF lines:', lines.slice(0, 20)); // Log first 20 lines for debugging
+
+  // Initialize data object with default values
+  const data: any = {
+    datetime: new Date().toISOString(),
+    unitId: null,
+    operationType: 'salao',
+    initialFund: '0.00',
+    cashSales: '0.00',
+    debitSales: '0.00',
+    creditSales: '0.00',
+    pixSales: '0.00',
+    withdrawals: '0.00',
+    shift: 'dia',
+    observations: 'Importado via PDF'
+  };
+
+  // Helper function to extract currency values
+  const extractCurrency = (text: string): string => {
+    // Look for patterns like "R$ 123,45" or "123,45" or "123.45"
+    const currencyRegex = /(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d{2})?|\d+(?:\.\d{2})?)/;
+    const match = text.match(currencyRegex);
+    if (match) {
+      // Convert Brazilian format (123.456,78) to decimal (123456.78)
+      let value = match[1];
+      if (value.includes(',')) {
+        // Brazilian format
+        value = value.replace(/\./g, '').replace(',', '.');
+      }
+      return parseFloat(value).toFixed(2);
+    }
+    return '0.00';
+  };
+
+  // Helper function to extract date/time
+  const extractDateTime = (text: string): string => {
+    // Look for date patterns like "DD/MM/YYYY" or "DD-MM-YYYY"
+    const dateRegex = /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/;
+    const timeRegex = /(\d{1,2}):(\d{2})/;
+    
+    const dateMatch = text.match(dateRegex);
+    const timeMatch = text.match(timeRegex);
+    
+    if (dateMatch) {
+      const [, day, month, year] = dateMatch;
+      let dateTime = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      
+      if (timeMatch) {
+        const [, hour, minute] = timeMatch;
+        dateTime += `T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+      } else {
+        dateTime += 'T00:00';
+      }
+      
+      return dateTime;
+    }
+    
+    return new Date().toISOString();
+  };
+
+  // Process each line to extract relevant information
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].toLowerCase();
+    const originalLine = lines[i];
+
+    // Extract date/time information
+    if (line.includes('data') || line.includes('período') || originalLine.match(/\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/)) {
+      const extractedDate = extractDateTime(originalLine);
+      if (extractedDate !== new Date().toISOString()) {
+        data.datetime = extractedDate;
+      }
+    }
+
+    // Extract unit information
+    if (line.includes('unidade') || line.includes('loja') || line.includes('filial')) {
+      // Try to match with existing units in the system
+      if (line.includes('apollonio') || line.includes('apollo')) {
+        data.unitId = 5; // Apollonio unit ID from database
+      } else if (line.includes('grão') || line.includes('grao') || line.includes('para')) {
+        data.unitId = 6; // Grão Pará unit ID
+      }
+    }
+
+    // Extract operation type
+    if (line.includes('delivery') || line.includes('entrega')) {
+      data.operationType = 'delivery';
+    } else if (line.includes('salão') || line.includes('salao') || line.includes('balcão')) {
+      data.operationType = 'salao';
+    }
+
+    // Extract shift information
+    if (line.includes('turno') || line.includes('período')) {
+      if (line.includes('manhã') || line.includes('manha') || line.includes('dia')) {
+        data.shift = 'dia';
+      } else if (line.includes('tarde')) {
+        data.shift = 'tarde';
+      } else if (line.includes('noite')) {
+        data.shift = 'noite';
+      } else if (line.includes('madrugada') || line.includes('madrug')) {
+        data.shift = 'madrugada';
+      }
+    }
+
+    // Extract financial values
+    if (line.includes('fundo') && (line.includes('inicial') || line.includes('abertura'))) {
+      data.initialFund = extractCurrency(originalLine);
+    }
+    
+    if (line.includes('dinheiro') || line.includes('espécie') || line.includes('cash')) {
+      if (line.includes('venda') || line.includes('receb')) {
+        data.cashSales = extractCurrency(originalLine);
+      }
+    }
+    
+    if (line.includes('débito') || line.includes('debito') || line.includes('cartão débito')) {
+      data.debitSales = extractCurrency(originalLine);
+    }
+    
+    if (line.includes('crédito') || line.includes('credito') || line.includes('cartão crédito')) {
+      data.creditSales = extractCurrency(originalLine);
+    }
+    
+    if (line.includes('pix')) {
+      data.pixSales = extractCurrency(originalLine);
+    }
+    
+    if (line.includes('sangria') || line.includes('retirada') || line.includes('saque')) {
+      data.withdrawals = extractCurrency(originalLine);
+    }
+
+    // Look for total sales
+    if (line.includes('total') && (line.includes('venda') || line.includes('receit'))) {
+      const totalValue = extractCurrency(originalLine);
+      // If we don't have individual breakdown, put everything in cash sales
+      if (data.cashSales === '0.00' && data.debitSales === '0.00' && 
+          data.creditSales === '0.00' && data.pixSales === '0.00') {
+        data.cashSales = totalValue;
+      }
+    }
+  }
+
+  console.log('Parsed data:', data);
+  
+  // Return data even if unitId is null - we'll handle it in the frontend
+  return data;
 }
 
 // Simple demo auth middleware - allows all requests for demonstration
@@ -3482,6 +3650,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting cash register closure:", error);
       res.status(500).json({ message: "Error deleting cash register closure" });
+    }
+  });
+
+  // Upload PDF and parse cash register closure data
+  app.post('/api/cash-register-closures/upload-pdf', demoAuth, upload.single('pdf'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Nenhum arquivo PDF foi enviado" });
+      }
+
+      // Verify file type
+      if (req.file.mimetype !== 'application/pdf') {
+        return res.status(400).json({ message: "Apenas arquivos PDF são aceitos" });
+      }
+
+      console.log('Processing PDF file:', req.file.originalname);
+      
+      // Parse PDF content
+      const pdfParse = await import('pdf-parse');
+      const pdfBuffer = req.file.buffer;
+      const data = await pdfParse.default(pdfBuffer);
+      
+      console.log('PDF text content:', data.text);
+      
+      // Parse the PDF content to extract cash register data
+      const parsedData = parsePDFContent(data.text);
+      
+      if (!parsedData) {
+        return res.status(400).json({ 
+          message: "Não foi possível extrair dados de fechamento do PDF",
+          rawText: data.text.substring(0, 500) + "..." // First 500 chars for debugging
+        });
+      }
+
+      // If unit ID is not detected, return parsed data for manual completion
+      if (!parsedData.unitId) {
+        return res.status(200).json({
+          message: "PDF processado com sucesso. Selecione a unidade para finalizar.",
+          requiresManualCompletion: true,
+          parsedData,
+          rawText: data.text.substring(0, 1000) + "..." // More text for debugging
+        });
+      }
+
+      // Create cash register closure with parsed data
+      const { insertCashRegisterClosureSchema } = await import("@shared/schema");
+      const closureData = insertCashRegisterClosureSchema.parse({
+        ...parsedData,
+        createdBy: req.session.user?.id,
+      });
+
+      const closure = await storage.createCashRegisterClosure(closureData);
+      
+      res.status(201).json({ 
+        message: "Fechamento de caixa criado com sucesso a partir do PDF",
+        closure,
+        parsedData
+      });
+    } catch (error) {
+      console.error("Error processing PDF upload:", error);
+      res.status(500).json({ 
+        message: "Erro ao processar arquivo PDF",
+        error: error.message 
+      });
     }
   });
 

@@ -2,12 +2,12 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Calendar, Building2, DollarSign, Edit, Trash2 } from "lucide-react";
+import { Plus, Calendar, Building2, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -35,8 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
-import { apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 
 import type { CashRegisterClosure, Unit } from "@shared/schema";
 import { insertCashRegisterClosureSchema } from "@shared/schema";
@@ -56,17 +55,18 @@ function CashRegisterForm({
   const form = useForm<CashRegisterClosureFormData>({
     resolver: zodResolver(insertCashRegisterClosureSchema),
     defaultValues: {
-      datetime: closure?.datetime || new Date().toISOString().slice(0, 16),
+      datetime: closure?.datetime || new Date(),
       unitId: closure?.unitId || undefined,
-      operationType: closure?.operationType || "salao",
-      initialFund: closure?.initialFund || "0.00",
-      cashSales: closure?.cashSales || "0.00",
-      debitSales: closure?.debitSales || "0.00",
-      creditSales: closure?.creditSales || "0.00",
-      pixSales: closure?.pixSales || "0.00",
-      withdrawals: closure?.withdrawals || "0.00",
+      operation: closure?.operation || "salao",
+      initialFund: closure?.initialFund ? parseFloat(closure.initialFund) : 0,
+      cashSales: closure?.cashSales ? parseFloat(closure.cashSales) : 0,
+      debitSales: closure?.debitSales ? parseFloat(closure.debitSales) : 0,
+      creditSales: closure?.creditSales ? parseFloat(closure.creditSales) : 0,
+      pixSales: closure?.pixSales ? parseFloat(closure.pixSales) : 0,
+      withdrawals: closure?.withdrawals ? parseFloat(closure.withdrawals) : 0,
       shift: closure?.shift || "dia",
-      observations: closure?.observations || "",
+      notes: closure?.notes || "",
+      createdBy: "demo-user", // Will be replaced by actual user in backend
     },
   });
 
@@ -77,9 +77,9 @@ function CashRegisterForm({
 
   const createMutation = useMutation({
     mutationFn: (data: CashRegisterClosureFormData) =>
-      apiRequest('/api/cash-register-closures', 'POST', data),
+      apiRequest("/api/cash-register-closures", "POST", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/cash-register-closures'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-register-closures"] });
       toast({
         title: "Fechamento criado",
         description: "O fechamento de caixa foi criado com sucesso.",
@@ -96,10 +96,10 @@ function CashRegisterForm({
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: CashRegisterClosureFormData) =>
-      apiRequest(`/api/cash-register-closures/${closure!.id}`, 'PUT', data),
+    mutationFn: ({ id, data }: { id: number; data: Partial<CashRegisterClosureFormData> }) =>
+      apiRequest(`/api/cash-register-closures/${id}`, "PUT", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/cash-register-closures'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-register-closures"] });
       toast({
         title: "Fechamento atualizado",
         description: "O fechamento de caixa foi atualizado com sucesso.",
@@ -117,7 +117,7 @@ function CashRegisterForm({
 
   const onSubmit = (data: CashRegisterClosureFormData) => {
     if (closure) {
-      updateMutation.mutate(data);
+      updateMutation.mutate({ id: closure.id, data });
     } else {
       createMutation.mutate(data);
     }
@@ -136,7 +136,8 @@ function CashRegisterForm({
                 <FormControl>
                   <Input
                     type="datetime-local"
-                    {...field}
+                    value={field.value ? new Date(field.value).toISOString().slice(0, 16) : ""}
+                    onChange={(e) => field.onChange(new Date(e.target.value))}
                   />
                 </FormControl>
                 <FormMessage />
@@ -171,7 +172,7 @@ function CashRegisterForm({
 
           <FormField
             control={form.control}
-            name="operationType"
+            name="operation"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo de Operação *</FormLabel>
@@ -197,7 +198,7 @@ function CashRegisterForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Turno</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || ""}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o turno" />
@@ -226,7 +227,8 @@ function CashRegisterForm({
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    {...field}
+                    value={field.value || 0}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -245,7 +247,8 @@ function CashRegisterForm({
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    {...field}
+                    value={field.value || 0}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -264,7 +267,8 @@ function CashRegisterForm({
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    {...field}
+                    value={field.value || 0}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -283,7 +287,8 @@ function CashRegisterForm({
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    {...field}
+                    value={field.value || 0}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -302,7 +307,8 @@ function CashRegisterForm({
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    {...field}
+                    value={field.value || 0}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -321,7 +327,8 @@ function CashRegisterForm({
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    {...field}
+                    value={field.value || 0}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -332,7 +339,7 @@ function CashRegisterForm({
 
         <FormField
           control={form.control}
-          name="observations"
+          name="notes"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Observações</FormLabel>
@@ -341,6 +348,7 @@ function CashRegisterForm({
                   placeholder="Observações sobre o fechamento..."
                   className="resize-none"
                   {...field}
+                  value={field.value || ""}
                 />
               </FormControl>
               <FormMessage />
@@ -352,6 +360,7 @@ function CashRegisterForm({
           <Button
             type="submit"
             disabled={createMutation.isPending || updateMutation.isPending}
+            className="bg-orange-600 hover:bg-orange-700"
           >
             {closure ? "Atualizar" : "Criar"} Fechamento
           </Button>
@@ -366,19 +375,18 @@ export default function CashRegisterManagement() {
   const [editingClosure, setEditingClosure] = useState<CashRegisterClosure | null>(null);
   const { toast } = useToast();
 
-  // Get cash register closures
+  // Fetch closures
   const { data: closures = [], isLoading } = useQuery<CashRegisterClosure[]>({
     queryKey: ['/api/cash-register-closures'],
   });
 
-  // Get units for display
+  // Fetch units for display
   const { data: units = [] } = useQuery<Unit[]>({
     queryKey: ['/api/units'],
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) =>
-      apiRequest(`/api/cash-register-closures/${id}`, 'DELETE'),
+    mutationFn: (id: number) => apiRequest(`/api/cash-register-closures/${id}`, 'DELETE'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/cash-register-closures'] });
       toast({
@@ -406,71 +414,42 @@ export default function CashRegisterManagement() {
     }
   };
 
-  const handleDialogClose = () => {
-    setIsDialogOpen(false);
-    setEditingClosure(null);
+  const getUnitName = (unitId: number) => {
+    const unit = units.find(u => u.id === unitId);
+    return unit?.name || "Unidade não encontrada";
+  };
+
+  const getOperationBadge = (operation: string) => {
+    return (
+      <Badge variant={operation === "salao" ? "default" : "secondary"}>
+        {operation === "salao" ? "Salão" : "Delivery"}
+      </Badge>
+    );
+  };
+
+  const getShiftBadge = (shift: string | null) => {
+    if (!shift) return null;
+    return (
+      <Badge variant="outline">
+        {shift.charAt(0).toUpperCase() + shift.slice(1)}
+      </Badge>
+    );
   };
 
   const formatCurrency = (value: string | number) => {
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL',
+      currency: 'BRL'
     }).format(numValue);
   };
-
-  const getOperationBadge = (type: string) => {
-    return type === 'salao' ? (
-      <Badge variant="default">Salão</Badge>
-    ) : (
-      <Badge variant="secondary">Delivery</Badge>
-    );
-  };
-
-  const getShiftBadge = (shift: string) => {
-    const shiftColors: Record<string, string> = {
-      dia: "bg-yellow-100 text-yellow-800",
-      tarde: "bg-orange-100 text-orange-800",
-      noite: "bg-blue-100 text-blue-800",
-      madrugada: "bg-purple-100 text-purple-800",
-    };
-
-    const shiftLabels: Record<string, string> = {
-      dia: "Dia",
-      tarde: "Tarde", 
-      noite: "Noite",
-      madrugada: "Madrugada",
-    };
-
-    return (
-      <Badge className={shiftColors[shift]}>
-        {shiftLabels[shift]}
-      </Badge>
-    );
-  };
-
-  const getUnitName = (unitId: number) => {
-    const unit = units.find(u => u.id === unitId);
-    return unit?.name || 'Unidade não encontrada';
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando fechamentos de caixa...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Fechamentos de Caixa</h1>
-          <p className="text-gray-600 mt-2">
+          <p className="mt-1 text-sm text-gray-600">
             Gerencie os fechamentos de caixa das suas unidades
           </p>
         </div>
@@ -488,41 +467,30 @@ export default function CashRegisterManagement() {
                 {editingClosure ? "Editar Fechamento" : "Novo Fechamento de Caixa"}
               </DialogTitle>
               <DialogDescription>
-                {editingClosure 
-                  ? "Edite as informações do fechamento de caixa"
-                  : "Preencha as informações para criar um novo fechamento de caixa"
-                }
+                {editingClosure ? "Edite as informações do fechamento" : "Registre um novo fechamento de caixa"}
               </DialogDescription>
             </DialogHeader>
-            <CashRegisterForm
+            <CashRegisterForm 
               closure={editingClosure || undefined}
-              onSuccess={handleDialogClose}
+              onSuccess={() => {
+                setIsDialogOpen(false);
+                setEditingClosure(null);
+              }}
             />
           </DialogContent>
         </Dialog>
       </div>
 
-      {closures.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <DollarSign className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Nenhum fechamento encontrado
-            </h3>
-            <p className="text-gray-600 text-center mb-4">
-              Comece criando seu primeiro fechamento de caixa
-            </p>
-            <Button
-              onClick={() => setIsDialogOpen(true)}
-              className="bg-orange-600 hover:bg-orange-700"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Fechamento
-            </Button>
-          </CardContent>
-        </Card>
+      {isLoading ? (
+        <div className="text-center py-8">
+          <p>Carregando fechamentos...</p>
+        </div>
+      ) : closures.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500">Nenhum fechamento de caixa encontrado.</p>
+        </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-6">
           {closures.map((closure) => (
             <Card key={closure.id}>
               <CardHeader>
@@ -539,8 +507,8 @@ export default function CashRegisterManagement() {
                       <span className="text-sm text-gray-600">
                         {getUnitName(closure.unitId)}
                       </span>
-                      {getOperationBadge(closure.operationType)}
-                      {closure.shift && getShiftBadge(closure.shift)}
+                      {getOperationBadge(closure.operation)}
+                      {getShiftBadge(closure.shift)}
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -579,19 +547,19 @@ export default function CashRegisterManagement() {
                   <div>
                     <p className="text-sm font-medium text-gray-500">Vendas Débito</p>
                     <p className="text-lg font-semibold">
-                      {formatCurrency(closure.debitSales || 0)}
+                      {formatCurrency(closure.debitSales || "0")}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">Vendas Crédito</p>
                     <p className="text-lg font-semibold">
-                      {formatCurrency(closure.creditSales || 0)}
+                      {formatCurrency(closure.creditSales || "0")}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">Vendas PIX</p>
                     <p className="text-lg font-semibold">
-                      {formatCurrency(closure.pixSales || 0)}
+                      {formatCurrency(closure.pixSales || "0")}
                     </p>
                   </div>
                   <div>
@@ -602,10 +570,10 @@ export default function CashRegisterManagement() {
                   </div>
                 </div>
 
-                {closure.observations && (
+                {closure.notes && (
                   <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                     <p className="text-sm font-medium text-gray-500 mb-1">Observações</p>
-                    <p className="text-sm text-gray-700">{closure.observations}</p>
+                    <p className="text-sm text-gray-700">{closure.notes}</p>
                   </div>
                 )}
 
