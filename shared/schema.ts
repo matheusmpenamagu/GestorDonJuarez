@@ -519,6 +519,8 @@ export type StockCount = typeof stockCounts.$inferSelect;
 export type InsertStockCount = typeof stockCounts.$inferInsert;
 export type StockCountItem = typeof stockCountItems.$inferSelect;
 export type InsertStockCountItem = typeof stockCountItems.$inferInsert;
+export type CashRegisterClosure = typeof cashRegisterClosures.$inferSelect;
+export type InsertCashRegisterClosure = z.infer<typeof insertCashRegisterClosureSchema>;
 
 export const insertStockCountSchema = createInsertSchema(stockCounts).omit({
   id: true,
@@ -533,6 +535,51 @@ export const insertStockCountItemSchema = createInsertSchema(stockCountItems).om
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+// Cash Register Closures table
+export const cashRegisterClosures = pgTable("cash_register_closures", {
+  id: serial("id").primaryKey(),
+  datetime: timestamp("datetime").notNull(),
+  unitId: integer("unit_id").notNull().references(() => units.id),
+  operation: varchar("operation", { length: 20 }).notNull(), // "salao" or "delivery"
+  initialFund: decimal("initial_fund", { precision: 10, scale: 2 }).notNull(),
+  cashSales: decimal("cash_sales", { precision: 10, scale: 2 }).notNull(),
+  debitSales: decimal("debit_sales", { precision: 10, scale: 2 }),
+  creditSales: decimal("credit_sales", { precision: 10, scale: 2 }),
+  pixSales: decimal("pix_sales", { precision: 10, scale: 2 }),
+  withdrawals: decimal("withdrawals", { precision: 10, scale: 2 }).notNull(),
+  shift: varchar("shift", { length: 20 }), // "dia", "tarde", "noite", "madrugada"
+  notes: text("notes"),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Relations for Cash Register Closures
+export const cashRegisterClosuresRelations = relations(cashRegisterClosures, ({ one }) => ({
+  unit: one(units, {
+    fields: [cashRegisterClosures.unitId],
+    references: [units.id],
+  }),
+  creator: one(users, {
+    fields: [cashRegisterClosures.createdBy],
+    references: [users.id],
+  }),
+}));
+
+// Insert schema for Cash Register Closures
+export const insertCashRegisterClosureSchema = createInsertSchema(cashRegisterClosures).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  initialFund: z.number().min(0),
+  cashSales: z.number().min(0),
+  debitSales: z.number().min(0).optional(),
+  creditSales: z.number().min(0).optional(),
+  pixSales: z.number().min(0).optional(),
+  withdrawals: z.number().min(0),
 });
 
 export type StockCountWithRelations = StockCount & {

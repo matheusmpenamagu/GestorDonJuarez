@@ -23,6 +23,7 @@ import StockCountsManagement from "@/pages/StockCountsManagement";
 import StockCountDetail from "@/pages/StockCountDetail";
 import PublicStockCount from "@/pages/PublicStockCount";
 import CompanySettings from "@/pages/CompanySettings";
+import CashRegisterManagement from "@/pages/CashRegisterManagement";
 import Privacy from "@/pages/Privacy";
 import TermsOfUse from "@/pages/TermsOfUse";
 import NotFound from "@/pages/not-found";
@@ -137,6 +138,13 @@ function Router() {
           <Route path="/empresa/configuracoes">
             <Layout>
               <CompanySettings />
+            </Layout>
+          </Route>
+
+          {/* Financeiro */}
+          <Route path="/financeiro/caixas">
+            <Layout>
+              <CashRegisterManagement />
             </Layout>
           </Route>
         </>

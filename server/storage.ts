@@ -16,6 +16,7 @@ import {
   productUnits,
   stockCounts,
   stockCountItems,
+  cashRegisterClosures,
   settings,
   type User,
   type UpsertUser,
@@ -55,6 +56,8 @@ import {
   type StockCountItem,
   type InsertStockCountItem,
   type StockCountItemWithRelations,
+  type CashRegisterClosure,
+  type InsertCashRegisterClosure,
   type TapWithRelations,
   type PourEventWithRelations,
   type EmployeeWithRelations,
@@ -219,6 +222,13 @@ export interface IStorage {
   getSetting(key: string): Promise<Setting | undefined>;
   setSetting(key: string, value: string, description?: string): Promise<Setting>;
   updateSetting(key: string, value: string): Promise<Setting>;
+  
+  // Cash Register Closures operations
+  getCashRegisterClosures(): Promise<CashRegisterClosure[]>;
+  getCashRegisterClosure(id: number): Promise<CashRegisterClosure | undefined>;
+  createCashRegisterClosure(closure: InsertCashRegisterClosure): Promise<CashRegisterClosure>;
+  updateCashRegisterClosure(id: number, closure: Partial<InsertCashRegisterClosure>): Promise<CashRegisterClosure>;
+  deleteCashRegisterClosure(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1931,6 +1941,34 @@ export class DatabaseStorage implements IStorage {
 
   async clearAllStockCountItems(): Promise<void> {
     await db.delete(stockCountItems);
+  }
+
+  // Cash Register Closures operations
+  async getCashRegisterClosures(): Promise<CashRegisterClosure[]> {
+    return await db.select().from(cashRegisterClosures).orderBy(desc(cashRegisterClosures.datetime));
+  }
+
+  async getCashRegisterClosure(id: number): Promise<CashRegisterClosure | undefined> {
+    const [closure] = await db.select().from(cashRegisterClosures).where(eq(cashRegisterClosures.id, id));
+    return closure || undefined;
+  }
+
+  async createCashRegisterClosure(closure: InsertCashRegisterClosure): Promise<CashRegisterClosure> {
+    const [created] = await db.insert(cashRegisterClosures).values(closure).returning();
+    return created;
+  }
+
+  async updateCashRegisterClosure(id: number, closure: Partial<InsertCashRegisterClosure>): Promise<CashRegisterClosure> {
+    const [updated] = await db
+      .update(cashRegisterClosures)
+      .set({ ...closure, updatedAt: new Date() })
+      .where(eq(cashRegisterClosures.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteCashRegisterClosure(id: number): Promise<void> {
+    await db.delete(cashRegisterClosures).where(eq(cashRegisterClosures.id, id));
   }
 }
 

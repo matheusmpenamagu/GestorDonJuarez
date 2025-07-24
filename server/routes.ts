@@ -1337,6 +1337,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { insertRoleSchema } = await import("@shared/schema");
       const roleData = insertRoleSchema.parse(req.body);
+      
+      // Check if the role includes financial permission
+      if (roleData.permissions && roleData.permissions.includes('financial')) {
+        // Only specific user can grant financial permission
+        const authorizedUserId = 'e6bea1c6-e6f4-4f7b-8efc-73c4f2d7f6c0'; // Your user ID
+        if (req.session.user?.id !== authorizedUserId) {
+          return res.status(403).json({ 
+            message: "Você não tem autorização para conceder permissões financeiras" 
+          });
+        }
+      }
+      
       const role = await storage.createRole(roleData);
       res.status(201).json(role);
     } catch (error) {
@@ -1351,6 +1363,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { insertRoleSchema } = await import("@shared/schema");
       const id = parseInt(req.params.id);
       const roleData = insertRoleSchema.partial().parse(req.body);
+      
+      // Check if the role includes financial permission
+      if (roleData.permissions && roleData.permissions.includes('financial')) {
+        // Only specific user can grant financial permission
+        const authorizedUserId = 'e6bea1c6-e6f4-4f7b-8efc-73c4f2d7f6c0'; // Your user ID
+        if (req.session.user?.id !== authorizedUserId) {
+          return res.status(403).json({ 
+            message: "Você não tem autorização para conceder permissões financeiras" 
+          });
+        }
+      }
+      
       const role = await storage.updateRole(id, roleData);
       res.json(role);
     } catch (error) {
@@ -3403,6 +3427,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating setting:", error);
       res.status(500).json({ message: "Erro ao atualizar configuração" });
+    }
+  });
+
+  // ============ CASH REGISTER CLOSURES ROUTES ============
+
+  // Get all cash register closures
+  app.get('/api/cash-register-closures', demoAuth, async (req, res) => {
+    try {
+      const closures = await storage.getCashRegisterClosures();
+      res.json(closures);
+    } catch (error) {
+      console.error("Error fetching cash register closures:", error);
+      res.status(500).json({ message: "Error fetching cash register closures" });
+    }
+  });
+
+  // Create new cash register closure
+  app.post('/api/cash-register-closures', demoAuth, async (req, res) => {
+    try {
+      const { insertCashRegisterClosureSchema } = await import("@shared/schema");
+      const closureData = insertCashRegisterClosureSchema.parse({
+        ...req.body,
+        createdBy: req.session.user?.id,
+      });
+      const closure = await storage.createCashRegisterClosure(closureData);
+      res.status(201).json(closure);
+    } catch (error) {
+      console.error("Error creating cash register closure:", error);
+      res.status(500).json({ message: "Error creating cash register closure" });
+    }
+  });
+
+  // Update cash register closure
+  app.put('/api/cash-register-closures/:id', demoAuth, async (req, res) => {
+    try {
+      const { insertCashRegisterClosureSchema } = await import("@shared/schema");
+      const id = parseInt(req.params.id);
+      const closureData = insertCashRegisterClosureSchema.partial().parse(req.body);
+      const closure = await storage.updateCashRegisterClosure(id, closureData);
+      res.json(closure);
+    } catch (error) {
+      console.error("Error updating cash register closure:", error);
+      res.status(500).json({ message: "Error updating cash register closure" });
+    }
+  });
+
+  // Delete cash register closure
+  app.delete('/api/cash-register-closures/:id', demoAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteCashRegisterClosure(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting cash register closure:", error);
+      res.status(500).json({ message: "Error deleting cash register closure" });
     }
   });
 

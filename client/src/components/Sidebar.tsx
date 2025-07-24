@@ -17,7 +17,9 @@ import {
   Wind,
   Clock,
   Package,
-  Settings
+  Settings,
+  DollarSign,
+  CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -56,6 +58,13 @@ const menuItems = [
       { href: "/empresa/configuracoes", icon: Settings, label: "Configurações" },
     ],
   },
+  {
+    title: "Financeiro",
+    icon: DollarSign,
+    items: [
+      { href: "/financeiro/caixas", icon: CreditCard, label: "Caixas" },
+    ],
+  },
 ];
 
 export function Sidebar() {
@@ -64,7 +73,8 @@ export function Sidebar() {
     "Chopes": false,
     "Pessoas": false,
     "Estoque": false,
-    "Empresa": false
+    "Empresa": false,
+    "Financeiro": false
   });
 
   const toggleSection = (sectionTitle: string) => {

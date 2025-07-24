@@ -32,6 +32,7 @@ const AVAILABLE_PERMISSIONS = [
   { id: 'products', name: 'Produtos', description: 'Gerenciar produtos e catálogo' },
   { id: 'stock_counts', name: 'Contagens de Estoque', description: 'Criar e gerenciar contagens de estoque' },
   { id: 'co2_management', name: 'Gestão de CO2', description: 'Gerenciar recargas e retiradas de CO2' },
+  { id: 'financial', name: 'Financeiro', description: 'Acessar módulo financeiro (restrito)' },
 ];
 
 export default function RolesManagement() {
