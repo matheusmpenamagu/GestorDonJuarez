@@ -46,9 +46,6 @@ function fromSaoPauloTime(dateString: string): Date {
 function parsePDFContent(text: string): any {
   console.log('Parsing PDF content...');
   
-  const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-  console.log('PDF lines:', lines.slice(0, 20)); // Log first 20 lines for debugging
-
   // Initialize data object with default values
   const data: any = {
     datetime: new Date().toISOString(),
@@ -64,19 +61,31 @@ function parsePDFContent(text: string): any {
     observations: 'Importado via PDF'
   };
 
-  // Helper function to extract currency values
+  // Helper function to extract currency values with improved patterns
   const extractCurrency = (text: string): string => {
-    // Look for patterns like "R$ 123,45" or "123,45" or "123.45"
-    const currencyRegex = /(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d{2})?|\d+(?:\.\d{2})?)/;
-    const match = text.match(currencyRegex);
-    if (match) {
-      // Convert Brazilian format (123.456,78) to decimal (123456.78)
-      let value = match[1];
-      if (value.includes(',')) {
-        // Brazilian format
-        value = value.replace(/\./g, '').replace(',', '.');
+    // Multiple patterns for currency extraction
+    const patterns = [
+      /(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/g, // R$ 1.234,56
+      /(?:R\$\s*)?(\d+,\d{2})/g, // R$ 123,45
+      /(?:R\$\s*)?(\d+\.\d{2})/g, // R$ 123.45
+      /(\d{1,3}(?:\.\d{3})*,\d{2})/g, // 1.234,56
+      /(\d+,\d{2})/g, // 123,45
+      /(\d+\.\d{2})/g // 123.45
+    ];
+    
+    for (const pattern of patterns) {
+      const matches = text.match(pattern);
+      if (matches && matches.length > 0) {
+        let value = matches[0].replace('R$', '').trim();
+        // Convert Brazilian format to decimal
+        if (value.includes(',')) {
+          value = value.replace(/\./g, '').replace(',', '.');
+        }
+        const numValue = parseFloat(value);
+        if (!isNaN(numValue) && numValue > 0) {
+          return numValue.toFixed(2);
+        }
       }
-      return parseFloat(value).toFixed(2);
     }
     return '0.00';
   };
@@ -107,7 +116,41 @@ function parsePDFContent(text: string): any {
     return new Date().toISOString();
   };
 
-  // Process each line to extract relevant information
+  // Clean and prepare text for parsing
+  const cleanText = text.replace(/[^\x20-\x7E\u00C0-\u017F]/g, ' ').replace(/\s+/g, ' ');
+  const lines = cleanText.split(/[\n\r]+/).map(line => line.trim()).filter(line => line.length > 0);
+  
+  console.log('Extracted PDF text (cleaned):', cleanText.substring(0, 500));
+  console.log('Number of lines found:', lines.length);
+
+  // Look for specific patterns across the entire content
+  const findValueNearKeyword = (keywords: string[], textContent: string): string => {
+    for (const keyword of keywords) {
+      const regex = new RegExp(`${keyword}[\\s\\S]*?(\\d{1,3}(?:\\.\\d{3})*,\\d{2}|\\d+,\\d{2}|\\d+\\.\\d{2})`, 'i');
+      const match = textContent.match(regex);
+      if (match) {
+        const value = match[1];
+        // Convert Brazilian format to decimal
+        let processedValue = value.replace(/\./g, '').replace(',', '.');
+        const numValue = parseFloat(processedValue);
+        if (!isNaN(numValue) && numValue > 0) {
+          console.log(`Found ${keyword}: ${value} -> ${numValue.toFixed(2)}`);
+          return numValue.toFixed(2);
+        }
+      }
+    }
+    return '0.00';
+  };
+
+  // Extract values using keyword-based search
+  data.cashSales = findValueNearKeyword(['dinheiro', 'especie', 'cash', 'moeda'], cleanText);
+  data.debitSales = findValueNearKeyword(['debito', 'débito', 'cartao debito', 'cartão débito'], cleanText);
+  data.creditSales = findValueNearKeyword(['credito', 'crédito', 'cartao credito', 'cartão crédito'], cleanText);
+  data.pixSales = findValueNearKeyword(['pix'], cleanText);
+  data.withdrawals = findValueNearKeyword(['sangria', 'retirada', 'saque'], cleanText);
+  data.initialFund = findValueNearKeyword(['fundo inicial', 'caixa abertura', 'abertura'], cleanText);
+
+  // Process each line to extract additional information
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].toLowerCase();
     const originalLine = lines[i];
@@ -122,19 +165,13 @@ function parsePDFContent(text: string): any {
 
     // Extract unit information
     if (line.includes('unidade') || line.includes('loja') || line.includes('filial')) {
-      // Try to match with existing units in the system
       if (line.includes('apollonio') || line.includes('apollo')) {
         data.unitId = 5; // Apollonio unit ID from database
       } else if (line.includes('grão') || line.includes('grao') || line.includes('para')) {
         data.unitId = 6; // Grão Pará unit ID
+      } else if (line.includes('don juarez') || line.includes('donjuarez')) {
+        data.unitId = 1; // Don Juarez main unit
       }
-    }
-
-    // Extract operation type
-    if (line.includes('delivery') || line.includes('entrega')) {
-      data.operationType = 'delivery';
-    } else if (line.includes('salão') || line.includes('salao') || line.includes('balcão')) {
-      data.operationType = 'salao';
     }
 
     // Extract shift information
@@ -147,43 +184,6 @@ function parsePDFContent(text: string): any {
         data.shift = 'noite';
       } else if (line.includes('madrugada') || line.includes('madrug')) {
         data.shift = 'madrugada';
-      }
-    }
-
-    // Extract financial values
-    if (line.includes('fundo') && (line.includes('inicial') || line.includes('abertura'))) {
-      data.initialFund = extractCurrency(originalLine);
-    }
-    
-    if (line.includes('dinheiro') || line.includes('espécie') || line.includes('cash')) {
-      if (line.includes('venda') || line.includes('receb')) {
-        data.cashSales = extractCurrency(originalLine);
-      }
-    }
-    
-    if (line.includes('débito') || line.includes('debito') || line.includes('cartão débito')) {
-      data.debitSales = extractCurrency(originalLine);
-    }
-    
-    if (line.includes('crédito') || line.includes('credito') || line.includes('cartão crédito')) {
-      data.creditSales = extractCurrency(originalLine);
-    }
-    
-    if (line.includes('pix')) {
-      data.pixSales = extractCurrency(originalLine);
-    }
-    
-    if (line.includes('sangria') || line.includes('retirada') || line.includes('saque')) {
-      data.withdrawals = extractCurrency(originalLine);
-    }
-
-    // Look for total sales
-    if (line.includes('total') && (line.includes('venda') || line.includes('receit'))) {
-      const totalValue = extractCurrency(originalLine);
-      // If we don't have individual breakdown, put everything in cash sales
-      if (data.cashSales === '0.00' && data.debitSales === '0.00' && 
-          data.creditSales === '0.00' && data.pixSales === '0.00') {
-        data.cashSales = totalValue;
       }
     }
   }
