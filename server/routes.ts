@@ -3668,9 +3668,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Processing PDF file:', req.file.originalname);
       
       // Parse PDF content
-      const pdfParse = await import('pdf-parse');
       const pdfBuffer = req.file.buffer;
-      const data = await pdfParse.default(pdfBuffer);
+      let data;
+      
+      try {
+        // Try to use pdf-parse with proper import handling
+        const pdfParse = require('pdf-parse');
+        data = await pdfParse(pdfBuffer);
+      } catch (importError: any) {
+        console.error('Error importing pdf-parse:', importError);
+        return res.status(500).json({ 
+          message: "Erro interno ao processar PDF. Biblioteca não disponível.",
+          error: importError?.message || "Erro desconhecido"
+        });
+      }
       
       console.log('PDF text content:', data.text);
       
