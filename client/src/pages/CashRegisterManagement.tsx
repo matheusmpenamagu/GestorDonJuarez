@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Calendar, Building2, Edit, Trash2, Upload, FileText } from "lucide-react";
+import { Plus, Calendar, Building2, Edit, Trash2, Upload, FileText, Search, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -34,6 +34,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
@@ -512,11 +520,19 @@ function CashRegisterForm({
   );
 }
 
+type SortField = 'datetime' | 'unitId' | 'operation' | 'totalSales' | 'cashSales' | 'shift';
+type SortOrder = 'asc' | 'desc';
+
 export default function CashRegisterManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClosure, setEditingClosure] = useState<CashRegisterClosure | null>(null);
   const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
   const [extractedData, setExtractedData] = useState<Partial<CashRegisterClosureFormData> | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortField, setSortField] = useState<SortField>('datetime');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [filterUnit, setFilterUnit] = useState<string>('all');
+  const [filterOperation, setFilterOperation] = useState<string>('all');
   const { toast } = useToast();
 
   // Fetch closures
@@ -574,6 +590,86 @@ export default function CashRegisterManagement() {
   const getUnitName = (unitId: number) => {
     const unit = units.find(u => u.id === unitId);
     return unit?.name || "Unidade não encontrada";
+  };
+
+  // Filtragem e ordenação dos fechamentos
+  const filteredAndSortedClosures = useMemo(() => {
+    let filtered = closures.filter(closure => {
+      // Filtro de busca
+      const searchMatch = searchTerm === "" || 
+        getUnitName(closure.unitId).toLowerCase().includes(searchTerm.toLowerCase()) ||
+        closure.operation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (closure.shift && closure.shift.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (closure.notes && closure.notes.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      // Filtro por unidade
+      const unitMatch = filterUnit === 'all' || closure.unitId.toString() === filterUnit;
+
+      // Filtro por operação
+      const operationMatch = filterOperation === 'all' || closure.operation === filterOperation;
+
+      return searchMatch && unitMatch && operationMatch;
+    });
+
+    // Ordenação
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any;
+
+      switch (sortField) {
+        case 'datetime':
+          aValue = new Date(a.datetime);
+          bValue = new Date(b.datetime);
+          break;
+        case 'unitId':
+          aValue = getUnitName(a.unitId);
+          bValue = getUnitName(b.unitId);
+          break;
+        case 'operation':
+          aValue = a.operation;
+          bValue = b.operation;
+          break;
+        case 'shift':
+          aValue = a.shift || '';
+          bValue = b.shift || '';
+          break;
+        case 'cashSales':
+          aValue = parseFloat(a.cashSales);
+          bValue = parseFloat(b.cashSales);
+          break;
+        case 'totalSales':
+          aValue = parseFloat(a.cashSales) + parseFloat(a.debitSales || "0") + 
+                   parseFloat(a.creditSales || "0") + parseFloat(a.pixSales || "0");
+          bValue = parseFloat(b.cashSales) + parseFloat(b.debitSales || "0") + 
+                   parseFloat(b.creditSales || "0") + parseFloat(b.pixSales || "0");
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return filtered;
+  }, [closures, searchTerm, sortField, sortOrder, filterUnit, filterOperation, units]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    }
+    return sortOrder === 'asc' ? 
+      <ChevronUp className="ml-2 h-4 w-4" /> : 
+      <ChevronDown className="ml-2 h-4 w-4" />;
   };
 
   const getOperationBadge = (operation: string) => {
@@ -653,119 +749,293 @@ export default function CashRegisterManagement() {
         </Dialog>
       </div>
 
+      {/* Resumo Estatístico */}
+      {filteredAndSortedClosures.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg">Resumo dos Fechamentos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-orange-600">
+                  {filteredAndSortedClosures.length}
+                </p>
+                <p className="text-sm text-gray-600">Fechamentos</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600">
+                  {formatCurrency(
+                    filteredAndSortedClosures.reduce((sum, closure) => 
+                      sum + parseFloat(closure.cashSales), 0
+                    )
+                  )}
+                </p>
+                <p className="text-sm text-gray-600">Total Dinheiro</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600">
+                  {formatCurrency(
+                    filteredAndSortedClosures.reduce((sum, closure) => 
+                      sum + parseFloat(closure.debitSales || "0"), 0
+                    )
+                  )}
+                </p>
+                <p className="text-sm text-gray-600">Total Débito</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-purple-600">
+                  {formatCurrency(
+                    filteredAndSortedClosures.reduce((sum, closure) => 
+                      sum + parseFloat(closure.creditSales || "0"), 0
+                    )
+                  )}
+                </p>
+                <p className="text-sm text-gray-600">Total Crédito</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-indigo-600">
+                  {formatCurrency(
+                    filteredAndSortedClosures.reduce((sum, closure) => 
+                      sum + parseFloat(closure.pixSales || "0"), 0
+                    )
+                  )}
+                </p>
+                <p className="text-sm text-gray-600">Total PIX</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-700">
+                  {formatCurrency(
+                    filteredAndSortedClosures.reduce((sum, closure) => 
+                      sum + parseFloat(closure.cashSales) + 
+                      parseFloat(closure.debitSales || "0") + 
+                      parseFloat(closure.creditSales || "0") + 
+                      parseFloat(closure.pixSales || "0"), 0
+                    )
+                  )}
+                </p>
+                <p className="text-sm text-gray-600">Total Geral</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filtros e Busca */}
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por unidade, operação, turno ou observações..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <Select value={filterUnit} onValueChange={setFilterUnit}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Filtrar por unidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as unidades</SelectItem>
+                  {units.map((unit) => (
+                    <SelectItem key={unit.id} value={unit.id.toString()}>
+                      {unit.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterOperation} onValueChange={setFilterOperation}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Filtrar por operação" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="salao">Salão</SelectItem>
+                  <SelectItem value="delivery">Delivery</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {isLoading ? (
         <div className="text-center py-8">
           <p>Carregando fechamentos...</p>
         </div>
-      ) : closures.length === 0 ? (
+      ) : filteredAndSortedClosures.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-gray-500">Nenhum fechamento de caixa encontrado.</p>
+          <p className="text-gray-500">
+            {closures.length === 0 
+              ? "Nenhum fechamento de caixa encontrado." 
+              : "Nenhum fechamento encontrado com os filtros aplicados."}
+          </p>
         </div>
       ) : (
-        <div className="grid gap-6">
-          {closures.map((closure) => (
-            <Card key={closure.id}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calendar className="h-5 w-5 text-orange-600" />
-                      {format(new Date(closure.datetime), "dd/MM/yyyy 'às' HH:mm", {
-                        locale: ptBR,
-                      })}
-                    </CardTitle>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Building2 className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">
-                        {getUnitName(closure.unitId)}
-                      </span>
-                      {getOperationBadge(closure.operation)}
-                      {getShiftBadge(closure.shift)}
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(closure)}
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort('datetime')}
                     >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(closure.id)}
-                      disabled={deleteMutation.isPending}
+                      <div className="flex items-center">
+                        Data/Hora
+                        {getSortIcon('datetime')}
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort('unitId')}
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Fundo Inicial</p>
-                    <p className="text-lg font-semibold">
-                      {formatCurrency(closure.initialFund)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Vendas Dinheiro</p>
-                    <p className="text-lg font-semibold text-green-600">
-                      {formatCurrency(closure.cashSales)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Vendas Débito</p>
-                    <p className="text-lg font-semibold">
-                      {formatCurrency(closure.debitSales || "0")}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Vendas Crédito</p>
-                    <p className="text-lg font-semibold">
-                      {formatCurrency(closure.creditSales || "0")}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Vendas PIX</p>
-                    <p className="text-lg font-semibold">
-                      {formatCurrency(closure.pixSales || "0")}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Sangrias</p>
-                    <p className="text-lg font-semibold text-red-600">
-                      {formatCurrency(closure.withdrawals)}
-                    </p>
-                  </div>
-                </div>
-
-                {closure.notes && (
-                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm font-medium text-gray-500 mb-1">Observações</p>
-                    <p className="text-sm text-gray-700">{closure.notes}</p>
-                  </div>
-                )}
-
-                <div className="mt-4 pt-4 border-t">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-500">Total Vendas</span>
-                    <span className="text-xl font-bold text-green-600">
-                      {formatCurrency(
-                        parseFloat(closure.cashSales) +
-                        parseFloat(closure.debitSales || "0") +
-                        parseFloat(closure.creditSales || "0") +
-                        parseFloat(closure.pixSales || "0")
-                      )}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                      <div className="flex items-center">
+                        Unidade
+                        {getSortIcon('unitId')}
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort('operation')}
+                    >
+                      <div className="flex items-center">
+                        Operação
+                        {getSortIcon('operation')}
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort('shift')}
+                    >
+                      <div className="flex items-center">
+                        Turno
+                        {getSortIcon('shift')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right">Fundo Inicial</TableHead>
+                    <TableHead 
+                      className="text-right cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort('cashSales')}
+                    >
+                      <div className="flex items-center justify-end">
+                        Dinheiro
+                        {getSortIcon('cashSales')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right">Débito</TableHead>
+                    <TableHead className="text-right">Crédito</TableHead>
+                    <TableHead className="text-right">PIX</TableHead>
+                    <TableHead className="text-right">Sangrias</TableHead>
+                    <TableHead 
+                      className="text-right cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort('totalSales')}
+                    >
+                      <div className="flex items-center justify-end">
+                        Total Vendas
+                        {getSortIcon('totalSales')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-center">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAndSortedClosures.map((closure) => {
+                    const totalSales = parseFloat(closure.cashSales) +
+                                     parseFloat(closure.debitSales || "0") +
+                                     parseFloat(closure.creditSales || "0") +
+                                     parseFloat(closure.pixSales || "0");
+                    
+                    return (
+                      <TableRow key={closure.id} className="hover:bg-gray-50">
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-orange-600" />
+                            <div>
+                              <div className="font-medium">
+                                {format(new Date(closure.datetime), "dd/MM/yyyy", {
+                                  locale: ptBR,
+                                })}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {format(new Date(closure.datetime), "HH:mm", {
+                                  locale: ptBR,
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-gray-500" />
+                            <span className="font-medium">
+                              {getUnitName(closure.unitId)}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {getOperationBadge(closure.operation)}
+                        </TableCell>
+                        <TableCell>
+                          {getShiftBadge(closure.shift)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {formatCurrency(closure.initialFund)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-green-600 font-medium">
+                          {formatCurrency(closure.cashSales)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {formatCurrency(closure.debitSales || "0")}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {formatCurrency(closure.creditSales || "0")}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {formatCurrency(closure.pixSales || "0")}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-red-600 font-medium">
+                          {formatCurrency(closure.withdrawals)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-bold text-green-700">
+                          {formatCurrency(totalSales)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(closure)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(closure.id)}
+                              disabled={deleteMutation.isPending}
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* PDF Upload Modal */}
