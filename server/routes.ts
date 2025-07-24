@@ -3673,35 +3673,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         size: req.file.buffer.length
       });
 
-      // Parse PDF content using pdfjs-dist
+      // Extract text from PDF using a simpler approach
       let extractedText = '';
       let parsedData: any = {};
       
       try {
-        // Use pdfjs-dist to extract text from PDF
-        const pdfjs = await import('pdfjs-dist');
+        // Extract text from PDF buffer using string search
+        const pdfString = req.file.buffer.toString('latin1');
         
-        // Load PDF document
-        const pdfDoc = await pdfjs.getDocument({
-          data: req.file.buffer,
-          useSystemFonts: true
-        }).promise;
+        // Look for text streams in PDF (simple text extraction)
+        const textMatches = pdfString.match(/BT[\s\S]*?ET/g) || [];
+        const streamMatches = pdfString.match(/stream[\s\S]*?endstream/g) || [];
         
-        // Extract text from all pages
-        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-          const page = await pdfDoc.getPage(pageNum);
-          const textContent = await page.getTextContent();
-          const pageText = textContent.items.map((item: any) => item.str).join(' ');
-          extractedText += pageText + '\n';
+        // Combine all potential text content
+        let allContent = textMatches.join(' ') + ' ' + streamMatches.join(' ');
+        
+        // Clean up the extracted content to get readable text
+        extractedText = allContent
+          .replace(/[^\x20-\x7E\u00C0-\u00FF]/g, ' ') // Keep printable chars and accented chars
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        console.log('Extracted PDF text (first 500 chars):', extractedText.substring(0, 500));
+        
+        // If we got some text, try to parse it
+        if (extractedText.length > 50) {
+          parsedData = parsePDFContent(extractedText);
+        } else {
+          // Fallback: try to find any date-like patterns in raw buffer
+          const rawText = req.file.buffer.toString('utf8', 0, Math.min(2000, req.file.buffer.length));
+          console.log('Raw buffer text sample:', rawText.substring(0, 300));
+          parsedData = parsePDFContent(rawText);
         }
         
-        console.log('Extracted PDF text:', extractedText.substring(0, 500));
-        
-        // Parse extracted text to find specific fields
-        parsedData = parsePDFContent(extractedText);
-        
       } catch (pdfError: any) {
-        console.error('Error parsing PDF with pdfjs:', pdfError);
+        console.error('Error parsing PDF:', pdfError);
         // Fallback to basic data structure
         parsedData = {
           datetime: new Date(),
@@ -3713,7 +3719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pixSales: 0,
           withdrawals: 0,
           shift: "dia",
-          notes: `PDF processado: ${req.file.originalname}. Erro no parsing automático: ${pdfError.message}`
+          notes: `PDF processado: ${req.file.originalname}. Erro no parsing: ${pdfError.message}`
         };
       }
 
@@ -3755,17 +3761,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
 
     try {
-      // Extract date and time from "Caixa Abertura"
-      const dateTimeMatch = text.match(/Caixa\s+Abertura[:\s]*([\d\/\s\:]+)/i);
-      if (dateTimeMatch) {
-        const dateTimeStr = dateTimeMatch[1].trim();
-        console.log('Found datetime string:', dateTimeStr);
-        
-        // Try to parse various date formats: DD/MM/YYYY HH:MM:SS
-        const parsedDate = parseDate(dateTimeStr);
-        if (parsedDate) {
-          extractedData.datetime = parsedDate;
+      // Extract date and time from "Caixa Abertura" with more flexible patterns
+      const dateTimePatterns = [
+        /Caixa\s+Abertura[:\s]*([\d\/\s\:]+)/i,
+        /Abertura[:\s]*([\d\/\s\:]+)/i,
+        /Data[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
+        /(\d{1,2}\/\d{1,2}\/\d{4}\s+\d{1,2}:\d{2}:\d{2})/i,
+        /(\d{1,2}\/\d{1,2}\/\d{4})/i
+      ];
+      
+      let foundDateTime = false;
+      for (const pattern of dateTimePatterns) {
+        const dateTimeMatch = text.match(pattern);
+        if (dateTimeMatch) {
+          const dateTimeStr = dateTimeMatch[1].trim();
+          console.log('Found datetime string with pattern:', pattern.toString(), 'Result:', dateTimeStr);
+          
+          const parsedDate = parseDate(dateTimeStr);
+          if (parsedDate) {
+            extractedData.datetime = parsedDate;
+            foundDateTime = true;
+            break;
+          }
         }
+      }
+      
+      if (!foundDateTime) {
+        console.log('No datetime pattern matched in text preview:', text.substring(0, 200));
       }
 
       // Extract monetary values - look for patterns like "R$ 123,45" or "123,45"
