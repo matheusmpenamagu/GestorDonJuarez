@@ -3667,22 +3667,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Processing PDF file:', req.file.originalname);
       
-      // For now, since PDF parsing libraries are having issues,
-      // we'll return a message asking user to enter data manually
-      // but still accept the file for future implementation
-      
       console.log('PDF file received:', {
         originalname: req.file.originalname,
         mimetype: req.file.mimetype,
         size: req.file.buffer.length
       });
 
-      // Return a response indicating manual data entry is needed
-      return res.status(200).json({
-        message: "PDF recebido com sucesso. Por enquanto, será necessário inserir os dados manualmente.",
-        requiresManualCompletion: true,
-        parsedData: {
-          // Provide some default values that user can override
+      // Parse PDF content using pdfjs-dist
+      let extractedText = '';
+      let parsedData: any = {};
+      
+      try {
+        // Use pdfjs-dist to extract text from PDF
+        const pdfjs = await import('pdfjs-dist/legacy/build/pdf.js');
+        
+        // Load PDF document
+        const pdfDoc = await pdfjs.getDocument({
+          data: req.file.buffer,
+          useSystemFonts: true
+        }).promise;
+        
+        // Extract text from all pages
+        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+          const page = await pdfDoc.getPage(pageNum);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map((item: any) => item.str).join(' ');
+          extractedText += pageText + '\n';
+        }
+        
+        console.log('Extracted PDF text:', extractedText.substring(0, 500));
+        
+        // Parse extracted text to find specific fields
+        parsedData = parsePDFContent(extractedText);
+        
+      } catch (pdfError: any) {
+        console.error('Error parsing PDF with pdfjs:', pdfError);
+        // Fallback to basic data structure
+        parsedData = {
           datetime: new Date(),
           operation: "salao",
           initialFund: 0,
@@ -3692,12 +3713,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pixSales: 0,
           withdrawals: 0,
           shift: "dia",
-          notes: `Dados extraídos do PDF: ${req.file.originalname}. Por favor, verifique e complete as informações.`
-        },
+          notes: `PDF processado: ${req.file.originalname}. Erro no parsing automático: ${pdfError.message}`
+        };
+      }
+
+      // Return parsed data for manual completion/verification
+      return res.status(200).json({
+        message: "PDF processado com sucesso. Verifique os dados extraídos.",
+        requiresManualCompletion: true,
+        parsedData,
         debug: {
           fileName: req.file.originalname,
           fileSize: req.file.buffer.length,
-          message: "Sistema de parsing automático será implementado em versão futura."
+          extractedTextPreview: extractedText.substring(0, 1000),
+          parsingSuccess: !!extractedText
         }
       });
       
@@ -3709,6 +3738,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Helper function to parse PDF content and extract cash register data
+  function parsePDFContent(text: string): any {
+    const extractedData: any = {
+      datetime: new Date(),
+      operation: "salao",
+      initialFund: 0,
+      cashSales: 0,
+      debitSales: 0,
+      creditSales: 0,
+      pixSales: 0,
+      withdrawals: 0,
+      shift: "dia",
+      notes: ""
+    };
+
+    try {
+      // Extract date and time from "Caixa Abertura"
+      const dateTimeMatch = text.match(/Caixa\s+Abertura[:\s]*([\d\/\s\:]+)/i);
+      if (dateTimeMatch) {
+        const dateTimeStr = dateTimeMatch[1].trim();
+        console.log('Found datetime string:', dateTimeStr);
+        
+        // Try to parse various date formats: DD/MM/YYYY HH:MM:SS
+        const parsedDate = parseDate(dateTimeStr);
+        if (parsedDate) {
+          extractedData.datetime = parsedDate;
+        }
+      }
+
+      // Extract monetary values - look for patterns like "R$ 123,45" or "123,45"
+      const extractMoneyValue = (pattern: RegExp): number => {
+        const match = text.match(pattern);
+        if (match) {
+          const valueStr = match[1].replace(/[R$\s]/g, '').replace(',', '.');
+          const value = parseFloat(valueStr);
+          return isNaN(value) ? 0 : value;
+        }
+        return 0;
+      };
+
+      // Map common field patterns from ERP PDFs
+      extractedData.initialFund = extractMoneyValue(/(?:Fundo\s+Inicial|Valor\s+Inicial)[:\s]*R?\$?\s*([\d,\.]+)/i);
+      extractedData.cashSales = extractMoneyValue(/(?:Vendas?\s+Dinheiro|Dinheiro)[:\s]*R?\$?\s*([\d,\.]+)/i);
+      extractedData.debitSales = extractMoneyValue(/(?:Vendas?\s+D[eé]bito|D[eé]bito)[:\s]*R?\$?\s*([\d,\.]+)/i);
+      extractedData.creditSales = extractMoneyValue(/(?:Vendas?\s+Cr[eé]dito|Cr[eé]dito)[:\s]*R?\$?\s*([\d,\.]+)/i);
+      extractedData.pixSales = extractMoneyValue(/(?:Vendas?\s+PIX|PIX)[:\s]*R?\$?\s*([\d,\.]+)/i);
+      extractedData.withdrawals = extractMoneyValue(/(?:Retiradas?|Sangrias?)[:\s]*R?\$?\s*([\d,\.]+)/i);
+
+      // Determine shift based on time
+      if (extractedData.datetime) {
+        const hour = extractedData.datetime.getHours();
+        extractedData.shift = hour >= 6 && hour < 18 ? "dia" : "noite";
+      }
+
+      // Add notes with raw parsing info
+      extractedData.notes = `Dados extraídos automaticamente do PDF. Data/hora base: ${dateTimeMatch?.[1] || 'não encontrada'}`;
+
+      console.log('Parsed data:', extractedData);
+      return extractedData;
+
+    } catch (error) {
+      console.error('Error parsing PDF content:', error);
+      return extractedData;
+    }
+  }
+
+  // Helper function to parse date strings in various formats
+  function parseDate(dateStr: string): Date | null {
+    try {
+      // Remove extra spaces and normalize
+      const cleaned = dateStr.replace(/\s+/g, ' ').trim();
+      
+      // Try DD/MM/YYYY HH:MM:SS format
+      const ddmmyyyyMatch = cleaned.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})/);
+      if (ddmmyyyyMatch) {
+        const [, day, month, year, hour, minute, second] = ddmmyyyyMatch;
+        return new Date(
+          parseInt(year),
+          parseInt(month) - 1, // Month is 0-indexed
+          parseInt(day),
+          parseInt(hour),
+          parseInt(minute),
+          parseInt(second)
+        );
+      }
+
+      // Try DD/MM/YYYY format
+      const ddmmyyyy = cleaned.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (ddmmyyyy) {
+        const [, day, month, year] = ddmmyyyy;
+        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error parsing date:', error);
+      return null;
+    }
+  }
 
   // Test endpoint for WhatsApp Business Cloud API
   app.post('/api/test-whatsapp', async (req, res) => {
