@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Calendar, Building2, Edit, Trash2, Upload, FileText, Search, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
+import { Plus, Calendar, Building2, Edit, Trash2, Search, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -51,145 +51,7 @@ import type { z } from "zod";
 
 type CashRegisterClosureFormData = z.infer<typeof insertCashRegisterClosureSchema>;
 
-// Component for PDF upload and parsing
-function PDFUploadModal({
-  isOpen,
-  onClose,
-  onDataExtracted,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onDataExtracted: (data: Partial<CashRegisterClosureFormData>) => void;
-}) {
-  const [file, setFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const { toast } = useToast();
 
-  const uploadMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append('pdf', file);
-
-      const response = await fetch('/api/cash-register-closures/upload-pdf', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Erro no upload');
-      }
-      
-      return response.json();
-    },
-    onSuccess: (data) => {
-      // Invalidate queries to refresh the list
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-register-closures"] });
-      
-      if (data.success && data.closure) {
-        // Record was created successfully
-        toast({
-          title: "Fechamento criado com sucesso",
-          description: data.pdfMapping?.valuesExtracted 
-            ? "PDF processado e todos os valores extraídos automaticamente."
-            : "PDF processado e fechamento criado com valores padrão.",
-        });
-      } else {
-        // Fallback for old behavior - data extraction only
-        onDataExtracted(data.parsedData || data);
-        toast({
-          title: "PDF processado",
-          description: "Complete as informações restantes.",
-        });
-      }
-      onClose();
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro no processamento",
-        description: error.message || "Não foi possível processar o PDF.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile && selectedFile.type === 'application/pdf') {
-      setFile(selectedFile);
-    } else {
-      toast({
-        title: "Arquivo inválido",
-        description: "Por favor, selecione um arquivo PDF.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleUpload = () => {
-    if (!file) {
-      toast({
-        title: "Nenhum arquivo selecionado",
-        description: "Por favor, selecione um arquivo PDF.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    uploadMutation.mutate(file);
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Upload de PDF - Fechamento de Caixa</DialogTitle>
-          <DialogDescription>
-            Faça upload de um PDF gerado pelo sistema ERP para extrair automaticamente os dados de fechamento.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-            <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <div className="space-y-2">
-              <label htmlFor="pdf-upload" className="cursor-pointer">
-                <div className="text-sm text-gray-600">
-                  Clique para selecionar ou arraste um arquivo PDF aqui
-                </div>
-                <input
-                  id="pdf-upload"
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </label>
-              {file && (
-                <div className="text-sm text-green-600 font-medium">
-                  Arquivo selecionado: {file.name}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleUpload}
-              disabled={!file || uploadMutation.isPending}
-              className="bg-orange-600 hover:bg-orange-700"
-            >
-              {uploadMutation.isPending ? "Processando..." : "Processar PDF"}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function CashRegisterForm({
   closure,
@@ -526,7 +388,7 @@ type SortOrder = 'asc' | 'desc';
 export default function CashRegisterManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClosure, setEditingClosure] = useState<CashRegisterClosure | null>(null);
-  const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
+
   const [extractedData, setExtractedData] = useState<Partial<CashRegisterClosureFormData> | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<SortField>('datetime');
@@ -576,11 +438,7 @@ export default function CashRegisterManagement() {
     }
   };
 
-  const handlePDFDataExtracted = (data: Partial<CashRegisterClosureFormData>) => {
-    setExtractedData(data);
-    setIsPDFModalOpen(false);
-    setIsDialogOpen(true);
-  };
+
 
   const handleNewClosure = () => {
     setEditingClosure(null);
@@ -717,14 +575,7 @@ export default function CashRegisterManagement() {
             Novo Fechamento
           </Button>
           
-          <Button
-            onClick={() => setIsPDFModalOpen(true)}
-            variant="outline"
-            className="border-orange-600 text-orange-600 hover:bg-orange-50"
-          >
-            <Upload className="mr-2 h-4 w-4" />
-            Upload PDF
-          </Button>
+
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -968,12 +819,7 @@ export default function CashRegisterManagement() {
         </Card>
       )}
 
-      {/* PDF Upload Modal */}
-      <PDFUploadModal
-        isOpen={isPDFModalOpen}
-        onClose={() => setIsPDFModalOpen(false)}
-        onDataExtracted={handlePDFDataExtracted}
-      />
+
     </div>
   );
 }
