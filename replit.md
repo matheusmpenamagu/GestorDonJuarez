@@ -211,6 +211,9 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K");
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
+- ✓ Correção crítica do mapeamento de unidades no processamento de PDF (Julho 28, 2025)
+- ✓ PDF "relatorioCaixa.pdf" agora mapeia corretamente para unidade Beer Truck (ID 3)
+- ✓ Correção do unitId fixo que estava direcionando erroneamente para Grão Pará (ID 1)
 - ✓ Sistema de tipos de dispositivos implementado (Julho 24, 2025)
 - ✓ Campo deviceType adicionado com opções: Tela, Fluxo, Temperatura
 - ✓ Todos os dispositivos existentes configurados automaticamente como tipo "Fluxo"

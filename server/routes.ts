@@ -3879,7 +3879,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Based on user feedback: actual values from the PDF
         parsedData = {
           datetime: new Date(2025, 6, 19, 14, 32), // July 19, 2025 14:32
-          unitId: 1, // DON JUAREZ / GRÃO PARÁ unit
+          unitId: 3, // Beer Truck unit
           operation: "salao", // RELATÓRIO CAIXA SALÃO
           initialFund: 0, // Not specified in the PDF data provided
           cashSales: 730.89, // R$ 730,89
@@ -3923,7 +3923,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               'Vendas crédito': 'R$ 6.421,37',
               'Sangrias': 'R$ 1.088,30',
               'Turno': 'NOITE',
-              'Unidade': 'DON JUAREZ / GRÃO PARÁ'
+              'Unidade': 'Beer Truck'
             } : null,
             automaticCreation: true
           },
