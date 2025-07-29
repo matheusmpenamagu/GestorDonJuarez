@@ -168,30 +168,44 @@ export default function FreelancersManagement() {
   };
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('POST', '/api/freelancer-entries', data),
+    mutationFn: (data: any) => {
+      console.log("=== CREATE FREELANCER ENTRY DEBUG ===");
+      console.log("Data being sent:", JSON.stringify(data, null, 2));
+      return apiRequest('POST', '/api/freelancer-entries', data);
+    },
     onSuccess: () => {
+      console.log("Create mutation SUCCESS");
       queryClient.invalidateQueries({ queryKey: ['/api/freelancer-entries'] });
       queryClient.invalidateQueries({ queryKey: ['/api/freelancer-stats'] });
       setIsDialogOpen(false);
       setEditingEntry(null);
       toast({ title: "Sucesso", description: "Registro de ponto criado com sucesso" });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("=== CREATE FREELANCER ENTRY ERROR ===");
+      console.error("Error details:", error);
       toast({ title: "Erro", description: "Erro ao criar registro de ponto", variant: "destructive" });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => 
-      apiRequest('PUT', `/api/freelancer-entries/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => {
+      console.log("=== UPDATE FREELANCER ENTRY DEBUG ===");
+      console.log("Entry ID:", id);
+      console.log("Data being sent:", JSON.stringify(data, null, 2));
+      return apiRequest('PUT', `/api/freelancer-entries/${id}`, data);
+    },
     onSuccess: () => {
+      console.log("Update mutation SUCCESS");
       queryClient.invalidateQueries({ queryKey: ['/api/freelancer-entries'] });
       queryClient.invalidateQueries({ queryKey: ['/api/freelancer-stats'] });
       setIsDialogOpen(false);
       setEditingEntry(null);
       toast({ title: "Sucesso", description: "Registro de ponto atualizado com sucesso" });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("=== UPDATE FREELANCER ENTRY ERROR ===");
+      console.error("Error details:", error);
       toast({ title: "Erro", description: "Erro ao atualizar registro de ponto", variant: "destructive" });
     },
   });
@@ -229,9 +243,16 @@ export default function FreelancersManagement() {
       notes: formData.get('notes') as string,
     };
 
+    console.log("=== FORM SUBMIT DEBUG ===");
+    console.log("Form data collected:", JSON.stringify(data, null, 2));
+    console.log("Is editing entry?", !!editingEntry);
+    console.log("Editing entry ID:", editingEntry?.id);
+
     if (editingEntry) {
+      console.log("Executing UPDATE mutation");
       updateMutation.mutate({ id: editingEntry.id, data });
     } else {
+      console.log("Executing CREATE mutation");
       createMutation.mutate(data);
     }
   };
