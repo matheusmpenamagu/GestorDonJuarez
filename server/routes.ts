@@ -3690,40 +3690,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new cash register closure
   app.post('/api/cash-register-closures', demoAuth, async (req, res) => {
     try {
-      console.log("=== CASH REGISTER CLOSURE CREATION DEBUG ===");
-      console.log("Request body:", JSON.stringify(req.body, null, 2));
-      console.log("Session user:", req.session.user);
-      
       const { insertCashRegisterClosureSchema } = await import("@shared/schema");
-      
-      const dataToValidate = {
+      const closureData = insertCashRegisterClosureSchema.parse({
         ...req.body,
         createdBy: req.session.user?.id,
-      };
-      
-      console.log("Data to validate:", JSON.stringify(dataToValidate, null, 2));
-      
-      const closureData = insertCashRegisterClosureSchema.parse(dataToValidate);
-      console.log("Validated closure data:", JSON.stringify(closureData, null, 2));
-      
+      });
       const closure = await storage.createCashRegisterClosure(closureData);
-      console.log("Created closure:", JSON.stringify(closure, null, 2));
-      
       res.status(201).json(closure);
     } catch (error) {
-      console.error("=== ERROR CREATING CASH REGISTER CLOSURE ===");
-      console.error("Error type:", error.constructor.name);
-      console.error("Error message:", error.message);
-      console.error("Full error:", error);
-      
-      if (error.errors) {
-        console.error("Validation errors:", JSON.stringify(error.errors, null, 2));
-      }
-      
-      res.status(500).json({ 
-        message: "Error creating cash register closure",
-        details: error.message 
-      });
+      console.error("Error creating cash register closure:", error);
+      res.status(500).json({ message: "Error creating cash register closure" });
     }
   });
 
