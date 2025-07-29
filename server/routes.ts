@@ -3691,10 +3691,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/cash-register-closures', demoAuth, async (req, res) => {
     try {
       const { insertCashRegisterClosureSchema } = await import("@shared/schema");
-      const closureData = insertCashRegisterClosureSchema.parse({
-        ...req.body,
-        createdBy: req.session.user?.id,
-      });
+      
+      // Convert datetime string to Date object if it's a string
+      const requestData = { ...req.body, createdBy: req.session.user?.id };
+      if (requestData.datetime && typeof requestData.datetime === 'string') {
+        requestData.datetime = new Date(requestData.datetime);
+      }
+      
+      const closureData = insertCashRegisterClosureSchema.parse(requestData);
       const closure = await storage.createCashRegisterClosure(closureData);
       res.status(201).json(closure);
     } catch (error) {
@@ -3708,7 +3712,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { insertCashRegisterClosureSchema } = await import("@shared/schema");
       const id = parseInt(req.params.id);
-      const closureData = insertCashRegisterClosureSchema.partial().parse(req.body);
+      
+      // Convert datetime string to Date object if it's a string
+      const requestData = { ...req.body };
+      if (requestData.datetime && typeof requestData.datetime === 'string') {
+        requestData.datetime = new Date(requestData.datetime);
+      }
+      
+      const closureData = insertCashRegisterClosureSchema.partial().parse(requestData);
       const closure = await storage.updateCashRegisterClosure(id, closureData);
       res.json(closure);
     } catch (error) {
