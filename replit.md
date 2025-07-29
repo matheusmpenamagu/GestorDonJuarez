@@ -211,11 +211,13 @@ http.addHeader("x-webhook-token", "9hlJAoyTSy7K");
 - June 29, 2025. Migrated tap IDs from strings to auto-incrementing integers
 
 ## Recent Changes
-- ✓ Importação de dados históricos da unidade Grão Pará via SQL (Julho 29, 2025)
-- ✓ 150 registros de fechamento de caixa importados (janeiro a julho 2025)
-- ✓ Usuário 'admin-import' criado para importações históricas
-- ✓ Dados da planilha CSV convertidos e inseridos via comandos SQL diretos
-- ✓ Período completo: 22/01/2025 a 26/07/2025 com valores reais de operação
+- ✓ Importação completa de dados históricos de fechamento de caixa via SQL (Julho 29, 2025)
+- ✓ Don Juarez Grão Pará: 150 registros (22/01/2025 a 26/07/2025)
+- ✓ Beer Truck: 34 registros (08/02/2025 a 25/07/2025)
+- ✓ Apollonio: 8 registros (18/05/2025 a 20/07/2025)
+- ✓ Total: 192 registros históricos importados de planilhas CSV
+- ✓ Usuário 'admin-import' criado para identificar importações históricas
+- ✓ Dados convertidos preservando valores monetários, datas e observações originais
 - ✓ Remoção completa do sistema de upload de PDF para fechamentos de caixa (Julho 28, 2025)
 - ✓ Endpoint /api/cash-register-closures/upload-pdf removido do backend
 - ✓ Componente PDFUploadModal removido do frontend
