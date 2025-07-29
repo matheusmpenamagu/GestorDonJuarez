@@ -88,9 +88,13 @@ function CashRegisterForm({
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: CashRegisterClosureFormData) =>
-      apiRequest("/api/cash-register-closures", "POST", data),
+    mutationFn: (data: CashRegisterClosureFormData) => {
+      console.log("=== FRONTEND CREATE MUTATION DEBUG ===");
+      console.log("Form data being sent:", JSON.stringify(data, null, 2));
+      return apiRequest("/api/cash-register-closures", "POST", data);
+    },
     onSuccess: () => {
+      console.log("Create mutation SUCCESS");
       queryClient.invalidateQueries({ queryKey: ["/api/cash-register-closures"] });
       toast({
         title: "Fechamento criado",
@@ -98,7 +102,9 @@ function CashRegisterForm({
       });
       onSuccess();
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("=== FRONTEND CREATE MUTATION ERROR ===");
+      console.error("Error details:", error);
       toast({
         title: "Erro",
         description: "Não foi possível criar o fechamento de caixa.",
@@ -128,9 +134,16 @@ function CashRegisterForm({
   });
 
   const onSubmit = (data: CashRegisterClosureFormData) => {
+    console.log("=== FORM SUBMIT DEBUG ===");
+    console.log("Form state errors:", form.formState.errors);
+    console.log("Form submitted data:", JSON.stringify(data, null, 2));
+    console.log("Is editing closure?", !!closure);
+    
     if (closure) {
+      console.log("Executing UPDATE mutation");
       updateMutation.mutate({ id: closure.id, data });
     } else {
+      console.log("Executing CREATE mutation");
       createMutation.mutate(data);
     }
   };
