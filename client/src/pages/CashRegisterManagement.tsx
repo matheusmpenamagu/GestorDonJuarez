@@ -67,7 +67,7 @@ function CashRegisterForm({
   const form = useForm<CashRegisterClosureFormData>({
     resolver: zodResolver(insertCashRegisterClosureSchema),
     defaultValues: {
-      datetime: initialData?.datetime || closure?.datetime || new Date(),
+      datetime: initialData?.datetime || (closure?.datetime ? new Date(closure.datetime) : new Date()),
       unitId: initialData?.unitId || closure?.unitId || undefined,
       operation: initialData?.operation || closure?.operation || "salao",
       initialFund: initialData?.initialFund || (closure?.initialFund ? parseFloat(closure.initialFund) : 0),
