@@ -7,7 +7,7 @@ import { isAuthenticated } from "./replitAuth";
 import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, insertPointOfSaleSchema, insertBeerStyleSchema, insertDeviceSchema, insertUnitSchema, insertCo2RefillSchema, insertProductCategorySchema, insertProductSchema } from "@shared/schema";
 import { z } from "zod";
 import { format } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import multer from "multer";
 
 const SAO_PAULO_TZ = "America/Sao_Paulo";
@@ -37,7 +37,15 @@ function toSaoPauloTime(date: Date): string {
 function fromSaoPauloTime(dateString: string): Date {
   // Handle ISO datetime format (2025-07-24T15:30:00)
   if (dateString.includes('T')) {
-    return new Date(dateString);
+    // Remove Z suffix if present and treat as São Paulo time
+    const cleanDateString = dateString.replace(/\.000Z$/, '');
+    
+    // Parse the datetime string as São Paulo time and convert to UTC
+    // This assumes the input time is already in São Paulo timezone
+    const saoPauloDate = new Date(cleanDateString);
+    
+    // Use fromZonedTime to properly convert from São Paulo timezone to UTC
+    return fromZonedTime(saoPauloDate, SAO_PAULO_TZ);
   }
   
   // Parse date in YYYY-MM-DD format and set to São Paulo timezone

@@ -238,7 +238,7 @@ export default function FreelancersManagement() {
       freelancerName: selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : null,
       unitId: unitIdValue && unitIdValue !== 'none' ? parseInt(unitIdValue) : null,
       entryType: formData.get('entryType') as string,
-      timestamp: `${formData.get('date')}T${formData.get('time')}:00.000Z`,
+      timestamp: `${formData.get('date')}T${formData.get('time')}:00`,
       message: formData.get('message') as string,
       notes: formData.get('notes') as string,
     };
