@@ -55,7 +55,6 @@ const menuItems = [
     icon: Building2,
     items: [
       { href: "/empresa/unidades", icon: Building2, label: "Unidades" },
-      { href: "/empresa/fechamentos-caixa", icon: CreditCard, label: "Fechamentos de Caixa" },
       { href: "/empresa/configuracoes", icon: Settings, label: "Configurações" },
     ],
   },

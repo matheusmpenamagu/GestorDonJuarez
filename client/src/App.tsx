@@ -146,11 +146,6 @@ function Router() {
               <CompanySettings />
             </Layout>
           </Route>
-          <Route path="/empresa/fechamentos-caixa">
-            <Layout>
-              <CashRegisterManagement />
-            </Layout>
-          </Route>
 
           {/* Financeiro */}
           <Route path="/financeiro/caixas">
