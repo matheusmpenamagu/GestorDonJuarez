@@ -1968,11 +1968,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("=== Creating freelancer entry ===");
       console.log("Request body:", req.body);
       
+      let unitId = req.body.unitId ? parseInt(req.body.unitId) : null;
+      
+      // If this is a "saída" (exit) entry and no unit is specified, find the unit from the last "entrada" (entry)
+      if (req.body.entryType === 'saida' && (!unitId || unitId === 0)) {
+        console.log("Saída entry without unit specified, searching for last entrada unit...");
+        
+        const freelancerPhone = req.body.freelancerPhone;
+        const employeeId = req.body.employeeId ? parseInt(req.body.employeeId) : null;
+        
+        if (freelancerPhone || employeeId) {
+          try {
+            const lastEntryUnit = await storage.getLastEntryUnitForFreelancer(freelancerPhone, employeeId);
+            if (lastEntryUnit) {
+              unitId = lastEntryUnit;
+              console.log(`Found last entrada unit: ${unitId} for freelancer`);
+            }
+          } catch (error) {
+            console.log("Could not find last entrada unit, continuing without unit");
+          }
+        }
+      }
+      
       const entryData = {
         employeeId: req.body.employeeId ? parseInt(req.body.employeeId) : null,
         freelancerPhone: req.body.freelancerPhone,
         freelancerName: req.body.freelancerName,
-        unitId: req.body.unitId ? parseInt(req.body.unitId) : null,
+        unitId: unitId,
         entryType: req.body.entryType,
         timestamp: fromSaoPauloTime(req.body.timestamp),
         message: req.body.message,
@@ -2000,11 +2022,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Request body:", req.body);
       
       const id = parseInt(req.params.id);
+      let unitId = req.body.unitId ? parseInt(req.body.unitId) : null;
+      
+      // If this is a "saída" (exit) entry and no unit is specified, find the unit from the last "entrada" (entry)
+      if (req.body.entryType === 'saida' && (!unitId || unitId === 0)) {
+        console.log("Saída entry without unit specified, searching for last entrada unit...");
+        
+        const freelancerPhone = req.body.freelancerPhone;
+        const employeeId = req.body.employeeId ? parseInt(req.body.employeeId) : null;
+        
+        if (freelancerPhone || employeeId) {
+          try {
+            const lastEntryUnit = await storage.getLastEntryUnitForFreelancer(freelancerPhone, employeeId);
+            if (lastEntryUnit) {
+              unitId = lastEntryUnit;
+              console.log(`Found last entrada unit: ${unitId} for freelancer`);
+            }
+          } catch (error) {
+            console.log("Could not find last entrada unit, continuing without unit");
+          }
+        }
+      }
+      
       const entryData = {
         employeeId: req.body.employeeId ? parseInt(req.body.employeeId) : null,
         freelancerPhone: req.body.freelancerPhone,
         freelancerName: req.body.freelancerName,
-        unitId: req.body.unitId ? parseInt(req.body.unitId) : null,
+        unitId: unitId,
         entryType: req.body.entryType,
         timestamp: req.body.timestamp ? fromSaoPauloTime(req.body.timestamp) : undefined,
         message: req.body.message,

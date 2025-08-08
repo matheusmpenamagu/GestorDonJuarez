@@ -163,6 +163,7 @@ export interface IStorage {
   createFreelancerTimeEntry(entry: InsertFreelancerTimeEntry): Promise<FreelancerTimeEntry>;
   updateFreelancerTimeEntry(id: number, entry: Partial<InsertFreelancerTimeEntry>): Promise<FreelancerTimeEntry>;
   deleteFreelancerTimeEntry(id: number): Promise<void>;
+  getLastEntryUnitForFreelancer(freelancerPhone: string | null, employeeId: number | null): Promise<number | null>;
   getFreelancerStats(startDate: Date, endDate: Date): Promise<{
     freelancerPhone: string;
     freelancerName: string | null;
@@ -1239,7 +1240,34 @@ export class DatabaseStorage implements IStorage {
     await db.delete(freelancerTimeEntries).where(eq(freelancerTimeEntries.id, id));
   }
 
+  async getLastEntryUnitForFreelancer(freelancerPhone: string | null, employeeId: number | null): Promise<number | null> {
+    const conditions = [];
+    
+    // Build search conditions based on what's available
+    if (freelancerPhone) {
+      conditions.push(eq(freelancerTimeEntries.freelancerPhone, freelancerPhone));
+    }
+    if (employeeId) {
+      conditions.push(eq(freelancerTimeEntries.employeeId, employeeId));
+    }
+    
+    if (conditions.length === 0) {
+      return null;
+    }
 
+    // Find the last "entrada" entry for this freelancer
+    const [result] = await db
+      .select({ unitId: freelancerTimeEntries.unitId })
+      .from(freelancerTimeEntries)
+      .where(and(
+        or(...conditions),
+        eq(freelancerTimeEntries.entryType, 'entrada')
+      ))
+      .orderBy(desc(freelancerTimeEntries.timestamp))
+      .limit(1);
+
+    return result?.unitId || null;
+  }
 
   async getFreelancerStats(startDate: Date, endDate: Date): Promise<{
     freelancerPhone: string;
