@@ -10,6 +10,7 @@ export function Header() {
 
   const handleLogout = () => {
     localStorage.removeItem('beerAuth');
+    // Force a page reload to ensure the user sees the login page
     window.location.href = "/api/logout";
   };
 
