@@ -3693,7 +3693,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { insertCashRegisterClosureSchema } = await import("@shared/schema");
       
       // Convert datetime string to Date object if it's a string
-      const requestData = { ...req.body, createdBy: req.session.user?.id };
+      const requestData = { 
+        ...req.body, 
+        createdBy: req.session?.user?.id || 'demo-user'
+      };
       if (requestData.datetime && typeof requestData.datetime === 'string') {
         requestData.datetime = new Date(requestData.datetime);
       }
