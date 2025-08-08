@@ -725,6 +725,7 @@ export default function CashRegisterManagement() {
                         {getSortIcon('totalSales')}
                       </div>
                     </TableHead>
+                    <TableHead className="text-right">Diferença</TableHead>
                     <TableHead className="text-center">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -734,6 +735,10 @@ export default function CashRegisterManagement() {
                                      parseFloat(closure.debitSales || "0") +
                                      parseFloat(closure.creditSales || "0") +
                                      parseFloat(closure.pixSales || "0");
+                    
+                    // Cálculo da diferença: Fundo inicial + vendas - sangrias
+                    const difference = parseFloat(closure.initialFund) + totalSales - parseFloat(closure.withdrawals);
+                    const isDifferenceNegative = difference < 0;
                     
                     return (
                       <TableRow key={closure.id} className="hover:bg-gray-50">
@@ -788,6 +793,11 @@ export default function CashRegisterManagement() {
                         </TableCell>
                         <TableCell className="text-right font-mono font-bold text-green-700">
                           {formatCurrency(totalSales)}
+                        </TableCell>
+                        <TableCell className={`text-right font-mono font-bold ${
+                          isDifferenceNegative ? 'text-red-600' : 'text-green-700'
+                        }`}>
+                          {formatCurrency(difference)}
                         </TableCell>
                         <TableCell>
                           <div className="flex justify-center gap-2">
