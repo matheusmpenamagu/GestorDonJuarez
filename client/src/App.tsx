@@ -14,6 +14,7 @@ import POSManagement from "@/pages/POSManagement";
 import BeerStylesManagement from "@/pages/BeerStylesManagement";
 import DevicesManagement from "@/pages/DevicesManagement";
 import EmployeesManagement from "@/pages/EmployeesManagement";
+import EmployeeEdit from "@/pages/EmployeeEdit";
 import RolesManagement from "@/pages/RolesManagement";
 import FreelancersManagement from "@/pages/FreelancersManagement";
 import UnitsManagement from "@/pages/UnitsManagement";
@@ -99,6 +100,11 @@ function Router() {
           <Route path="/pessoas/colaboradores">
             <Layout>
               <EmployeesManagement />
+            </Layout>
+          </Route>
+          <Route path="/pessoas/colaboradores/:id">
+            <Layout>
+              <EmployeeEdit />
             </Layout>
           </Route>
           <Route path="/pessoas/cargos">

@@ -3,15 +3,25 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Beer } from "lucide-react";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { useLocation } from "wouter";
 
 export function Header() {
   const { user } = useAuth();
   const { isConnected } = useWebSocket('/');
+  const [, navigate] = useLocation();
 
-  const handleLogout = () => {
-    localStorage.removeItem('beerAuth');
-    // Force a page reload to ensure the user sees the login page
-    window.location.href = "/api/logout";
+  const handleLogout = async () => {
+    try {
+      localStorage.removeItem('beerAuth');
+      await fetch('/api/logout', { method: 'POST' });
+      // Redireciona para a página de login
+      navigate('/');
+      // Force page reload to clear all state
+      window.location.reload();
+    } catch (error) {
+      console.error('Logout error:', error);
+      window.location.href = '/';
+    }
   };
 
   return (
