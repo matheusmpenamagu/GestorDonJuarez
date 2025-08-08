@@ -325,6 +325,64 @@ export default function FreelancersManagement() {
   const totalHours = statsData?.reduce((sum: number, f: FreelancerStats) => sum + f.totalHours, 0) || 0;
   const totalDays = statsData?.reduce((sum: number, f: FreelancerStats) => sum + f.totalDays, 0) || 0;
 
+  // Calculate hours ranking by unit
+  const getHoursRankingByUnit = () => {
+    const unitHours = new Map<string, { unitName: string; totalHours: number }>();
+    
+    if (!entries || entries.length === 0) return [];
+    
+    // Group entries by unit and calculate hours worked
+    const entriesByFreelancer = new Map<string, any[]>();
+    entries.forEach(entry => {
+      const key = entry.freelancerPhone || 'unknown';
+      if (!entriesByFreelancer.has(key)) {
+        entriesByFreelancer.set(key, []);
+      }
+      entriesByFreelancer.get(key)!.push(entry);
+    });
+
+    entriesByFreelancer.forEach((freelancerEntries) => {
+      // Sort by timestamp
+      freelancerEntries.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      
+      const entradas = freelancerEntries.filter(e => e.entryType === 'entrada');
+      const saidas = freelancerEntries.filter(e => e.entryType === 'saida');
+      
+      // Match entries with exits to calculate hours per unit
+      for (const entrada of entradas) {
+        const entradaTime = new Date(entrada.timestamp).getTime();
+        
+        // Find corresponding exit
+        const correspondingSaida = saidas.find(saida => {
+          const saidaTime = new Date(saida.timestamp).getTime();
+          return saidaTime > entradaTime;
+        });
+        
+        if (correspondingSaida && entrada.unit) {
+          const unitKey = entrada.unit.name;
+          const hoursWorked = (new Date(correspondingSaida.timestamp).getTime() - entradaTime) / (1000 * 60 * 60);
+          
+          if (hoursWorked > 0 && hoursWorked <= 24) {
+            if (!unitHours.has(unitKey)) {
+              unitHours.set(unitKey, { unitName: unitKey, totalHours: 0 });
+            }
+            unitHours.get(unitKey)!.totalHours += hoursWorked;
+          }
+          
+          // Remove used exit
+          const saidaIndex = saidas.indexOf(correspondingSaida);
+          saidas.splice(saidaIndex, 1);
+        }
+      }
+    });
+
+    return Array.from(unitHours.values())
+      .sort((a, b) => b.totalHours - a.totalHours)
+      .slice(0, 3); // Top 3 units
+  };
+
+  const unitRanking = getHoursRankingByUnit();
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -548,11 +606,33 @@ export default function FreelancersManagement() {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <Timer className="h-5 w-5 text-orange-600" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">Dias Trabalhados</p>
-                <p className="text-2xl font-bold text-gray-900">{totalDays}</p>
+            <div className="flex items-start space-x-2">
+              <MapPin className="h-5 w-5 text-orange-600 mt-1" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-600 mb-3">Ranking de Unidades</p>
+                {unitRanking.length > 0 ? (
+                  <div className="space-y-2">
+                    {unitRanking.map((unit, index) => (
+                      <div key={unit.unitName} className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                            index === 0 ? 'bg-yellow-500' : 
+                            index === 1 ? 'bg-gray-400' : 
+                            'bg-orange-400'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          <span className="text-sm text-gray-900 truncate max-w-20">{unit.unitName}</span>
+                        </div>
+                        <span className="text-sm font-medium text-orange-600">
+                          {formatHours(unit.totalHours)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Nenhum dado disponível</p>
+                )}
               </div>
             </div>
           </CardContent>
