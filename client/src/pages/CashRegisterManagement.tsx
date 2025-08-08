@@ -738,7 +738,23 @@ export default function CashRegisterManagement() {
                     
                     // Cálculo da diferença: Fundo inicial + vendas - sangrias
                     const difference = parseFloat(closure.initialFund) + totalSales - parseFloat(closure.withdrawals);
-                    const isDifferenceNegative = difference < 0;
+                    
+                    // Lógica de coloração e emoji para diferença
+                    let differenceDisplay: string | React.ReactNode;
+                    let differenceColorClass: string;
+                    
+                    if (difference === 0) {
+                      differenceDisplay = '✅';
+                      differenceColorClass = 'text-green-600';
+                    } else {
+                      const absValue = Math.abs(difference);
+                      if (absValue <= 10) {
+                        differenceColorClass = 'text-orange-500';
+                      } else {
+                        differenceColorClass = 'text-red-600';
+                      }
+                      differenceDisplay = formatCurrency(difference);
+                    }
                     
                     return (
                       <TableRow key={closure.id} className="hover:bg-gray-50">
@@ -795,9 +811,9 @@ export default function CashRegisterManagement() {
                           {formatCurrency(totalSales)}
                         </TableCell>
                         <TableCell className={`text-right font-mono font-bold ${
-                          isDifferenceNegative ? 'text-red-600' : 'text-green-700'
+                          differenceColorClass
                         }`}>
-                          {formatCurrency(difference)}
+                          {differenceDisplay}
                         </TableCell>
                         <TableCell>
                           <div className="flex justify-center gap-2">
