@@ -2,8 +2,8 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Calendar, Building2, Edit, Trash2, Search, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
-import { format } from "date-fns";
+import { Plus, Calendar, Building2, Edit, Trash2, Search, ChevronUp, ChevronDown, ArrowUpDown, TrendingUp, Clock } from "lucide-react";
+import { format, startOfWeek, startOfDay, subDays, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 import { Button } from "@/components/ui/button";
@@ -557,6 +557,49 @@ export default function CashRegisterManagement() {
     }).format(numValue);
   };
 
+  // Calcular somatórios por período
+  const periodSummaries = useMemo(() => {
+    const now = new Date();
+    const startOfThisWeek = startOfWeek(now, { weekStartsOn: 1 }); // Segunda-feira
+    const startOfLast30Days = subDays(startOfDay(now), 30);
+
+    const thisWeekSummary: { [unitId: number]: number } = {};
+    const last30DaysSummary: { [unitId: number]: number } = {};
+
+    closures.forEach(closure => {
+      const closureDate = new Date(closure.datetime);
+      const totalSales = parseFloat(closure.cashSales) +
+                        parseFloat(closure.debitSales || "0") +
+                        parseFloat(closure.creditSales || "0") +
+                        parseFloat(closure.pixSales || "0");
+      const difference = parseFloat(closure.initialFund) + totalSales - parseFloat(closure.withdrawals);
+
+      // Semana atual
+      if (isWithinInterval(closureDate, { start: startOfThisWeek, end: now })) {
+        thisWeekSummary[closure.unitId] = (thisWeekSummary[closure.unitId] || 0) + difference;
+      }
+
+      // Últimos 30 dias
+      if (isWithinInterval(closureDate, { start: startOfLast30Days, end: now })) {
+        last30DaysSummary[closure.unitId] = (last30DaysSummary[closure.unitId] || 0) + difference;
+      }
+    });
+
+    return { thisWeekSummary, last30DaysSummary };
+  }, [closures]);
+
+  const getSummaryColor = (value: number) => {
+    if (value === 0) return 'text-green-600';
+    const absValue = Math.abs(value);
+    if (absValue <= 10) return 'text-orange-500';
+    return 'text-red-600';
+  };
+
+  const formatSummaryValue = (value: number) => {
+    if (value === 0) return '✅';
+    return formatCurrency(value);
+  };
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -600,6 +643,77 @@ export default function CashRegisterManagement() {
             />
           </DialogContent>
         </Dialog>
+      </div>
+
+      {/* Cards de Resumo */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* Card: Nesta Semana */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-orange-600" />
+              Nesta Semana
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {Object.entries(periodSummaries.thisWeekSummary).length === 0 ? (
+                <p className="text-gray-500 text-sm">Nenhum fechamento nesta semana</p>
+              ) : (
+                Object.entries(periodSummaries.thisWeekSummary).map(([unitId, difference]) => {
+                  const unitName = getUnitName(parseInt(unitId));
+                  return (
+                    <div key={unitId} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm font-medium">{unitName}</span>
+                      </div>
+                      <span className={`text-sm font-mono font-bold ${
+                        getSummaryColor(difference)
+                      }`}>
+                        {formatSummaryValue(difference)}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Card: Últimos 30 Dias */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-blue-600" />
+              Últimos 30 Dias
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {Object.entries(periodSummaries.last30DaysSummary).length === 0 ? (
+                <p className="text-gray-500 text-sm">Nenhum fechamento nos últimos 30 dias</p>
+              ) : (
+                Object.entries(periodSummaries.last30DaysSummary).map(([unitId, difference]) => {
+                  const unitName = getUnitName(parseInt(unitId));
+                  return (
+                    <div key={unitId} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm font-medium">{unitName}</span>
+                      </div>
+                      <span className={`text-sm font-mono font-bold ${
+                        getSummaryColor(difference)
+                      }`}>
+                        {formatSummaryValue(difference)}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
 
