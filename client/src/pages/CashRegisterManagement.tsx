@@ -72,11 +72,7 @@ function CashRegisterForm({
       operation: initialData?.operation || closure?.operation || "salao",
       initialFund: initialData?.initialFund || (closure?.initialFund ? parseFloat(closure.initialFund) : 0),
       cashSales: initialData?.cashSales || (closure?.cashSales ? parseFloat(closure.cashSales) : 0),
-      debitSales: initialData?.debitSales || (closure?.debitSales ? parseFloat(closure.debitSales) : 0),
-      creditSales: initialData?.creditSales || (closure?.creditSales ? parseFloat(closure.creditSales) : 0),
-      pixSales: initialData?.pixSales || (closure?.pixSales ? parseFloat(closure.pixSales) : 0),
       withdrawals: initialData?.withdrawals || (closure?.withdrawals ? parseFloat(closure.withdrawals) : 0),
-      shift: initialData?.shift || closure?.shift || "dia",
       notes: initialData?.notes || closure?.notes || "",
       createdBy: "demo-user", // Will be replaced by actual user in backend
     },
@@ -145,11 +141,11 @@ function CashRegisterForm({
             name="datetime"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Data e Hora *</FormLabel>
+                <FormLabel>Data *</FormLabel>
                 <FormControl>
                   <Input
-                    type="datetime-local"
-                    value={field.value ? new Date(field.value).toISOString().slice(0, 16) : ""}
+                    type="date"
+                    value={field.value ? new Date(field.value).toISOString().slice(0, 10) : ""}
                     onChange={(e) => field.onChange(new Date(e.target.value))}
                   />
                 </FormControl>
@@ -205,29 +201,6 @@ function CashRegisterForm({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="shift"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Turno</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ""}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o turno" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="dia">Dia</SelectItem>
-                    <SelectItem value="tarde">Tarde</SelectItem>
-                    <SelectItem value="noite">Noite</SelectItem>
-                    <SelectItem value="madrugada">Madrugada</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
           <FormField
             control={form.control}
@@ -269,65 +242,8 @@ function CashRegisterForm({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="debitSales"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Vendas em Débito</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={field.value || 0}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
-          <FormField
-            control={form.control}
-            name="creditSales"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Vendas em Crédito</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={field.value || 0}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
-          <FormField
-            control={form.control}
-            name="pixSales"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Vendas em PIX</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={field.value || 0}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
           <FormField
             control={form.control}
@@ -383,7 +299,7 @@ function CashRegisterForm({
   );
 }
 
-type SortField = 'datetime' | 'unitId' | 'operation' | 'totalSales' | 'cashSales' | 'shift';
+type SortField = 'datetime' | 'unitId' | 'operation' | 'totalSales' | 'cashSales';
 type SortOrder = 'asc' | 'desc';
 
 export default function CashRegisterManagement() {
@@ -459,7 +375,6 @@ export default function CashRegisterManagement() {
       const searchMatch = searchTerm === "" || 
         getUnitName(closure.unitId).toLowerCase().includes(searchTerm.toLowerCase()) ||
         closure.operation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (closure.shift && closure.shift.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (closure.notes && closure.notes.toLowerCase().includes(searchTerm.toLowerCase()));
 
       // Filtro por unidade
@@ -488,19 +403,13 @@ export default function CashRegisterManagement() {
           aValue = a.operation;
           bValue = b.operation;
           break;
-        case 'shift':
-          aValue = a.shift || '';
-          bValue = b.shift || '';
-          break;
         case 'cashSales':
           aValue = parseFloat(a.cashSales);
           bValue = parseFloat(b.cashSales);
           break;
         case 'totalSales':
-          aValue = parseFloat(a.cashSales) + parseFloat(a.debitSales || "0") + 
-                   parseFloat(a.creditSales || "0") + parseFloat(a.pixSales || "0");
-          bValue = parseFloat(b.cashSales) + parseFloat(b.debitSales || "0") + 
-                   parseFloat(b.creditSales || "0") + parseFloat(b.pixSales || "0");
+          aValue = parseFloat(a.cashSales);
+          bValue = parseFloat(b.cashSales);
           break;
         default:
           return 0;
@@ -540,15 +449,6 @@ export default function CashRegisterManagement() {
     );
   };
 
-  const getShiftBadge = (shift: string | null) => {
-    if (!shift) return null;
-    return (
-      <Badge variant="outline">
-        {shift.charAt(0).toUpperCase() + shift.slice(1)}
-      </Badge>
-    );
-  };
-
   const formatCurrency = (value: string | number) => {
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
     return new Intl.NumberFormat('pt-BR', {
@@ -568,10 +468,7 @@ export default function CashRegisterManagement() {
 
     closures.forEach(closure => {
       const closureDate = new Date(closure.datetime);
-      const totalSales = parseFloat(closure.cashSales) +
-                        parseFloat(closure.debitSales || "0") +
-                        parseFloat(closure.creditSales || "0") +
-                        parseFloat(closure.pixSales || "0");
+      const totalSales = parseFloat(closure.cashSales);
       const difference = parseFloat(closure.initialFund) + totalSales - parseFloat(closure.withdrawals);
 
       // Semana atual
@@ -785,7 +682,7 @@ export default function CashRegisterManagement() {
                       onClick={() => handleSort('datetime')}
                     >
                       <div className="flex items-center">
-                        Data/Hora
+Data
                         {getSortIcon('datetime')}
                       </div>
                     </TableHead>
@@ -807,15 +704,6 @@ export default function CashRegisterManagement() {
                         {getSortIcon('operation')}
                       </div>
                     </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-50"
-                      onClick={() => handleSort('shift')}
-                    >
-                      <div className="flex items-center">
-                        Turno
-                        {getSortIcon('shift')}
-                      </div>
-                    </TableHead>
                     <TableHead className="text-right">Fundo Inicial</TableHead>
                     <TableHead 
                       className="text-right cursor-pointer hover:bg-gray-50"
@@ -826,9 +714,6 @@ export default function CashRegisterManagement() {
                         {getSortIcon('cashSales')}
                       </div>
                     </TableHead>
-                    <TableHead className="text-right">Débito</TableHead>
-                    <TableHead className="text-right">Crédito</TableHead>
-                    <TableHead className="text-right">PIX</TableHead>
                     <TableHead className="text-right">Sangrias</TableHead>
                     <TableHead 
                       className="text-right cursor-pointer hover:bg-gray-50"
@@ -845,10 +730,7 @@ export default function CashRegisterManagement() {
                 </TableHeader>
                 <TableBody>
                   {filteredAndSortedClosures.map((closure) => {
-                    const totalSales = parseFloat(closure.cashSales) +
-                                     parseFloat(closure.debitSales || "0") +
-                                     parseFloat(closure.creditSales || "0") +
-                                     parseFloat(closure.pixSales || "0");
+                    const totalSales = parseFloat(closure.cashSales);
                     
                     // Cálculo da diferença: Fundo inicial + vendas - sangrias
                     const difference = parseFloat(closure.initialFund) + totalSales - parseFloat(closure.withdrawals);
@@ -875,17 +757,10 @@ export default function CashRegisterManagement() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-orange-600" />
-                            <div>
-                              <div className="font-medium">
-                                {format(new Date(closure.datetime), "dd/MM/yyyy", {
-                                  locale: ptBR,
-                                })}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {format(new Date(closure.datetime), "HH:mm", {
-                                  locale: ptBR,
-                                })}
-                              </div>
+                            <div className="font-medium">
+                              {format(new Date(closure.datetime), "dd/MM/yyyy", {
+                                locale: ptBR,
+                              })}
                             </div>
                           </div>
                         </TableCell>
@@ -900,23 +775,11 @@ export default function CashRegisterManagement() {
                         <TableCell>
                           {getOperationBadge(closure.operation)}
                         </TableCell>
-                        <TableCell>
-                          {getShiftBadge(closure.shift)}
-                        </TableCell>
                         <TableCell className="text-right font-mono">
                           {formatCurrency(closure.initialFund)}
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           {formatCurrency(closure.cashSales)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {formatCurrency(closure.debitSales || "0")}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {formatCurrency(closure.creditSales || "0")}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {formatCurrency(closure.pixSales || "0")}
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           {formatCurrency(closure.withdrawals)}
