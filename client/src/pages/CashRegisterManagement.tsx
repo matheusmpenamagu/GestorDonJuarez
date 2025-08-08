@@ -792,7 +792,7 @@ export default function CashRegisterManagement() {
                         <TableCell className="text-right font-mono">
                           {formatCurrency(closure.initialFund)}
                         </TableCell>
-                        <TableCell className="text-right font-mono text-green-600 font-medium">
+                        <TableCell className="text-right font-mono">
                           {formatCurrency(closure.cashSales)}
                         </TableCell>
                         <TableCell className="text-right font-mono">
@@ -804,10 +804,10 @@ export default function CashRegisterManagement() {
                         <TableCell className="text-right font-mono">
                           {formatCurrency(closure.pixSales || "0")}
                         </TableCell>
-                        <TableCell className="text-right font-mono text-red-600 font-medium">
+                        <TableCell className="text-right font-mono">
                           {formatCurrency(closure.withdrawals)}
                         </TableCell>
-                        <TableCell className="text-right font-mono font-bold text-green-700">
+                        <TableCell className="text-right font-mono">
                           {formatCurrency(totalSales)}
                         </TableCell>
                         <TableCell className={`text-right font-mono font-bold ${
