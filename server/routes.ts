@@ -1608,16 +1608,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const roleData = insertRoleSchema.partial().parse(req.body);
       
-      // Check if the role includes financial permission
-      if (roleData.permissions && roleData.permissions.includes('financial')) {
-        // Only specific user can grant financial permission
-        const authorizedUserId = 'e6bea1c6-e6f4-4f7b-8efc-73c4f2d7f6c0'; // Your user ID
-        if (req.session.user?.id !== authorizedUserId) {
-          return res.status(403).json({ 
-            message: "Você não tem autorização para conceder permissões financeiras" 
-          });
-        }
-      }
+      // Financial permissions are now allowed for any authenticated user
+      // This can be restricted later based on specific security requirements
       
       const role = await storage.updateRole(id, roleData);
       res.json(role);
