@@ -40,12 +40,17 @@ function fromSaoPauloTime(dateString: string): Date {
     // Remove Z suffix if present and treat as São Paulo time
     const cleanDateString = dateString.replace(/\.000Z$/, '');
     
-    // Parse the datetime string as São Paulo time and convert to UTC
-    // This assumes the input time is already in São Paulo timezone
-    const saoPauloDate = new Date(cleanDateString);
+    // Parse the date components manually
+    const [datePart, timePart] = cleanDateString.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hour, minute, second = 0] = timePart.split(':').map(Number);
     
-    // Use fromZonedTime to properly convert from São Paulo timezone to UTC
-    return fromZonedTime(saoPauloDate, SAO_PAULO_TZ);
+    // Create UTC date by adding São Paulo offset (UTC-3)
+    // São Paulo is 3 hours behind UTC, so we add 3 hours to convert local time to UTC
+    const saoPauloOffsetHours = 3;
+    const utcDate = new Date(Date.UTC(year, month - 1, day, hour + saoPauloOffsetHours, minute, second));
+    
+    return utcDate;
   }
   
   // Parse date in YYYY-MM-DD format and set to São Paulo timezone

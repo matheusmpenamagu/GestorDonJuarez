@@ -435,7 +435,7 @@ export default function FreelancersManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="unitId">Unidade</Label>
-                  <Select name="unitId" defaultValue={editingEntry?.unitId?.toString() || 'none'}>
+                  <Select name="unitId" defaultValue={editingEntry?.unitId ? editingEntry.unitId.toString() : 'none'}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecionar unidade" />
                     </SelectTrigger>
