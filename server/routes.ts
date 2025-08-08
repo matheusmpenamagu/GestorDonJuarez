@@ -3695,7 +3695,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert datetime string to Date object if it's a string
       const requestData = { 
         ...req.body, 
-        createdBy: req.session?.user?.id || 'demo-user'
+        createdBy: req.session?.user?.id || 'system-pdf-processor'
       };
       if (requestData.datetime && typeof requestData.datetime === 'string') {
         requestData.datetime = new Date(requestData.datetime);
