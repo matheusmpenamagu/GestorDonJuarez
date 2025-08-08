@@ -602,49 +602,6 @@ export default function CashRegisterManagement() {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Fechamentos de Caixa</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Gerencie os fechamentos de caixa das suas unidades
-          </p>
-        </div>
-
-        <div className="flex gap-2">
-          <Button
-            onClick={handleNewClosure}
-            className="bg-orange-600 hover:bg-orange-700"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Fechamento
-          </Button>
-          
-
-        </div>
-
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingClosure ? "Editar Fechamento" : "Novo Fechamento de Caixa"}
-              </DialogTitle>
-              <DialogDescription>
-                {editingClosure ? "Edite as informações do fechamento" : "Registre um novo fechamento de caixa"}
-              </DialogDescription>
-            </DialogHeader>
-            <CashRegisterForm 
-              closure={editingClosure || undefined}
-              initialData={extractedData || undefined}
-              onSuccess={() => {
-                setIsDialogOpen(false);
-                setEditingClosure(null);
-                setExtractedData(null);
-              }}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
       {/* Cards de Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Card: Nesta Semana */}
@@ -714,6 +671,49 @@ export default function CashRegisterManagement() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Fechamentos de Caixa</h1>
+          <p className="mt-1 text-sm text-gray-600">
+            Gerencie os fechamentos de caixa das suas unidades
+          </p>
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            onClick={handleNewClosure}
+            className="bg-orange-600 hover:bg-orange-700"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Fechamento
+          </Button>
+          
+
+        </div>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingClosure ? "Editar Fechamento" : "Novo Fechamento de Caixa"}
+              </DialogTitle>
+              <DialogDescription>
+                {editingClosure ? "Edite as informações do fechamento" : "Registre um novo fechamento de caixa"}
+              </DialogDescription>
+            </DialogHeader>
+            <CashRegisterForm 
+              closure={editingClosure || undefined}
+              initialData={extractedData || undefined}
+              onSuccess={() => {
+                setIsDialogOpen(false);
+                setEditingClosure(null);
+                setExtractedData(null);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
 
 
