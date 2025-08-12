@@ -62,16 +62,22 @@ export default function EmployeeEdit() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: employee, isLoading: employeeLoading } = useQuery({
+  const { data: employee, isLoading: employeeLoading, error } = useQuery({
     queryKey: [`/api/employees/${employeeId}`],
     enabled: !isNew && !!employeeId,
     staleTime: 0,
     gcTime: 0,
     queryFn: async () => {
-      const response = await apiRequest('GET', `/api/employees/${employeeId}`);
-      const data = await response.json();
-      console.log('🔧 [EMPLOYEE-EDIT] Custom fetch result:', data);
-      return data;
+      console.log('🔧 [EMPLOYEE-EDIT] Custom queryFn called for employeeId:', employeeId);
+      try {
+        const response = await apiRequest('GET', `/api/employees/${employeeId}`);
+        const data = await response.json();
+        console.log('🔧 [EMPLOYEE-EDIT] Custom fetch result:', data);
+        return data;
+      } catch (error) {
+        console.log('🔧 [EMPLOYEE-EDIT] Custom fetch error:', error);
+        throw error;
+      }
     },
   });
 
@@ -149,9 +155,15 @@ export default function EmployeeEdit() {
     );
   }
 
-  console.log('🔧 [EMPLOYEE-EDIT] Current formData:', formData);
-  console.log('🔧 [EMPLOYEE-EDIT] Employee loading:', employeeLoading);
-  console.log('🔧 [EMPLOYEE-EDIT] Employee data:', employee);
+  console.log('🔧 [EMPLOYEE-EDIT] Current state:', {
+    formData, 
+    employeeLoading, 
+    employee,
+    error,
+    isNew,
+    employeeId,
+    enabled: !isNew && !!employeeId
+  });
   
   return (
     <div className="p-6 max-w-2xl mx-auto">
