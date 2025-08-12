@@ -277,10 +277,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName: employee.firstName,
         lastName: employee.lastName,
         avatar: employee.avatar,
-        role: employee.role,
         employmentTypes: employee.employmentTypes,
         type: 'employee'
       };
+      
+      console.log('✅ [LOGIN] Session saved:', (req.session as any).employee);
 
       res.json({
         id: employee.id,
@@ -288,7 +289,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName: employee.firstName,
         lastName: employee.lastName,
         avatar: employee.avatar,
-        role: employee.role,
         employmentTypes: employee.employmentTypes,
         type: 'employee'
       });

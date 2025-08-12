@@ -49,9 +49,10 @@ export default function Landing() {
           description: `Bem-vindo(a), ${userData.firstName}!`,
         });
         
-        // Redirect to dashboard
-        setTimeout(() => {
-          window.location.href = "/dashboard";
+        // Trigger auth check and redirect
+        setTimeout(async () => {
+          // Force auth recheck before redirecting
+          window.location.reload();
         }, 1500);
       } else {
         const error = await response.json();
