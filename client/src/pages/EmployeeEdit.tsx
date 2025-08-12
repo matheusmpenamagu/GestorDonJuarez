@@ -70,7 +70,23 @@ export default function EmployeeEdit() {
     queryFn: async () => {
       console.log('🔧 [EMPLOYEE-EDIT] Custom queryFn called for employeeId:', employeeId);
       try {
-        const response = await apiRequest('GET', `/api/employees/${employeeId}`);
+        const storedSessionId = localStorage.getItem('sessionId');
+        const response = await fetch(`/api/employees/${employeeId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${storedSessionId}`,
+          },
+          credentials: 'include',
+        });
+        
+        console.log('🔧 [EMPLOYEE-EDIT] Response status:', response.status);
+        console.log('🔧 [EMPLOYEE-EDIT] Response ok:', response.ok);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
         console.log('🔧 [EMPLOYEE-EDIT] Custom fetch result:', data);
         return data;
