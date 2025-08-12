@@ -97,9 +97,10 @@ export default function EmployeeEdit() {
   });
 
   useEffect(() => {
+    console.log('🔧 [EMPLOYEE-EDIT] useEffect called:', { employee: !!employee, isNew, employeeId });
     if (employee && !isNew) {
       console.log('🔧 [EMPLOYEE-EDIT] Loading employee data:', employee);
-      setFormData({
+      const newFormData = {
         email: employee.email || "",
         password: "",
         firstName: employee.firstName || "",
@@ -109,15 +110,13 @@ export default function EmployeeEdit() {
         employmentTypes: (employee.employmentTypes || ["Funcionário"]) as ("Sócio" | "Funcionário" | "Freelancer")[],
         avatar: employee.avatar || "😊",
         isActive: employee.isActive ?? true,
-      });
-      console.log('🔧 [EMPLOYEE-EDIT] Form data set:', {
-        email: employee.email,
-        firstName: employee.firstName,
-        lastName: employee.lastName,
-        whatsapp: employee.whatsapp
-      });
+      };
+      setFormData(newFormData);
+      console.log('🔧 [EMPLOYEE-EDIT] Form data set:', newFormData);
+    } else {
+      console.log('🔧 [EMPLOYEE-EDIT] No employee data or is new:', { hasEmployee: !!employee, isNew });
     }
-  }, [employee, isNew]);
+  }, [employee, isNew, employeeId]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: EmployeeFormData) => {
@@ -167,6 +166,10 @@ export default function EmployeeEdit() {
     );
   }
 
+  console.log('🔧 [EMPLOYEE-EDIT] Rendering with formData:', formData);
+  console.log('🔧 [EMPLOYEE-EDIT] Employee data:', employee);
+  console.log('🔧 [EMPLOYEE-EDIT] IsNew:', isNew, 'EmployeeId:', employeeId);
+  
   return (
     <div className="p-6 max-w-2xl mx-auto">
       <div className="mb-6">
@@ -198,7 +201,10 @@ export default function EmployeeEdit() {
                 <Input
                   id="firstName"
                   value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  onChange={(e) => {
+                    console.log('🔧 [EMPLOYEE-EDIT] firstName changed:', e.target.value);
+                    setFormData({ ...formData, firstName: e.target.value });
+                  }}
                   placeholder="Ex: João"
                   required
                 />
