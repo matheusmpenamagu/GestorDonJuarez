@@ -65,6 +65,8 @@ export default function EmployeeEdit() {
   const { data: employee, isLoading: employeeLoading } = useQuery({
     queryKey: [`/api/employees/${employeeId}`],
     enabled: !isNew && !!employeeId,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const { data: roles } = useQuery({
@@ -72,8 +74,10 @@ export default function EmployeeEdit() {
   });
 
   useEffect(() => {
+    console.log('🔧 [EMPLOYEE-EDIT] useEffect:', { employee, isNew, employeeId });
     if (employee && !isNew) {
-      setFormData({
+      console.log('🔧 [EMPLOYEE-EDIT] Setting form data with:', employee);
+      const newFormData = {
         email: employee.email || "",
         password: "",
         firstName: employee.firstName || "",
@@ -83,9 +87,13 @@ export default function EmployeeEdit() {
         employmentTypes: (employee.employmentTypes || ["Funcionário"]) as ("Sócio" | "Funcionário" | "Freelancer")[],
         avatar: employee.avatar || "😊",
         isActive: employee.isActive ?? true,
-      });
+      };
+      setFormData(newFormData);
+      console.log('🔧 [EMPLOYEE-EDIT] Form data updated:', newFormData);
+    } else {
+      console.log('🔧 [EMPLOYEE-EDIT] No employee data to set');
     }
-  }, [employee, isNew]);
+  }, [employee, isNew, employeeId]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: EmployeeFormData) => {
@@ -135,7 +143,9 @@ export default function EmployeeEdit() {
     );
   }
 
-  // Remove debug logs for cleaner console
+  console.log('🔧 [EMPLOYEE-EDIT] Current formData:', formData);
+  console.log('🔧 [EMPLOYEE-EDIT] Employee loading:', employeeLoading);
+  console.log('🔧 [EMPLOYEE-EDIT] Employee data:', employee);
   
   return (
     <div className="p-6 max-w-2xl mx-auto">
