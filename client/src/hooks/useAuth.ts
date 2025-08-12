@@ -7,34 +7,69 @@ export function useAuth() {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    // Check for authentication state in localStorage
-    const authData = localStorage.getItem('beerAuth');
-    if (authData) {
-      try {
-        const userData = JSON.parse(authData);
-        setUser(userData);
-      } catch (error) {
-        localStorage.removeItem('beerAuth');
-      }
-    }
-    setIsLoading(false);
+    checkServerAuth();
+  }, [setLocation]);
 
-    // Listen for storage changes (logout from another tab)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'beerAuth' && !e.newValue) {
-        // Auth data was removed, redirect to login
+  const checkServerAuth = async () => {
+    setIsLoading(true);
+    try {
+      console.log('🔐 Checking server authentication...');
+      const response = await fetch('/api/auth/user', {
+        credentials: 'include',
+      });
+
+      console.log('🔐 Auth check response status:', response.status);
+      
+      if (response.ok) {
+        const userData = await response.json();
+        console.log('✅ User authenticated:', userData);
+        setUser(userData);
+        // Clear any old localStorage auth data
+        localStorage.removeItem('beerAuth');
+      } else {
+        console.log('❌ User not authenticated, response:', await response.text());
         setUser(null);
+        // Only redirect if we're not already on login page
+        if (window.location.pathname !== '/') {
+          setLocation('/');
+        }
+      }
+    } catch (error) {
+      console.error('🚨 Error checking authentication:', error);
+      setUser(null);
+      if (window.location.pathname !== '/') {
         setLocation('/');
       }
-    };
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [setLocation]);
+  const login = () => {
+    console.log('🔄 Redirecting to Replit login...');
+    window.location.href = '/api/login';
+  };
+
+  const logout = async () => {
+    console.log('🚪 Logging out...');
+    try {
+      await fetch('/api/logout', {
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+    setUser(null);
+    localStorage.removeItem('beerAuth');
+    window.location.href = '/';
+  };
 
   return {
     user,
     isLoading,
     isAuthenticated: !!user,
+    login,
+    logout,
+    checkServerAuth,
   };
 }
