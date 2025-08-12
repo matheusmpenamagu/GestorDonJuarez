@@ -30,7 +30,7 @@ export function useAuth() {
         console.log('❌ User not authenticated, response:', await response.text());
         setUser(null);
         // Only redirect if we're not already on login page
-        if (window.location.pathname !== '/') {
+        if (window.location.pathname !== '/' && window.location.pathname !== '/dashboard') {
           setLocation('/');
         }
       }

@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupWebSocket, broadcastUpdate } from "./websocket";
 import { storage } from "./storage";
 import { isAuthenticated } from "./replitAuth";
-// Removed Replit Auth for demo purposes
+import { authenticateEmployee } from "./localAuth";
 import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, insertPointOfSaleSchema, insertBeerStyleSchema, insertDeviceSchema, insertUnitSchema, insertCo2RefillSchema, insertProductCategorySchema, insertProductSchema } from "@shared/schema";
 import { z } from "zod";
 import { format } from "date-fns";
@@ -256,31 +256,110 @@ const validateWebhookToken = (req: any, res: any, next: any) => {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Real authentication route - returns authenticated user info
-  app.get('/api/auth/user', isAuthenticated, async (req, res) => {
+  // Local employee authentication
+  app.post('/api/auth/login', async (req, res) => {
     try {
-      const user = req.user as any;
-      const claims = user.claims;
+      const { email, password } = req.body;
       
-      if (!claims || !claims.sub) {
-        return res.status(401).json({ message: 'Invalid user session' });
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required' });
       }
 
-      // Get user from database
-      const dbUser = await storage.getUserById(claims.sub);
-      
-      if (!dbUser) {
-        return res.status(404).json({ message: 'User not found' });
+      const employee = await authenticateEmployee(email, password);
+      if (!employee) {
+        return res.status(401).json({ message: 'Invalid credentials' });
       }
+
+      // Store employee info in session
+      (req.session as any).employee = {
+        id: employee.id,
+        email: employee.email,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        avatar: employee.avatar,
+        role: employee.role,
+        employmentTypes: employee.employmentTypes,
+        type: 'employee'
+      };
 
       res.json({
-        id: dbUser.id,
-        email: dbUser.email,
-        firstName: dbUser.firstName,
-        lastName: dbUser.lastName,
-        profileImageUrl: dbUser.profileImageUrl
+        id: employee.id,
+        email: employee.email,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        avatar: employee.avatar,
+        role: employee.role,
+        employmentTypes: employee.employmentTypes,
+        type: 'employee'
       });
     } catch (error) {
-      console.error('Error getting user:', error);
+      console.error('🚨 [LOGIN] Error during employee login:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Logout endpoint
+  app.post('/api/auth/logout', async (req, res) => {
+    try {
+      if ((req.session as any).employee) {
+        delete (req.session as any).employee;
+      }
+      
+      // Also handle Replit logout if needed
+      req.logout((err) => {
+        if (err) {
+          console.error('Logout error:', err);
+        }
+        req.session.destroy((err) => {
+          if (err) {
+            console.error('Session destroy error:', err);
+            return res.status(500).json({ message: 'Logout failed' });
+          }
+          res.clearCookie('connect.sid');
+          res.json({ message: 'Logged out successfully' });
+        });
+      });
+    } catch (error) {
+      console.error('🚨 [LOGOUT] Error during logout:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get current user (handles both Replit and employee auth)
+  app.get('/api/auth/user', async (req, res) => {
+    try {
+      // Check for employee session first
+      const employeeSession = (req.session as any).employee;
+      if (employeeSession) {
+        return res.json(employeeSession);
+      }
+
+      // Check for Replit auth
+      if (req.isAuthenticated && req.isAuthenticated()) {
+        const user = req.user as any;
+        const claims = user.claims;
+        
+        if (claims && claims.sub) {
+          // Get user from database
+          const dbUser = await storage.getUserById(claims.sub);
+          
+          if (dbUser) {
+            return res.json({
+              id: dbUser.id,
+              email: dbUser.email,
+              firstName: dbUser.firstName,
+              lastName: dbUser.lastName,
+              profileImageUrl: dbUser.profileImageUrl,
+              type: 'replit'
+            });
+          }
+        }
+      }
+
+      // No valid session found
+      res.status(401).json({ message: 'Not authenticated' });
+    } catch (error) {
+      console.error('🚨 [AUTH-USER] Error getting user:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });

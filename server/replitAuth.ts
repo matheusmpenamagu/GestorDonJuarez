@@ -126,9 +126,16 @@ export async function setupAuth(app: Express) {
   });
 }
 
+// Hybrid authentication: supports both Replit OIDC and local employee auth
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  const user = req.user as any;
+  // Check for employee session first
+  const employeeSession = (req.session as any).employee;
+  if (employeeSession) {
+    return next();
+  }
 
+  // Check for Replit authentication
+  const user = req.user as any;
   if (!req.isAuthenticated() || !user || !user.expires_at) {
     return res.status(401).json({ message: "Unauthorized" });
   }
@@ -138,6 +145,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     return next();
   }
 
+  // Try to refresh Replit token
   const refreshToken = user.refresh_token;
   if (!refreshToken) {
     res.status(401).json({ message: "Unauthorized" });
