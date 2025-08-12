@@ -64,31 +64,6 @@ export default function EmployeeEdit() {
 
   const { data: employee, isLoading: employeeLoading } = useQuery({
     queryKey: ["/api/employees", employeeId],
-    queryFn: async () => {
-      if (isNew) return null;
-      console.log('🔧 [EMPLOYEE-EDIT] Fetching employee:', employeeId);
-      
-      // Use the same authentication method as other requests
-      const storedSessionId = localStorage.getItem('sessionId');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      
-      if (storedSessionId) {
-        headers['Authorization'] = `Bearer ${storedSessionId}`;
-      }
-      
-      const response = await fetch(`/api/employees/${employeeId}`, {
-        method: 'GET',
-        credentials: 'include',
-        headers
-      });
-      
-      if (!response.ok) throw new Error('Colaborador não encontrado');
-      const data = await response.json();
-      console.log('🔧 [EMPLOYEE-EDIT] Employee data received:', data);
-      return data;
-    },
     enabled: !isNew && !!employeeId,
   });
 
@@ -97,10 +72,8 @@ export default function EmployeeEdit() {
   });
 
   useEffect(() => {
-    console.log('🔧 [EMPLOYEE-EDIT] useEffect called:', { employee: !!employee, isNew, employeeId });
     if (employee && !isNew) {
-      console.log('🔧 [EMPLOYEE-EDIT] Loading employee data:', employee);
-      const newFormData = {
+      setFormData({
         email: employee.email || "",
         password: "",
         firstName: employee.firstName || "",
@@ -110,13 +83,9 @@ export default function EmployeeEdit() {
         employmentTypes: (employee.employmentTypes || ["Funcionário"]) as ("Sócio" | "Funcionário" | "Freelancer")[],
         avatar: employee.avatar || "😊",
         isActive: employee.isActive ?? true,
-      };
-      setFormData(newFormData);
-      console.log('🔧 [EMPLOYEE-EDIT] Form data set:', newFormData);
-    } else {
-      console.log('🔧 [EMPLOYEE-EDIT] No employee data or is new:', { hasEmployee: !!employee, isNew });
+      });
     }
-  }, [employee, isNew, employeeId]);
+  }, [employee, isNew]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: EmployeeFormData) => {
@@ -166,9 +135,7 @@ export default function EmployeeEdit() {
     );
   }
 
-  console.log('🔧 [EMPLOYEE-EDIT] Rendering with formData:', formData);
-  console.log('🔧 [EMPLOYEE-EDIT] Employee data:', employee);
-  console.log('🔧 [EMPLOYEE-EDIT] IsNew:', isNew, 'EmployeeId:', employeeId);
+  // Remove debug logs for cleaner console
   
   return (
     <div className="p-6 max-w-2xl mx-auto">
@@ -201,10 +168,7 @@ export default function EmployeeEdit() {
                 <Input
                   id="firstName"
                   value={formData.firstName}
-                  onChange={(e) => {
-                    console.log('🔧 [EMPLOYEE-EDIT] firstName changed:', e.target.value);
-                    setFormData({ ...formData, firstName: e.target.value });
-                  }}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                   placeholder="Ex: João"
                   required
                 />
