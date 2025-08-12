@@ -282,6 +282,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       console.log('✅ [LOGIN] Session saved:', (req.session as any).employee);
+      console.log('✅ [LOGIN] Session ID:', req.sessionID);
+      
+      // Force session save
+      req.session.save((err) => {
+        if (err) {
+          console.error('🚨 [LOGIN] Session save error:', err);
+        } else {
+          console.log('✅ [LOGIN] Session saved to store');
+        }
+      });
 
       res.json({
         id: employee.id,
