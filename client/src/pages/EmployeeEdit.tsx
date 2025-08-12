@@ -87,7 +87,18 @@ export default function EmployeeEdit() {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
-        const data = await response.json();
+        const text = await response.text();
+        console.log('🔧 [EMPLOYEE-EDIT] Raw response text:', text);
+        
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (parseError) {
+          console.log('🔧 [EMPLOYEE-EDIT] JSON parse error:', parseError);
+          console.log('🔧 [EMPLOYEE-EDIT] Response headers:', [...response.headers.entries()]);
+          throw new Error(`Invalid JSON response: ${text}`);
+        }
+        
         console.log('🔧 [EMPLOYEE-EDIT] Custom fetch result:', data);
         return data;
       } catch (error) {

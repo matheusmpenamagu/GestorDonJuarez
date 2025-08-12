@@ -1840,6 +1840,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get single employee by ID
+  app.get('/api/employees/:id', requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid employee ID" });
+      }
+      
+      const employee = await storage.getEmployee(id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      res.json(employee);
+    } catch (error) {
+      console.error("Error fetching employee:", error);
+      res.status(500).json({ message: "Error fetching employee" });
+    }
+  });
+
   // Create new employee
   app.post('/api/employees', requireAuth, async (req, res) => {
     try {
