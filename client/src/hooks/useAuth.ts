@@ -66,10 +66,7 @@ export function useAuth() {
     }
   };
 
-  const login = () => {
-    console.log('🔄 Redirecting to Replit login...');
-    window.location.href = '/api/login';
-  };
+  // Employee login only - no external auth needed
 
   const logout = async () => {
     console.log('🚪 Logging out...');
@@ -102,7 +99,6 @@ export function useAuth() {
     user,
     isLoading,
     isAuthenticated: !!user,
-    login,
     logout,
     checkServerAuth,
   };

@@ -5,12 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Beer, Lock, Shield, User, Eye, EyeOff } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+// Removed Replit auth - using employee auth only
 import { useToast } from "@/hooks/use-toast";
 import backgroundImage from "@assets/fundo-login-min_1751337057493.jpg";
 
 export default function Landing() {
-  const { login } = useAuth();
   const { toast } = useToast();
   
   const [email, setEmail] = useState("");
@@ -184,23 +183,23 @@ export default function Landing() {
                     Acesso Administrativo
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                    Autenticação segura via Replit para administradores do sistema
+                    Entre em contato com o administrador para obter acesso
                   </p>
                 </div>
               </div>
               
               <Button 
-                onClick={login}
+                disabled
                 className="w-full"
                 size="lg"
               >
                 <Lock className="h-4 w-4 mr-2" />
-                Login Replit
+                Em Breve
               </Button>
               
               <div className="text-center">
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Você será redirecionado para a autenticação do Replit
+                  Funcionalidade em desenvolvimento
                 </p>
               </div>
             </TabsContent>

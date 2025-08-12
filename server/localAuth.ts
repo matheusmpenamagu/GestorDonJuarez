@@ -1,6 +1,9 @@
 import bcrypt from 'bcryptjs';
 import { storage } from './storage';
 import type { Employee } from '@shared/schema';
+import session from 'express-session';
+import type { Express } from 'express';
+import MemoryStore from 'memorystore';
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12);
@@ -37,4 +40,28 @@ export async function authenticateEmployee(email: string, password: string): Pro
     console.error('🚨 [LOCAL-AUTH] Authentication error:', error);
     return null;
   }
+}
+
+export function setupLocalAuth(app: Express) {
+  console.log('🔐 Setting up local authentication with memory store');
+  
+  const MemStore = MemoryStore(session);
+  const sessionStore = new MemStore({
+    checkPeriod: 86400000, // prune expired entries every 24h
+  });
+
+  app.use(session({
+    store: sessionStore,
+    secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // set to true if using HTTPS
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      sameSite: 'lax'
+    }
+  }));
+
+  console.log('✅ Local authentication setup complete');
 }
