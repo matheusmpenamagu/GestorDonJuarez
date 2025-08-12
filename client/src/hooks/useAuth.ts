@@ -74,14 +74,27 @@ export function useAuth() {
   const logout = async () => {
     console.log('🚪 Logging out...');
     try {
-      await fetch('/api/logout', {
+      // Use stored session ID for logout request
+      const storedSessionId = localStorage.getItem('sessionId');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (storedSessionId) {
+        headers['Authorization'] = `Bearer ${storedSessionId}`;
+      }
+      
+      await fetch('/api/auth/logout', {
+        method: 'POST',
         credentials: 'include',
+        headers
       });
     } catch (error) {
       console.error('Error during logout:', error);
     }
     setUser(null);
     localStorage.removeItem('beerAuth');
+    localStorage.removeItem('sessionId'); // Clear stored session
     window.location.href = '/';
   };
 

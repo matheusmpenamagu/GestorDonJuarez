@@ -27,6 +27,63 @@ const upload = multer({
   },
 });
 
+// Enhanced authentication middleware for hybrid auth (cookies + headers)
+const requireAuth = async (req: any, res: any, next: any) => {
+  try {
+    // Check for employee session in regular session
+    if (req.session?.employee) {
+      req.user = req.session.employee;
+      return next();
+    }
+
+    // Check for session ID in Authorization header (fallback for Replit proxy issues)
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const sessionId = authHeader.substring(7);
+      
+      // Get session data from store directly
+      return new Promise((resolve) => {
+        req.sessionStore.get(sessionId, (err: any, sessionData: any) => {
+          if (!err && sessionData?.employee) {
+            req.user = sessionData.employee;
+            next();
+          } else {
+            res.status(401).json({ message: 'Unauthorized' });
+          }
+          resolve(null);
+        });
+      });
+    }
+
+    // Check for Replit auth
+    if (req.isAuthenticated && req.isAuthenticated()) {
+      const user = req.user as any;
+      const claims = user.claims;
+      
+      if (claims && claims.sub) {
+        const dbUser = await storage.getUserById(claims.sub);
+        if (dbUser) {
+          req.user = {
+            id: dbUser.id,
+            email: dbUser.email,
+            firstName: dbUser.firstName,
+            lastName: dbUser.lastName,
+            profileImageUrl: dbUser.profileImageUrl,
+            type: 'replit'
+          };
+          return next();
+        }
+      }
+    }
+
+    // No valid authentication found
+    res.status(401).json({ message: 'Unauthorized' });
+  } catch (error) {
+    console.error('Auth middleware error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // Helper function to convert dates to São Paulo timezone
 function toSaoPauloTime(date: Date): string {
   const zonedDate = toZonedTime(date, SAO_PAULO_TZ);
@@ -318,24 +375,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Logout endpoint
+  // Employee logout - hybrid auth support
   app.post('/api/auth/logout', async (req, res) => {
     try {
+      console.log('🚪 [LOGOUT] Processing logout request...');
+      
+      // Check if there's an Authorization header with session ID
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const sessionId = authHeader.substring(7);
+        console.log('🚪 [LOGOUT] Found session ID in header:', sessionId);
+        
+        // Destroy session in store
+        req.sessionStore.destroy(sessionId, (err: any) => {
+          if (err) {
+            console.error('🚨 [LOGOUT] Session destroy error:', err);
+            return res.status(500).json({ message: 'Logout failed' });
+          }
+          console.log('✅ [LOGOUT] Session destroyed successfully');
+          res.json({ message: 'Logout successful' });
+        });
+        return;
+      }
+      
+      // Clear employee from regular session first
       if ((req.session as any).employee) {
         delete (req.session as any).employee;
       }
       
       // Also handle Replit logout if needed
-      req.logout((err) => {
+      req.logout((err: any) => {
         if (err) {
           console.error('Logout error:', err);
         }
-        req.session.destroy((err) => {
+        req.session.destroy((err: any) => {
           if (err) {
             console.error('Session destroy error:', err);
             return res.status(500).json({ message: 'Logout failed' });
           }
           res.clearCookie('connect.sid');
+          console.log('✅ [LOGOUT] Regular session destroyed');
           res.json({ message: 'Logged out successfully' });
         });
       });
@@ -1337,7 +1416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard API endpoints (protected)
   
   // Get dashboard statistics
-  app.get('/api/dashboard/stats', isAuthenticated, async (req, res) => {
+  app.get('/api/dashboard/stats', requireAuth, async (req, res) => {
     try {
       const stats = await storage.getDashboardStats();
       res.json(stats);
@@ -1348,7 +1427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all taps with current status
-  app.get('/api/taps', isAuthenticated, async (req, res) => {
+  app.get('/api/taps', requireAuth, async (req, res) => {
     try {
       const taps = await storage.getTaps();
       res.json(taps);
@@ -1359,7 +1438,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get recent pour events for real-time display
-  app.get('/api/recent-pours', isAuthenticated, async (req, res) => {
+  app.get('/api/recent-pours', requireAuth, async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
       const events = await storage.getRecentPourEvents(limit);
@@ -1969,7 +2048,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get CO2 statistics
-  app.get('/api/co2-stats', isAuthenticated, async (req, res) => {
+  app.get('/api/co2-stats', requireAuth, async (req, res) => {
     try {
       const stats = await storage.getCo2Stats();
       res.json(stats);

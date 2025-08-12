@@ -12,9 +12,17 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  // Check for stored session ID (fallback for Replit proxy cookie issues)
+  const storedSessionId = localStorage.getItem('sessionId');
+  const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
+  
+  if (storedSessionId) {
+    headers['Authorization'] = `Bearer ${storedSessionId}`;
+  }
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -29,8 +37,17 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    // Check for stored session ID (fallback for Replit proxy cookie issues)
+    const storedSessionId = localStorage.getItem('sessionId');
+    const headers: Record<string, string> = {};
+    
+    if (storedSessionId) {
+      headers['Authorization'] = `Bearer ${storedSessionId}`;
+    }
+
     const res = await fetch(queryKey[0] as string, {
       credentials: "include",
+      headers,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
