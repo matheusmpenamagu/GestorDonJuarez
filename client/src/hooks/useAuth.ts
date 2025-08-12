@@ -13,12 +13,19 @@ export function useAuth() {
   const checkServerAuth = async () => {
     setIsLoading(true);
     try {
+      console.log('🔐 === CLIENT AUTH DEBUG ===');
+      console.log('🔐 Document cookies:', document.cookie);
       console.log('🔐 Checking server authentication...');
+      
       const response = await fetch('/api/auth/user', {
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
 
       console.log('🔐 Auth check response status:', response.status);
+      console.log('🔐 Auth check response headers:', Array.from(response.headers.entries()));
       
       if (response.ok) {
         const userData = await response.json();
@@ -27,7 +34,8 @@ export function useAuth() {
         // Clear any old localStorage auth data
         localStorage.removeItem('beerAuth');
       } else {
-        console.log('❌ User not authenticated, response:', await response.text());
+        const errorData = await response.json();
+        console.log('❌ User not authenticated, response:', JSON.stringify(errorData));
         setUser(null);
         // Only redirect if we're not already on login page
         if (window.location.pathname !== '/' && window.location.pathname !== '/dashboard') {
@@ -41,6 +49,7 @@ export function useAuth() {
         setLocation('/');
       }
     } finally {
+      console.log('🔐 === END CLIENT AUTH DEBUG ===');
       setIsLoading(false);
     }
   };

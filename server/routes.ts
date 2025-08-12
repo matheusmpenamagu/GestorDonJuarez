@@ -281,27 +281,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'employee'
       };
       
-      console.log('✅ [LOGIN] Session saved:', (req.session as any).employee);
-      console.log('✅ [LOGIN] Session ID:', req.sessionID);
+      console.log('✅ [LOGIN] === DETAILED LOGIN DEBUG ===');
+      console.log('✅ [LOGIN] Session ID before save:', req.sessionID);
+      console.log('✅ [LOGIN] Session object before save:', JSON.stringify(req.session, null, 2));
+      console.log('✅ [LOGIN] Cookie header sent:', req.headers.cookie);
+      console.log('✅ [LOGIN] Session store type:', req.sessionStore?.constructor?.name);
       
-      // Force session save
+      // Force session save and respond only after save is complete
       req.session.save((err) => {
         if (err) {
           console.error('🚨 [LOGIN] Session save error:', err);
-        } else {
-          console.log('✅ [LOGIN] Session saved to store');
+          return res.status(500).json({ message: 'Session save failed' });
         }
+        
+        console.log('✅ [LOGIN] Session saved to store successfully');
+        console.log('✅ [LOGIN] Session ID after save:', req.sessionID);
+        console.log('✅ [LOGIN] === END LOGIN DEBUG ===');
+        
+        // Send response with explicit cookie instructions
+        res.cookie('connect.sid', req.sessionID, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+        
+        res.json({
+          id: employee.id,
+          email: employee.email,
+          firstName: employee.firstName,
+          lastName: employee.lastName,
+          avatar: employee.avatar,
+          employmentTypes: employee.employmentTypes,
+          type: 'employee'
+        });
       });
 
-      res.json({
-        id: employee.id,
-        email: employee.email,
-        firstName: employee.firstName,
-        lastName: employee.lastName,
-        avatar: employee.avatar,
-        employmentTypes: employee.employmentTypes,
-        type: 'employee'
-      });
+
     } catch (error) {
       console.error('🚨 [LOGIN] Error during employee login:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -338,12 +353,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user (handles both Replit and employee auth)
   app.get('/api/auth/user', async (req, res) => {
     try {
-      console.log('🔐 [AUTH-USER] Checking session...', req.session);
+      console.log('🔐 [AUTH-USER] === DETAILED SESSION DEBUG ===');
+      console.log('🔐 [AUTH-USER] Cookies received:', req.headers.cookie);
       console.log('🔐 [AUTH-USER] Session ID:', req.sessionID);
+      console.log('🔐 [AUTH-USER] Session object:', JSON.stringify(req.session, null, 2));
+      console.log('🔐 [AUTH-USER] Session store type:', req.sessionStore?.constructor?.name);
       
       // Check for employee session first
       const employeeSession = (req.session as any).employee;
       console.log('🔐 [AUTH-USER] Employee session found:', !!employeeSession);
+      console.log('🔐 [AUTH-USER] Employee session data:', employeeSession);
       
       if (employeeSession) {
         console.log('✅ [AUTH-USER] Returning employee session:', employeeSession);
@@ -375,6 +394,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // No valid session found
       console.log('❌ [AUTH-USER] No valid session found');
+      console.log('🔐 [AUTH-USER] === END SESSION DEBUG ===');
       res.status(401).json({ message: 'Not authenticated' });
     } catch (error) {
       console.error('🚨 [AUTH-USER] Error getting user:', error);
