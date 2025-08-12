@@ -127,40 +127,20 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  console.log('🔐 [AUTH] Checking authentication for:', req.method, req.path);
-  console.log('🔐 [AUTH] req.isAuthenticated():', req.isAuthenticated?.());
-  console.log('🔐 [AUTH] req.user exists:', !!req.user);
-  
   const user = req.user as any;
-  
-  if (!req.isAuthenticated()) {
-    console.log('❌ [AUTH] Request not authenticated via Passport');
-    return res.status(401).json({ message: "Unauthorized - Not authenticated" });
-  }
-  
-  if (!user) {
-    console.log('❌ [AUTH] No user object found');
-    return res.status(401).json({ message: "Unauthorized - No user" });
-  }
-  
-  if (!user.expires_at) {
-    console.log('❌ [AUTH] No expiration timestamp in user');
-    return res.status(401).json({ message: "Unauthorized - No expiry" });
+
+  if (!req.isAuthenticated() || !user || !user.expires_at) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
 
   const now = Math.floor(Date.now() / 1000);
-  console.log('🔐 [AUTH] Token expires at:', user.expires_at, 'Now:', now);
-  
   if (now <= user.expires_at) {
-    console.log('✅ [AUTH] Token still valid, allowing access');
     return next();
   }
 
-  console.log('🔄 [AUTH] Token expired, attempting refresh...');
   const refreshToken = user.refresh_token;
   if (!refreshToken) {
-    console.log('❌ [AUTH] No refresh token available');
-    res.status(401).json({ message: "Unauthorized - No refresh token" });
+    res.status(401).json({ message: "Unauthorized" });
     return;
   }
 
@@ -168,11 +148,9 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     const config = await getOidcConfig();
     const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
     updateUserSession(user, tokenResponse);
-    console.log('✅ [AUTH] Token refreshed successfully');
     return next();
   } catch (error) {
-    console.log('❌ [AUTH] Token refresh failed:', error);
-    res.status(401).json({ message: "Unauthorized - Refresh failed" });
+    res.status(401).json({ message: "Unauthorized" });
     return;
   }
 };

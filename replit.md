@@ -3,6 +3,12 @@
 ## Overview
 Gestor Don Juarez is a comprehensive operational management system for Don Juarez, a Brazilian craft brewery. Initially designed for real-time monitoring of beer taps and kegs connected to ESP32 sensors, it's expanding to integrate various administrative operations previously managed via spreadsheets. The system provides a dashboard, consumption monitoring, keg management, and data export, all localized in Brazilian Portuguese with São Paulo timezone support. The vision is to streamline all brewery operations, enhancing efficiency and data-driven decision-making.
 
+## Recent Security Updates (2025-08-12)
+- **CRITICAL SECURITY FIX**: Removed insecure localStorage-based authentication that accepted any email/password combination
+- **SECURE AUTHENTICATION**: Implemented proper Replit OIDC authentication with server-side validation
+- **ACCESS CONTROL**: All API endpoints now protected with real authentication middleware
+- **USER VERIFICATION**: Only users authenticated through Replit OIDC (e.g., matheusmpena@gmail.com) can access the system
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 Company branding: Don Juarez (cervejaria artesanal brasileira)
