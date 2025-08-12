@@ -67,6 +67,12 @@ export default function EmployeeEdit() {
     enabled: !isNew && !!employeeId,
     staleTime: 0,
     gcTime: 0,
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/employees/${employeeId}`);
+      const data = await response.json();
+      console.log('🔧 [EMPLOYEE-EDIT] Custom fetch result:', data);
+      return data;
+    },
   });
 
   const { data: roles } = useQuery({
