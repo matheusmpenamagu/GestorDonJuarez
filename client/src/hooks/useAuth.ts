@@ -17,11 +17,20 @@ export function useAuth() {
       console.log('🔐 Document cookies:', document.cookie);
       console.log('🔐 Checking server authentication...');
       
+      // Check for stored session ID (fallback for Replit proxy cookie issues)
+      const storedSessionId = localStorage.getItem('sessionId');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (storedSessionId) {
+        headers['Authorization'] = `Bearer ${storedSessionId}`;
+        console.log('🔐 Using stored session ID as Authorization header');
+      }
+      
       const response = await fetch('/api/auth/user', {
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        headers
       });
 
       console.log('🔐 Auth check response status:', response.status);
@@ -36,6 +45,8 @@ export function useAuth() {
       } else {
         const errorData = await response.json();
         console.log('❌ User not authenticated, response:', JSON.stringify(errorData));
+        // Clear stored session if authentication fails
+        localStorage.removeItem('sessionId');
         setUser(null);
         // Only redirect if we're not already on login page
         if (window.location.pathname !== '/' && window.location.pathname !== '/dashboard') {
@@ -44,6 +55,7 @@ export function useAuth() {
       }
     } catch (error) {
       console.error('🚨 Error checking authentication:', error);
+      localStorage.removeItem('sessionId');
       setUser(null);
       if (window.location.pathname !== '/') {
         setLocation('/');

@@ -298,6 +298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('✅ [LOGIN] Session ID after save:', req.sessionID);
         console.log('✅ [LOGIN] === END LOGIN DEBUG ===');
         
+        // Send session ID in response for client to store
         res.json({
           id: employee.id,
           email: employee.email,
@@ -305,7 +306,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName: employee.lastName,
           avatar: employee.avatar,
           employmentTypes: employee.employmentTypes,
-          type: 'employee'
+          type: 'employee',
+          sessionId: req.sessionID // Include session ID for client
         });
       });
 
@@ -348,11 +350,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🔐 [AUTH-USER] === DETAILED SESSION DEBUG ===');
       console.log('🔐 [AUTH-USER] Cookies received:', req.headers.cookie);
+      console.log('🔐 [AUTH-USER] Authorization header:', req.headers.authorization);
       console.log('🔐 [AUTH-USER] Session ID:', req.sessionID);
       console.log('🔐 [AUTH-USER] Session object:', JSON.stringify(req.session, null, 2));
       console.log('🔐 [AUTH-USER] Session store type:', req.sessionStore?.constructor?.name);
       
-      // Check for employee session first
+      // Check for session ID in Authorization header (fallback for Replit proxy issues)
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const sessionId = authHeader.substring(7);
+        console.log('🔐 [AUTH-USER] Found session ID in Authorization header:', sessionId);
+        
+        // Get session data from store directly
+        req.sessionStore.get(sessionId, (err, sessionData) => {
+          if (err) {
+            console.error('🚨 [AUTH-USER] Error getting session from store:', err);
+          } else if (sessionData && sessionData.employee) {
+            console.log('✅ [AUTH-USER] Found employee session via Authorization header:', sessionData.employee);
+            return res.json(sessionData.employee);
+          } else {
+            console.log('❌ [AUTH-USER] No employee session found via Authorization header');
+            return res.status(401).json({ message: 'Not authenticated' });
+          }
+        });
+        return;
+      }
+      
+      // Check for employee session first (normal cookie-based)
       const employeeSession = (req.session as any).employee;
       console.log('🔐 [AUTH-USER] Employee session found:', !!employeeSession);
       console.log('🔐 [AUTH-USER] Employee session data:', employeeSession);

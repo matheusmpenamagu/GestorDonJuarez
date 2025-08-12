@@ -44,6 +44,13 @@ export default function Landing() {
 
       if (response.ok) {
         const userData = await response.json();
+        
+        // Store session ID for fallback authentication
+        if (userData.sessionId) {
+          localStorage.setItem('sessionId', userData.sessionId);
+          console.log('💾 Stored session ID for fallback authentication');
+        }
+        
         toast({
           title: "Login realizado com sucesso!",
           description: `Bem-vindo(a), ${userData.firstName}!`,
