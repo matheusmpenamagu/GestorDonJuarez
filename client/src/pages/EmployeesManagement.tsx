@@ -82,8 +82,17 @@ export default function EmployeesManagement() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(Array.isArray(employees) ? employees : []).map((employee: EmployeeWithRelations) => (
-            <Card key={employee.id}>
+          {(Array.isArray(employees) ? employees : [])
+            .sort((a, b) => {
+              // Active employees first
+              if (a.isActive !== b.isActive) {
+                return b.isActive ? 1 : -1;
+              }
+              // Then by name
+              return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+            })
+            .map((employee: EmployeeWithRelations) => (
+            <Card key={employee.id} className={`${!employee.isActive ? 'opacity-60 grayscale' : ''}`}>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -97,6 +106,7 @@ export default function EmployeesManagement() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        disabled={!employee.isActive}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -105,6 +115,7 @@ export default function EmployeesManagement() {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDelete(employee.id)}
+                      disabled={!employee.isActive}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
