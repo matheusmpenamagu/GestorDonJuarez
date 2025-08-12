@@ -5,9 +5,12 @@ Gestor Don Juarez is a comprehensive operational management system for Don Juare
 
 ## Recent Security Updates (2025-08-12)
 - **CRITICAL SECURITY FIX**: Removed insecure localStorage-based authentication that accepted any email/password combination
-- **SECURE AUTHENTICATION**: Implemented proper Replit OIDC authentication with server-side validation
+- **SECURE AUTHENTICATION**: Implemented proper employee-only authentication with bcrypt password hashing
+- **PASSWORD ENCRYPTION**: All passwords now properly encrypted using bcrypt with salt rounds of 12
 - **ACCESS CONTROL**: All API endpoints now protected with real authentication middleware
-- **USER VERIFICATION**: Only users authenticated through Replit OIDC (e.g., matheusmpena@gmail.com) can access the system
+- **USER VERIFICATION**: Only employees with valid credentials can access the system
+- **EMPLOYEE MANAGEMENT**: Added proper password hashing for create/update operations
+- **SORTING IMPLEMENTATION**: Active employees displayed first, inactive employees shown with disabled styling
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -66,8 +69,10 @@ The system employs a client-server architecture with a React 18+ TypeScript fron
 - **@radix-ui/react-***: Accessible UI components
 
 ### Authentication
-- Replit's built-in OIDC authentication.
-- Session-based authentication with PostgreSQL storage.
+- Employee-only authentication system using bcrypt password hashing
+- Session-based authentication with in-memory storage
+- Password encryption implemented for all create/update operations
+- Secure login verification with proper password comparison
 
 ### Hardware Integration
 - ESP32 microcontrollers with YF-S401 flow sensors.
