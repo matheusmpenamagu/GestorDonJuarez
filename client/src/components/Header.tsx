@@ -6,18 +6,14 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { useLocation } from "wouter";
 
 export function Header() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { isConnected } = useWebSocket('/');
   const [, navigate] = useLocation();
 
   const handleLogout = async () => {
     try {
-      localStorage.removeItem('beerAuth');
-      await fetch('/api/logout', { method: 'POST' });
-      // Redireciona para a página de login
-      navigate('/');
-      // Force page reload to clear all state
-      window.location.reload();
+      // Use the logout function from useAuth hook
+      await logout();
     } catch (error) {
       console.error('Logout error:', error);
       window.location.href = '/';
