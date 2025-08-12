@@ -63,7 +63,7 @@ export default function EmployeeEdit() {
   const queryClient = useQueryClient();
 
   const { data: employee, isLoading: employeeLoading } = useQuery({
-    queryKey: ["/api/employees", employeeId],
+    queryKey: [`/api/employees/${employeeId}`],
     enabled: !isNew && !!employeeId,
   });
 
