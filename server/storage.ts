@@ -869,6 +869,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createEmployee(employeeData: InsertEmployee): Promise<Employee> {
+    // Hash password if provided
+    if (employeeData.password) {
+      const { hashPassword } = await import('./localAuth');
+      employeeData.password = await hashPassword(employeeData.password);
+    }
+    
     const [employee] = await db
       .insert(employees)
       .values(employeeData)
@@ -877,6 +883,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateEmployee(id: number, employeeData: Partial<InsertEmployee>): Promise<Employee> {
+    // Hash password if provided and not empty
+    if (employeeData.password && employeeData.password.trim() !== '') {
+      const { hashPassword } = await import('./localAuth');
+      employeeData.password = await hashPassword(employeeData.password);
+    } else if (employeeData.password === '') {
+      // Don't update password if empty string is provided
+      delete employeeData.password;
+    }
+    
     const [employee] = await db
       .update(employees)
       .set({ ...employeeData, updatedAt: new Date() })
