@@ -66,9 +66,28 @@ export default function EmployeeEdit() {
     queryKey: ["/api/employees", employeeId],
     queryFn: async () => {
       if (isNew) return null;
-      const response = await fetch(`/api/employees/${employeeId}`);
+      console.log('🔧 [EMPLOYEE-EDIT] Fetching employee:', employeeId);
+      
+      // Use the same authentication method as other requests
+      const storedSessionId = localStorage.getItem('sessionId');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (storedSessionId) {
+        headers['Authorization'] = `Bearer ${storedSessionId}`;
+      }
+      
+      const response = await fetch(`/api/employees/${employeeId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers
+      });
+      
       if (!response.ok) throw new Error('Colaborador não encontrado');
-      return response.json();
+      const data = await response.json();
+      console.log('🔧 [EMPLOYEE-EDIT] Employee data received:', data);
+      return data;
     },
     enabled: !isNew && !!employeeId,
   });
@@ -79,6 +98,7 @@ export default function EmployeeEdit() {
 
   useEffect(() => {
     if (employee && !isNew) {
+      console.log('🔧 [EMPLOYEE-EDIT] Loading employee data:', employee);
       setFormData({
         email: employee.email || "",
         password: "",
@@ -89,6 +109,12 @@ export default function EmployeeEdit() {
         employmentTypes: (employee.employmentTypes || ["Funcionário"]) as ("Sócio" | "Funcionário" | "Freelancer")[],
         avatar: employee.avatar || "😊",
         isActive: employee.isActive ?? true,
+      });
+      console.log('🔧 [EMPLOYEE-EDIT] Form data set:', {
+        email: employee.email,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        whatsapp: employee.whatsapp
       });
     }
   }, [employee, isNew]);
