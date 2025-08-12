@@ -328,13 +328,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user (handles both Replit and employee auth)
   app.get('/api/auth/user', async (req, res) => {
     try {
+      console.log('🔐 [AUTH-USER] Checking session...', req.session);
+      console.log('🔐 [AUTH-USER] Session ID:', req.sessionID);
+      
       // Check for employee session first
       const employeeSession = (req.session as any).employee;
+      console.log('🔐 [AUTH-USER] Employee session found:', !!employeeSession);
+      
       if (employeeSession) {
+        console.log('✅ [AUTH-USER] Returning employee session:', employeeSession);
         return res.json(employeeSession);
       }
 
       // Check for Replit auth
+      console.log('🔐 [AUTH-USER] Checking Replit auth...', req.isAuthenticated?.());
       if (req.isAuthenticated && req.isAuthenticated()) {
         const user = req.user as any;
         const claims = user.claims;
@@ -357,6 +364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // No valid session found
+      console.log('❌ [AUTH-USER] No valid session found');
       res.status(401).json({ message: 'Not authenticated' });
     } catch (error) {
       console.error('🚨 [AUTH-USER] Error getting user:', error);
