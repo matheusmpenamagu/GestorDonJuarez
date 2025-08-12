@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Calendar, Building2, Edit, Trash2, Search, ChevronUp, ChevronDown, ArrowUpDown, TrendingUp, Clock } from "lucide-react";
 import { format, startOfWeek, startOfDay, subDays, isWithinInterval } from "date-fns";
+import { zonedTimeToUtc, utcToZonedTime } from "date-fns-tz";
 import { ptBR } from "date-fns/locale";
 
 import { Button } from "@/components/ui/button";
@@ -67,7 +68,7 @@ function CashRegisterForm({
   const form = useForm<CashRegisterClosureFormData>({
     resolver: zodResolver(insertCashRegisterClosureSchema),
     defaultValues: {
-      datetime: initialData?.datetime || (closure?.datetime ? utcToZonedTime(new Date(closure.datetime), 'America/Sao_Paulo') : utcToZonedTime(new Date(), 'America/Sao_Paulo')),
+      datetime: initialData?.datetime || (closure?.datetime ? new Date(closure.datetime) : new Date()),
       unitId: initialData?.unitId || closure?.unitId || undefined,
       operation: initialData?.operation || closure?.operation || "salao",
       initialFund: initialData?.initialFund || (closure?.initialFund ? parseFloat(closure.initialFund) : undefined),
@@ -125,16 +126,10 @@ function CashRegisterForm({
   });
 
   const onSubmit = (data: CashRegisterClosureFormData) => {
-    // Convert datetime from São Paulo timezone to UTC before sending to server
-    const processedData = {
-      ...data,
-      datetime: data.datetime ? zonedTimeToUtc(data.datetime, 'America/Sao_Paulo') : new Date()
-    };
-    
     if (closure) {
-      updateMutation.mutate({ id: closure.id, data: processedData });
+      updateMutation.mutate({ id: closure.id, data });
     } else {
-      createMutation.mutate(processedData);
+      createMutation.mutate(data);
     }
   };
 
@@ -154,10 +149,7 @@ function CashRegisterForm({
                     value={field.value ? format(field.value, 'yyyy-MM-dd') : ""}
                     onChange={(e) => {
                       if (e.target.value) {
-                        // Parse date in São Paulo timezone
-                        const [year, month, day] = e.target.value.split('-').map(Number);
-                        const saoPauloDate = new Date(year, month - 1, day, 12, 0, 0); // Set to noon to avoid timezone issues
-                        field.onChange(saoPauloDate);
+                        field.onChange(new Date(e.target.value + 'T12:00:00'));
                       }
                     }}
                   />
