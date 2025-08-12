@@ -50,10 +50,10 @@ export default function Landing() {
         });
         
         // Trigger auth check and redirect
-        setTimeout(async () => {
-          // Force auth recheck before redirecting
-          window.location.reload();
-        }, 1500);
+        setTimeout(() => {
+          // Navigate to main page
+          window.location.href = "/";
+        }, 1000);
       } else {
         const error = await response.json();
         toast({

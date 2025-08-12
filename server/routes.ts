@@ -298,13 +298,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('✅ [LOGIN] Session ID after save:', req.sessionID);
         console.log('✅ [LOGIN] === END LOGIN DEBUG ===');
         
-        // Send response with explicit cookie instructions
-        res.cookie('connect.sid', req.sessionID, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          maxAge: 7 * 24 * 60 * 60 * 1000
-        });
-        
         res.json({
           id: employee.id,
           email: employee.email,
