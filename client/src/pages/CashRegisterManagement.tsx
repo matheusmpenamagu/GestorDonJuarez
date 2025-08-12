@@ -67,12 +67,12 @@ function CashRegisterForm({
   const form = useForm<CashRegisterClosureFormData>({
     resolver: zodResolver(insertCashRegisterClosureSchema),
     defaultValues: {
-      datetime: initialData?.datetime || (closure?.datetime ? new Date(closure.datetime) : new Date()),
+      datetime: initialData?.datetime || (closure?.datetime ? utcToZonedTime(new Date(closure.datetime), 'America/Sao_Paulo') : utcToZonedTime(new Date(), 'America/Sao_Paulo')),
       unitId: initialData?.unitId || closure?.unitId || undefined,
       operation: initialData?.operation || closure?.operation || "salao",
-      initialFund: initialData?.initialFund || (closure?.initialFund ? parseFloat(closure.initialFund) : 0),
-      cashSales: initialData?.cashSales || (closure?.cashSales ? parseFloat(closure.cashSales) : 0),
-      withdrawals: initialData?.withdrawals || (closure?.withdrawals ? parseFloat(closure.withdrawals) : 0),
+      initialFund: initialData?.initialFund || (closure?.initialFund ? parseFloat(closure.initialFund) : undefined),
+      cashSales: initialData?.cashSales || (closure?.cashSales ? parseFloat(closure.cashSales) : undefined),
+      withdrawals: initialData?.withdrawals || (closure?.withdrawals ? parseFloat(closure.withdrawals) : undefined),
       notes: initialData?.notes || closure?.notes || "",
       createdBy: "demo-user", // Will be replaced by actual user in backend
     },
@@ -125,10 +125,16 @@ function CashRegisterForm({
   });
 
   const onSubmit = (data: CashRegisterClosureFormData) => {
+    // Convert datetime from São Paulo timezone to UTC before sending to server
+    const processedData = {
+      ...data,
+      datetime: data.datetime ? zonedTimeToUtc(data.datetime, 'America/Sao_Paulo') : new Date()
+    };
+    
     if (closure) {
-      updateMutation.mutate({ id: closure.id, data });
+      updateMutation.mutate({ id: closure.id, data: processedData });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(processedData);
     }
   };
 
@@ -145,8 +151,15 @@ function CashRegisterForm({
                 <FormControl>
                   <Input
                     type="date"
-                    value={field.value ? new Date(field.value).toISOString().slice(0, 10) : ""}
-                    onChange={(e) => field.onChange(new Date(e.target.value))}
+                    value={field.value ? format(field.value, 'yyyy-MM-dd') : ""}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        // Parse date in São Paulo timezone
+                        const [year, month, day] = e.target.value.split('-').map(Number);
+                        const saoPauloDate = new Date(year, month - 1, day, 12, 0, 0); // Set to noon to avoid timezone issues
+                        field.onChange(saoPauloDate);
+                      }
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -209,13 +222,19 @@ function CashRegisterForm({
               <FormItem>
                 <FormLabel>Fundo Inicial *</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={field.value || 0}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                      R$
+                    </span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      className="pl-10"
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -229,13 +248,19 @@ function CashRegisterForm({
               <FormItem>
                 <FormLabel>Vendas em Dinheiro *</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={field.value || 0}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                      R$
+                    </span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      className="pl-10"
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -252,13 +277,19 @@ function CashRegisterForm({
               <FormItem>
                 <FormLabel>Sangrias *</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={field.value || 0}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                      R$
+                    </span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      className="pl-10"
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
