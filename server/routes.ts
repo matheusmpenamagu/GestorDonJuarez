@@ -2888,7 +2888,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           let created = 0;
           let updated = 0;
-          let associated = 0; // New counter for unit associations
           const errors: any[] = [];
           const detailedErrors: string[] = [];
 
@@ -2950,16 +2949,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               // Check if product already exists by code
               let product = await storage.getProductByCode(rawCode.toString());
-              let action = "";
               
               if (!product) {
-                // CASO 1: Novo código - Cria o item
+                // Código NÃO existe: Cadastra novo item
                 product = await storage.upsertProductByCode(productInfo);
                 created++;
-                action = "CREATED";
-                console.log(`✓ NEW PRODUCT: ${product.code} - ${product.name}`);
+                console.log(`✓ CREATED: ${product.code} - ${product.name}`);
                 
-                // Associate with the unit from CSV
+                // Associate with the unit from CSV if specified
                 if (unitId) {
                   try {
                     await storage.addProductToUnit(product.id, unitId, 0);
@@ -2969,54 +2966,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }
                 }
               } else {
-                // CASO 2 e 3: Produto já existe - verificar unidade
-                if (unitId) {
-                  // Verificar se o produto já está associado a esta unidade
-                  const productUnits = await storage.getProductUnits(product.id);
-                  const isAssociatedWithUnit = productUnits.some(pu => pu.unitId === unitId);
-                  
-                  if (isAssociatedWithUnit) {
-                    // CASO 3: Mesmo código e mesma unidade - Atualiza as informações
-                    await storage.updateProduct(product.id, {
-                      name: productInfo.name,
-                      stockCategory: productInfo.stockCategory,
-                      unitOfMeasure: productInfo.unitOfMeasure,
-                      currentValue: productInfo.currentValue
-                    });
-                    updated++;
-                    action = "UPDATED_SAME_UNIT";
-                    console.log(`✓ UPDATED (same unit): ${product.code} - ${product.name}`);
-                  } else {
-                    // CASO 2: Mesmo código, unidade diferente - Associa a nova unidade
-                    try {
-                      await storage.addProductToUnit(product.id, unitId, 0);
-                      // Também atualiza as informações do produto
-                      await storage.updateProduct(product.id, {
-                        name: productInfo.name,
-                        stockCategory: productInfo.stockCategory,
-                        unitOfMeasure: productInfo.unitOfMeasure,
-                        currentValue: productInfo.currentValue
-                      });
-                      associated++;
-                      action = "ASSOCIATED_NEW_UNIT";
-                      console.log(`✓ ASSOCIATED with new unit: ${product.code} - unit ${unitId}`);
-                    } catch (unitError) {
-                      console.log(`→ Error associating product with new unit:`, unitError);
-                      console.error("Full error:", unitError);
-                    }
-                  }
-                } else {
-                  // Sem unidade específica - apenas atualiza informações
-                  await storage.updateProduct(product.id, {
-                    name: productInfo.name,
-                    stockCategory: productInfo.stockCategory,
-                    unitOfMeasure: productInfo.unitOfMeasure,
-                    currentValue: productInfo.currentValue
-                  });
-                  updated++;
-                  action = "UPDATED_NO_UNIT";
-                  console.log(`✓ UPDATED (no unit): ${product.code} - ${product.name}`);
-                }
+                // Código JÁ existe: Atualiza TODOS os campos usando planilha como referência
+                await storage.updateProduct(product.id, {
+                  name: productInfo.name,
+                  stockCategory: productInfo.stockCategory,
+                  unit: productInfo.unit,
+                  unitOfMeasure: productInfo.unitOfMeasure,
+                  currentValue: productInfo.currentValue
+                });
+                updated++;
+                console.log(`✓ UPDATED: ${product.code} - ${product.name}`);
+                console.log(`  → Name: ${productInfo.name}`);
+                console.log(`  → Category: ${productInfo.stockCategory}`);
+                console.log(`  → Unit: ${productInfo.unit}`);
+                console.log(`  → Unit of Measure: ${productInfo.unitOfMeasure}`);
+                console.log(`  → Current Value: ${productInfo.currentValue}`);
               }
 
             } catch (productError) {
@@ -3027,8 +2991,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           res.json({
-            message: `Importação concluída: ${created} criados, ${updated} atualizados, ${associated} associados a novas unidades, ${errors.length} erros`,
-            stats: { created, updated, associated, errors: errors.length, total: products.length },
+            message: `Importação concluída: ${created} criados, ${updated} atualizados, ${errors.length} erros`,
+            stats: { created, updated, errors: errors.length, total: products.length },
             errors: detailedErrors.slice(0, 10) // Return first 10 errors only
           });
 
