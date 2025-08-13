@@ -95,50 +95,16 @@ function ProductsManagementContent() {
   });
 
   // Helper functions to get names by ID
-  const getCategoryName = (categoryIdOrName: number | string) => {
-    if (!categoryIdOrName) return 'Categoria não encontrada';
-    
-    // Se é um número, busca por ID
-    if (typeof categoryIdOrName === 'number' || !isNaN(Number(categoryIdOrName))) {
-      const id = typeof categoryIdOrName === 'string' ? parseInt(categoryIdOrName) : categoryIdOrName;
-      const category = categories.find((c: ProductCategory) => c.id === id);
-      return category ? category.name : 'Categoria não encontrada';
-    }
-    
-    // Se é uma string (nome da categoria), procura pelo nome ou retorna a própria string
-    const categoryByName = categories.find((c: ProductCategory) => 
-      c.name.toLowerCase() === categoryIdOrName.toString().toLowerCase()
-    );
-    
-    if (categoryByName) {
-      return categoryByName.name;
-    }
-    
-    // Se não encontrou na lista, mas é uma string válida, retorna ela mesma
-    return categoryIdOrName.toString();
+  const getCategoryName = (categoryId: number | string) => {
+    const id = typeof categoryId === 'string' ? parseInt(categoryId) : categoryId;
+    const category = categories.find((c: ProductCategory) => c.id === id);
+    return category ? category.name : 'Categoria não encontrada';
   };
 
-  const getUnitName = (unitIdOrName: number | string) => {
-    if (!unitIdOrName) return 'Unidade não encontrada';
-    
-    // Se é um número, busca por ID
-    if (typeof unitIdOrName === 'number' || !isNaN(Number(unitIdOrName))) {
-      const id = typeof unitIdOrName === 'string' ? parseInt(unitIdOrName) : unitIdOrName;
-      const unit = units.find((u: Unit) => u.id === id);
-      return unit ? unit.name : 'Unidade não encontrada';
-    }
-    
-    // Se é uma string (nome da unidade), procura pelo nome ou retorna a própria string
-    const unitByName = units.find((u: Unit) => 
-      u.name.toLowerCase() === unitIdOrName.toString().toLowerCase()
-    );
-    
-    if (unitByName) {
-      return unitByName.name;
-    }
-    
-    // Se não encontrou na lista, mas é uma string válida, retorna ela mesma
-    return unitIdOrName.toString();
+  const getUnitName = (unitId: number | string) => {
+    const id = typeof unitId === 'string' ? parseInt(unitId) : unitId;
+    const unit = units.find((u: Unit) => u.id === id);
+    return unit ? unit.name : 'Unidade não encontrada';
   };
 
   const createMutation = useMutation({

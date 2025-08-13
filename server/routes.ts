@@ -2920,31 +2920,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const stockCategoryId = findBestCategory(rawCategory);
               const unitId = findBestUnit(rawUnit);
 
-              // Get category name instead of ID for stock_category field
-              const categoryName = stockCategoryId 
-                ? categories.find(cat => cat.id === stockCategoryId)?.name || ""
-                : "";
-
-              // Get unit name instead of ID for unit field
-              const unitName = unitId 
-                ? units.find(unit => unit.id === unitId)?.name || ""
-                : "";
-
               // Use extracted unit from name, or raw unit measure, or extracted unit
               const finalUnitOfMeasure = rawUnitMeasure || extractedUnit || "";
 
               const productInfo = {
                 code: rawCode.toString(),
                 name: name,
-                stockCategory: categoryName,
-                unit: unitName,
+                stockCategory: stockCategoryId || 1, // Use category ID, fallback to first category
+                unit: unitId || 1, // Use unit ID, fallback to first unit
                 unitOfMeasure: finalUnitOfMeasure,
                 currentValue: parseFloat(rawValue) || 0,
               };
 
               console.log(`Processing product: ${productInfo.code} - ${productInfo.name}`);
-              console.log(`Category mapping: "${rawCategory}" -> ID ${stockCategoryId} (${categoryName})`);
-              console.log(`Unit mapping: "${rawUnit}" -> ID ${unitId} (${unitName})`);
+              console.log(`Category mapping: "${rawCategory}" -> ID ${stockCategoryId}`);
+              console.log(`Unit mapping: "${rawUnit}" -> ID ${unitId}`);
               console.log(`Unit of measure: "${finalUnitOfMeasure}"`);
 
               // Check if product already exists by code
@@ -2977,8 +2967,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 updated++;
                 console.log(`✓ UPDATED: ${product.code} - ${product.name}`);
                 console.log(`  → Name: ${productInfo.name}`);
-                console.log(`  → Category: ${productInfo.stockCategory}`);
-                console.log(`  → Unit: ${productInfo.unit}`);
+                console.log(`  → Category ID: ${productInfo.stockCategory}`);
+                console.log(`  → Unit ID: ${productInfo.unit}`);
                 console.log(`  → Unit of Measure: ${productInfo.unitOfMeasure}`);
                 console.log(`  → Current Value: ${productInfo.currentValue}`);
               }
