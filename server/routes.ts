@@ -2894,13 +2894,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           for (const productData of products) {
             try {
-              // Map common CSV column names (Portuguese and English) 
-              const rawCode = productData.codigo || productData.code || productData.Codigo || productData.Code || productData.CODIGO || productData.COD || productData["COD."] || "";
-              const rawName = productData.produto || productData.product || productData.nome || productData.name || productData.Produto || productData.Product || productData.NOME || productData.PRODUTO || productData.titulo || productData.TITULO || productData.Titulo || "";
-              const rawCategory = productData.categoria || productData.category || productData.Categoria || productData.Category || productData.CATEGORIA || productData.tipo || productData.Tipo || productData.TIPO || "";
-              const rawUnit = productData.unidade || productData.unit || productData.Unidade || productData.Unit || productData.UNIDADE || "";
+              // Map CSV column names according to user specification
+              const rawCode = productData["COD."] || productData.codigo || productData.code || productData.Codigo || productData.Code || productData.CODIGO || productData.COD || "";
+              const rawName = productData.PRODUTO || productData.produto || productData.product || productData.nome || productData.name || productData.Produto || productData.Product || productData.NOME || productData.titulo || productData.TITULO || productData.Titulo || "";
+              const rawCategory = productData.CATEGORIA || productData.categoria || productData.category || productData.Categoria || productData.Category || productData.tipo || productData.Tipo || productData.TIPO || "";
+              const rawUnit = productData.UNIDADE || productData.unidade || productData.unit || productData.Unidade || productData.Unit || "";
               const rawUnitMeasure = productData.medida || productData.measure || productData.Medida || productData.Measure || productData.MEDIDA || productData["UNIDADE DE MEDIDA"] || productData["unidade de medida"] || "";
-              const rawValue = productData.valor || productData.value || productData.Valor || productData.Value || productData.VALOR || productData.currentValue || productData["VALOR ATUAL"] || "0";
+              const rawValue = productData["VALOR ATUAL"] || productData.valor || productData.value || productData.Valor || productData.Value || productData.VALOR || productData.currentValue || "0";
 
               if (!rawCode) {
                 errors.push({ data: productData, error: 'Código é obrigatório' });
