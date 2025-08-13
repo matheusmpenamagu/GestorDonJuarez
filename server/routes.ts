@@ -2674,10 +2674,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const findBestCategory = (categoryName: string): number | null => {
             if (!categoryName) return categories.length > 0 ? categories[0].id : null;
             
-            const normalized = categoryName.toLowerCase().trim();
+            const normalized = normalizeText(categoryName);
             console.log(`Finding category for: "${categoryName}" (normalized: "${normalized}")`);
             
-            // Specific mapping rules for known category variations
+            // First priority: Try exact match on database category names (normalized)
+            let match = categories.find(cat => normalizeText(cat.name) === normalized);
+            if (match) {
+              console.log(`✓ Exact name match: "${categoryName}" -> ${match.name} (ID ${match.id})`);
+              return match.id;
+            }
+
+            // Second priority: Try partial match on database category names (normalized)
+            match = categories.find(cat => {
+              const normalizedCatName = normalizeText(cat.name);
+              return normalizedCatName.includes(normalized) || normalized.includes(normalizedCatName);
+            });
+            if (match) {
+              console.log(`✓ Partial name match: "${categoryName}" -> ${match.name} (ID ${match.id})`);
+              return match.id;
+            }
+
+            // Third priority: Try specific mapping rules for known category variations
             const categoryMappings = {
               'embalagem': 'Embalagens',
               'embalagens': 'Embalagens',
@@ -2698,31 +2715,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               'revenda': 'Revenda'
             };
 
-            // Check specific mappings first
+            // Check specific mappings
             if (categoryMappings[normalized]) {
               const targetCategoryName = categoryMappings[normalized];
-              const match = categories.find(cat => cat.name === targetCategoryName);
-              if (match) {
-                console.log(`✓ Specific mapping: "${categoryName}" -> ${match.name} (ID ${match.id})`);
-                return match.id;
+              const mappingMatch = categories.find(cat => cat.name === targetCategoryName);
+              if (mappingMatch) {
+                console.log(`✓ Specific mapping: "${categoryName}" -> ${mappingMatch.name} (ID ${mappingMatch.id})`);
+                return mappingMatch.id;
               }
-            }
-            
-            // Try exact match
-            let match = categories.find(cat => cat.name.toLowerCase() === normalized);
-            if (match) {
-              console.log(`✓ Exact match: "${categoryName}" -> ${match.name} (ID ${match.id})`);
-              return match.id;
-            }
-
-            // Try partial match (contains)
-            match = categories.find(cat => 
-              cat.name.toLowerCase().includes(normalized) || 
-              normalized.includes(cat.name.toLowerCase())
-            );
-            if (match) {
-              console.log(`✓ Partial match: "${categoryName}" -> ${match.name} (ID ${match.id})`);
-              return match.id;
             }
 
             // Default to first category if no match
