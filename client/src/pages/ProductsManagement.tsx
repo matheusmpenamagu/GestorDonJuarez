@@ -245,9 +245,19 @@ function ProductsManagementContent() {
       const formData = new FormData();
       formData.append('file', file);
       
+      // Include authentication headers
+      const storedSessionId = localStorage.getItem('sessionId');
+      const headers: Record<string, string> = {};
+      
+      if (storedSessionId) {
+        headers['Authorization'] = `Bearer ${storedSessionId}`;
+      }
+      
       const response = await fetch('/api/products/upload', {
         method: 'POST',
         body: formData,
+        headers,
+        credentials: 'include', // Include cookies for session-based auth
       });
       
       if (!response.ok) {
@@ -280,8 +290,18 @@ function ProductsManagementContent() {
 
   const clearDatabaseMutation = useMutation({
     mutationFn: async () => {
+      // Include authentication headers
+      const storedSessionId = localStorage.getItem('sessionId');
+      const headers: Record<string, string> = {};
+      
+      if (storedSessionId) {
+        headers['Authorization'] = `Bearer ${storedSessionId}`;
+      }
+      
       const response = await fetch('/api/products/clear-all', {
         method: 'DELETE',
+        headers,
+        credentials: 'include', // Include cookies for session-based auth
       });
       
       if (!response.ok) {
