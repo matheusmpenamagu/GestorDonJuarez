@@ -2897,7 +2897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Map common CSV column names (Portuguese and English) 
               const rawCode = productData.codigo || productData.code || productData.Codigo || productData.Code || productData.CODIGO || productData.COD || productData["COD."] || "";
               const rawName = productData.produto || productData.product || productData.nome || productData.name || productData.Produto || productData.Product || productData.NOME || productData.PRODUTO || "";
-              const rawCategory = productData.categoria || productData.category || productData.Categoria || productData.Category || productData.CATEGORIA || "";
+              const rawCategory = productData.categoria || productData.category || productData.Categoria || productData.Category || productData.CATEGORIA || productData.tipo || productData.Tipo || productData.TIPO || "";
               const rawUnit = productData.unidade || productData.unit || productData.Unidade || productData.Unit || productData.UNIDADE || "";
               const rawUnitMeasure = productData.medida || productData.measure || productData.Medida || productData.Measure || productData.MEDIDA || "";
               const rawValue = productData.valor || productData.value || productData.Valor || productData.Value || productData.VALOR || productData.currentValue || productData["VALOR ATUAL"] || "0";
