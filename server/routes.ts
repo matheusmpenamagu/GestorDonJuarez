@@ -2359,13 +2359,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const productsWithUnits = await Promise.all(
         products.map(async (product) => {
+          // Try to get product-specific units first (for products created via form)
           const productUnits = await storage.getProductUnits(product.id);
+          
+          // If no specific product-unit relationships exist, use the main unit field
+          const associatedUnits = productUnits.length > 0 
+            ? productUnits.map(pu => ({
+                unitId: pu.unitId,
+                unitName: unitsMap.get(pu.unitId) || 'N/A'
+              }))
+            : product.unit 
+              ? [{
+                  unitId: product.unit,
+                  unitName: unitsMap.get(product.unit) || 'N/A'
+                }]
+              : [];
+          
           return {
             ...product,
-            associatedUnits: productUnits.map(pu => ({
-              unitId: pu.unitId,
-              unitName: unitsMap.get(pu.unitId) || 'N/A'
-            }))
+            associatedUnits
           };
         })
       );
