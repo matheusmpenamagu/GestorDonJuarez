@@ -42,6 +42,8 @@ export async function authenticateEmployee(email: string, password: string): Pro
   }
 }
 
+let globalSessionStore: any = null;
+
 export function setupLocalAuth(app: Express) {
   console.log('🔐 Setting up local authentication with memory store');
   
@@ -49,6 +51,8 @@ export function setupLocalAuth(app: Express) {
   const sessionStore = new MemStore({
     checkPeriod: 86400000, // prune expired entries every 24h
   });
+
+  globalSessionStore = sessionStore;
 
   app.use(session({
     store: sessionStore,
@@ -63,5 +67,15 @@ export function setupLocalAuth(app: Express) {
     }
   }));
 
+  // Make sessionStore available globally for auth middleware
+  app.use((req: any, res: any, next: any) => {
+    req.sessionStore = sessionStore;
+    next();
+  });
+
   console.log('✅ Local authentication setup complete');
+}
+
+export function getSessionStore() {
+  return globalSessionStore;
 }
