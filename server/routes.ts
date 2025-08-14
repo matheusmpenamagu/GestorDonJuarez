@@ -2498,34 +2498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/products/:id', requireAuth, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const result = insertProductSchema.partial().safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ message: "Dados inválidos", errors: result.error.issues });
-      }
-      
-      const product = await storage.updateProduct(id, result.data);
-      res.json(product);
-    } catch (error) {
-      console.error("Error updating product:", error);
-      res.status(500).json({ message: "Error updating product" });
-    }
-  });
-
-  app.delete('/api/products/:id', requireAuth, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      await storage.deleteProduct(id);
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting product:", error);
-      res.status(500).json({ message: "Error deleting product" });
-    }
-  });
-
-  // Clear all products and related data
+  // Clear all products and related data (must be before /:id routes)
   app.delete('/api/products/clear-all', requireAuth, async (req, res) => {
     try {
       console.log("=== Clearing all products and related data ===");
@@ -2553,6 +2526,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error clearing products:", error);
       res.status(500).json({ message: "Erro ao limpar produtos" });
+    }
+  });
+
+  app.put('/api/products/:id', requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const result = insertProductSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Dados inválidos", errors: result.error.issues });
+      }
+      
+      const product = await storage.updateProduct(id, result.data);
+      res.json(product);
+    } catch (error) {
+      console.error("Error updating product:", error);
+      res.status(500).json({ message: "Error updating product" });
+    }
+  });
+
+  app.delete('/api/products/:id', requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteProduct(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      res.status(500).json({ message: "Error deleting product" });
     }
   });
 
