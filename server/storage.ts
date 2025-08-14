@@ -906,7 +906,7 @@ export class DatabaseStorage implements IStorage {
 
   // Units operations
   async getUnits(): Promise<Unit[]> {
-    return await db.select().from(units).orderBy(units.name);
+    return await db.select().from(units).orderBy(units.id);
   }
 
   async getUnit(id: number): Promise<Unit | undefined> {

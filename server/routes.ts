@@ -2829,7 +2829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
             // Default to first unit if no match
-            console.log(`⚠ No match found, using default unit (ID ${units[0]?.id})`);
+            console.log(`⚠ No match found for "${unitName}", using default unit (ID ${units[0]?.id})`);
             return units.length > 0 ? units[0].id : null;
           }
 
@@ -2936,6 +2936,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
               };
               
               const associatedUnitId = unitId || 1; // Unit ID to associate with product
+
+              // Only log debug for ABACAXI to reduce noise
+              if (rawCode === '536') {
+                console.log(`📊 PRODUCT ${rawCode} DEBUG:`);
+                console.log(`  Raw data from CSV:`, {
+                  code: rawCode,
+                  name: rawName, 
+                  category: rawCategory,
+                  unit: rawUnit,
+                  unitMeasure: rawUnitMeasure,
+                  value: rawValue
+                });
+                console.log(`  Final processing:`, {
+                  categoryId: stockCategoryId,
+                  unitId: unitId,
+                  associatedUnitId: associatedUnitId,
+                  finalUnitOfMeasure: finalUnitOfMeasure
+                });
+              }
 
               console.log(`Processing product: ${productInfo.code} - ${productInfo.name}`);
               console.log(`Category mapping: "${rawCategory}" -> ID ${stockCategoryId}`);
