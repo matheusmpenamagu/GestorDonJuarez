@@ -24,14 +24,10 @@ Testing contact: 33988286293 (número principal para testes de webhook WhatsApp)
 ## System Architecture
 The system employs a client-server architecture with a React 18+ TypeScript frontend and a Node.js Express.js TypeScript backend.
 
-### Database Architecture (Updated 2025-08-14)
-- **Single Database Setup**: Currently using one PostgreSQL database for both environments
-- **Environment Detection**: System detects NODE_ENV but both environments use the same DATABASE_URL
-- **Prepared for Dual Setup**: Code infrastructure ready for separate databases when needed
-- **Database Management Tools**: 
-  - `copy-database.js`: Prepared for copying between different databases
-  - `database-manager.js`: Environment management and sync capabilities
-  - Console logging shows environment detection on startup
+### Database Architecture
+- **PostgreSQL Database**: Single Neon Database (serverless PostgreSQL)
+- **ORM**: Drizzle with type-safe operations
+- **Environment**: Unified database for all environments
 
 ### Frontend Architecture
 - **Framework**: React 18+ with TypeScript
