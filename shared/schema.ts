@@ -185,7 +185,6 @@ export const products = pgTable("products", {
   code: varchar("code", { length: 50 }).notNull().unique(),
   name: varchar("name", { length: 200 }).notNull(),
   stockCategory: varchar("stock_category", { length: 100 }).notNull(),
-  unit: varchar("unit", { length: 50 }).notNull(),
   unitOfMeasure: varchar("unit_of_measure", { length: 20 }).notNull(),
   currentValue: decimal("current_value", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),

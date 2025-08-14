@@ -2359,21 +2359,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const productsWithUnits = await Promise.all(
         products.map(async (product) => {
-          // Try to get product-specific units first (for products created via form)
+          // Get all associated units from product_units relationship table
           const productUnits = await storage.getProductUnits(product.id);
           
-          // If no specific product-unit relationships exist, use the main unit field
-          const associatedUnits = productUnits.length > 0 
-            ? productUnits.map(pu => ({
-                unitId: pu.unitId,
-                unitName: unitsMap.get(pu.unitId) || 'N/A'
-              }))
-            : product.unit 
-              ? [{
-                  unitId: product.unit,
-                  unitName: unitsMap.get(product.unit) || 'N/A'
-                }]
-              : [];
+          const associatedUnits = productUnits.map(pu => ({
+            unitId: pu.unitId,
+            unitName: unitsMap.get(pu.unitId) || 'N/A'
+          }));
           
           return {
             ...product,
@@ -2939,14 +2931,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 code: rawCode.toString(),
                 name: name,
                 stockCategory: stockCategoryId || 1, // Use category ID, fallback to first category
-                unit: unitId || 1, // Use unit ID, fallback to first unit
                 unitOfMeasure: finalUnitOfMeasure,
                 currentValue: parseFloat(rawValue) || 0,
               };
+              
+              const associatedUnitId = unitId || 1; // Unit ID to associate with product
 
               console.log(`Processing product: ${productInfo.code} - ${productInfo.name}`);
               console.log(`Category mapping: "${rawCategory}" -> ID ${stockCategoryId}`);
-              console.log(`Unit mapping: "${rawUnit}" -> ID ${unitId}`);
+              console.log(`Unit mapping: "${rawUnit}" -> ID ${associatedUnitId}`);
               console.log(`Unit of measure: "${finalUnitOfMeasure}"`);
 
               // Check if product already exists by code
@@ -2954,33 +2947,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               if (!product) {
                 // Código NÃO existe: Cadastra novo item
-                product = await storage.upsertProductByCode(productInfo);
+                product = await storage.createProduct(productInfo);
                 created++;
                 console.log(`✓ CREATED: ${product.code} - ${product.name}`);
                 
-                // Associate with the unit from CSV if specified
-                if (unitId) {
-                  try {
-                    await storage.addProductToUnit(product.id, unitId, 0);
-                    console.log(`✓ Associated new product with unit ${unitId}`);
-                  } catch (unitError) {
-                    console.log(`→ Error associating new product with unit:`, unitError);
-                  }
+                // Associate with the unit from CSV
+                try {
+                  await storage.createProductUnit({
+                    productId: product.id,
+                    unitId: associatedUnitId
+                  });
+                  console.log(`✓ Associated new product with unit ${associatedUnitId}`);
+                } catch (unitError) {
+                  console.log(`→ Error associating new product with unit:`, unitError);
                 }
               } else {
                 // Código JÁ existe: Atualiza TODOS os campos usando planilha como referência
                 await storage.updateProduct(product.id, {
                   name: productInfo.name,
                   stockCategory: productInfo.stockCategory,
-                  unit: productInfo.unit,
                   unitOfMeasure: productInfo.unitOfMeasure,
                   currentValue: productInfo.currentValue
                 });
+
+                // Update unit association - remove old and add new
+                try {
+                  // Remove existing associations
+                  const existingUnits = await storage.getProductUnits(product.id);
+                  for (const existingUnit of existingUnits) {
+                    await storage.deleteProductUnit(product.id, existingUnit.unitId);
+                  }
+                  
+                  // Add new association
+                  await storage.createProductUnit({
+                    productId: product.id,
+                    unitId: associatedUnitId
+                  });
+                  console.log(`→ Updated unit association to ID: ${associatedUnitId}`);
+                } catch (unitError) {
+                  console.log(`→ Error updating unit association:`, unitError);
+                }
+
                 updated++;
                 console.log(`✓ UPDATED: ${product.code} - ${product.name}`);
                 console.log(`  → Name: ${productInfo.name}`);
                 console.log(`  → Category ID: ${productInfo.stockCategory}`);
-                console.log(`  → Unit ID: ${productInfo.unit}`);
+                console.log(`  → Unit ID: ${associatedUnitId}`);
                 console.log(`  → Unit of Measure: ${productInfo.unitOfMeasure}`);
                 console.log(`  → Current Value: ${productInfo.currentValue}`);
               }

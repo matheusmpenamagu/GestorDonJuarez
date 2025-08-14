@@ -42,7 +42,7 @@ import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Product, InsertProduct, ProductCategory, InsertProductCategory, Unit } from "@shared/schema";
 
-type SortField = 'code' | 'name' | 'stockCategory' | 'unit' | 'unitOfMeasure' | 'currentValue';
+type SortField = 'code' | 'name' | 'stockCategory' | 'unitOfMeasure' | 'currentValue';
 type SortDirection = 'asc' | 'desc';
 
 type ProductWithUnits = Product & {
@@ -66,7 +66,6 @@ function ProductsManagementContent() {
     code: "",
     name: "",
     stockCategory: "",
-    unit: "",
     unitOfMeasure: "",
     currentValue: "",
   });
@@ -118,7 +117,6 @@ function ProductsManagementContent() {
         code: "",
         name: "",
         stockCategory: "",
-        unit: "",
         unitOfMeasure: "",
         currentValue: "",
       });
@@ -148,7 +146,6 @@ function ProductsManagementContent() {
         code: "",
         name: "",
         stockCategory: "",
-        unit: "",
         unitOfMeasure: "",
         currentValue: "",
       });
@@ -179,7 +176,6 @@ function ProductsManagementContent() {
         code: "",
         name: "",
         stockCategory: "",
-        unit: "",
         unitOfMeasure: "",
         currentValue: "",
       });
@@ -369,7 +365,6 @@ function ProductsManagementContent() {
       code: product.code,
       name: product.name,
       stockCategory: product.stockCategory.toString(),
-      unit: product.unit.toString(),
       unitOfMeasure: product.unitOfMeasure,
       currentValue: product.currentValue.toString(),
     });
@@ -382,13 +377,13 @@ function ProductsManagementContent() {
         const associatedUnitIds = productUnits.map((pu: any) => pu.unitId.toString());
         setSelectedUnits(associatedUnitIds);
       } else {
-        // Fallback to current unit if API fails
-        setSelectedUnits([product.unit.toString()]);
+        // No units associated yet
+        setSelectedUnits([]);
       }
     } catch (error) {
       console.error("Error loading product units:", error);
-      // Fallback to current unit if API fails
-      setSelectedUnits([product.unit.toString()]);
+      // No units associated yet
+      setSelectedUnits([]);
     }
     
     setIsEditDialogOpen(true);
