@@ -1,11 +1,30 @@
 # Gerenciamento de Banco de Dados - Don Juarez
 
-## Configuração de Múltiplos Ambientes
+## ⚠️ SITUAÇÃO ATUAL: BANCO ÚNICO
 
-O sistema agora suporta dois bancos de dados separados:
+**IMPORTANTE**: Atualmente estamos usando um **único banco de dados** para desenvolvimento e produção. O sistema foi configurado para suportar múltiplos bancos, mas na prática ambos os ambientes apontam para o mesmo DATABASE_URL.
 
-- **Desenvolvimento** (`NODE_ENV=development`): Para testes locais e desenvolvimento
-- **Produção** (`NODE_ENV=production`): Para dados reais em produção
+### Configuração Atual:
+- **Desenvolvimento** (`NODE_ENV=development`): Usa DATABASE_URL
+- **Produção** (`NODE_ENV=production`): Deveria usar PRODUCTION_DATABASE_URL, mas está configurado com o mesmo valor
+
+### Por que isso aconteceu:
+O Replit Database Manager provisiona apenas um banco PostgreSQL por projeto. Para ter bancos verdadeiramente separados, seria necessário usar schemas diferentes ou um serviço externo.
+
+## Opções para Bancos Separados
+
+### Opção 1: Schemas Separados (Recomendado)
+Usar o mesmo banco mas com schemas diferentes:
+- `development_schema` para desenvolvimento
+- `production_schema` para produção
+
+### Opção 2: Serviço Externo
+- Neon Database (gratuito com limitações)
+- Supabase (gratuito com limitações)  
+- PostgreSQL em outro provedor
+
+### Opção 3: Manter Configuração Atual
+Continuar com um banco único e usar branches/tags para controle de versão dos dados.
 
 ## Comandos Disponíveis
 
