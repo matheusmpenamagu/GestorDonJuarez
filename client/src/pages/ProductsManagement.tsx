@@ -749,7 +749,9 @@ function ProductsManagementContent() {
                         ))}
                       </div>
                     ) : (
-                      <span className="text-gray-500 text-sm">Nenhuma unidade</span>
+                      <span className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">
+                        {getUnitName(product.unit)}
+                      </span>
                     )}
                   </TableCell>
                   <TableCell>{product.unitOfMeasure}</TableCell>
