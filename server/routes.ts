@@ -41,25 +41,32 @@ const requireAuth = async (req: any, res: any, next: any) => {
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const sessionId = authHeader.substring(7);
       
-      // Get session data from store directly
-      return new Promise((resolve) => {
-        req.sessionStore.get(sessionId, (err: any, sessionData: any) => {
-          if (!err && sessionData?.employee) {
-            req.user = sessionData.employee;
-            next();
-          } else {
-            res.status(401).json({ message: 'Unauthorized' });
-          }
-          resolve(null);
+      // Get session data from store directly with proper Promise handling
+      try {
+        const sessionData = await new Promise<any>((resolve, reject) => {
+          req.sessionStore.get(sessionId, (err: any, data: any) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(data);
+            }
+          });
         });
-      });
+
+        if (sessionData?.employee) {
+          req.user = sessionData.employee;
+          return next();
+        }
+      } catch (sessionError) {
+        console.error('Session store error:', sessionError);
+      }
     }
 
     // No valid authentication found
-    res.status(401).json({ message: 'Unauthorized' });
+    return res.status(401).json({ message: 'Unauthorized' });
   } catch (error) {
     console.error('Auth middleware error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -412,20 +419,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const sessionId = authHeader.substring(7);
         console.log('🔐 [AUTH-USER] Found session ID in Authorization header:', sessionId);
         
-        // Get session data from store directly
-        req.sessionStore.get(sessionId, (err, sessionData) => {
-          if (err) {
-            console.error('🚨 [AUTH-USER] Error getting session from store:', err);
-            return res.status(401).json({ message: 'Not authenticated' });
-          } else if (sessionData && sessionData.employee) {
+        // Get session data from store directly with proper Promise handling
+        try {
+          const sessionData = await new Promise<any>((resolve, reject) => {
+            req.sessionStore.get(sessionId, (err: any, data: any) => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve(data);
+              }
+            });
+          });
+
+          if (sessionData && sessionData.employee) {
             console.log('✅ [AUTH-USER] Found employee session via Authorization header:', sessionData.employee);
             return res.json(sessionData.employee);
           } else {
             console.log('❌ [AUTH-USER] No employee session found via Authorization header');
             return res.status(401).json({ message: 'Not authenticated' });
           }
-        });
-        return;
+        } catch (sessionError) {
+          console.error('🚨 [AUTH-USER] Error getting session from store:', sessionError);
+          return res.status(401).json({ message: 'Not authenticated' });
+        }
       }
       
       // Check for employee session (normal cookie-based)
@@ -441,10 +457,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // No valid session found
       console.log('❌ [AUTH-USER] No valid session found');
       console.log('🔐 [AUTH-USER] === END SESSION DEBUG ===');
-      res.status(401).json({ message: 'Not authenticated' });
+      return res.status(401).json({ message: 'Not authenticated' });
     } catch (error) {
       console.error('🚨 [AUTH-USER] Error getting user:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      return res.status(500).json({ message: 'Internal server error' });
     }
   });
 
