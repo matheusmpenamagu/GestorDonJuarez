@@ -29,23 +29,23 @@ export default function Dashboard() {
   const [taps, setTaps] = useState<TapWithRelations[]>([]);
   const { lastMessage } = useWebSocket("/");
 
-  // Initial data queries
+  // Initial data queries with reduced frequency to prevent DOMException
   const { data: initialStats } = useQuery({
     queryKey: ["/api/dashboard/stats"],
-    refetchInterval: 3000, // Atualiza a cada 3 segundos
-    refetchIntervalInBackground: true,
+    refetchInterval: 10000, // Increased to 10 seconds
+    refetchIntervalInBackground: false, // Disable background refetch to reduce load
   });
 
   const { data: initialTaps } = useQuery({
     queryKey: ["/api/taps"],
-    refetchInterval: 5000, // Atualiza a cada 5 segundos
-    refetchIntervalInBackground: true,
+    refetchInterval: 15000, // Increased to 15 seconds
+    refetchIntervalInBackground: false, // Disable background refetch to reduce load
   });
 
   const { data: co2Stats } = useQuery<Co2Stats>({
     queryKey: ["/api/co2-stats"],
-    refetchInterval: 30000, // Atualiza a cada 30 segundos (dados menos voláteis)
-    refetchIntervalInBackground: true,
+    refetchInterval: 60000, // Increased to 60 seconds (less volatile data)
+    refetchIntervalInBackground: false, // Disable background refetch to reduce load
   });
 
   // Update state when WebSocket data arrives
@@ -70,10 +70,10 @@ export default function Dashboard() {
     }
   }, [lastMessage]);
 
-  // Set initial data from React Query
+  // Set initial data from React Query with proper type checking
   useEffect(() => {
-    if (initialStats && !lastMessage) {
-      setStats(initialStats);
+    if (initialStats && typeof initialStats === 'object' && !lastMessage) {
+      setStats(initialStats as DashboardStats);
     }
   }, [initialStats, lastMessage]);
 
