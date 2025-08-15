@@ -263,34 +263,43 @@ function parsePDFContent(text: string): any {
 // Webhook token validation middleware
 const validateWebhookToken = (req: any, res: any, next: any) => {
   try {
+    console.log('🔐 [WEBHOOK-AUTH] Validating webhook token...');
+    console.log('🔐 [WEBHOOK-AUTH] Headers received:', Object.keys(req.headers));
+    
     const providedToken = req.headers['x-webhook-token'] || req.headers['webhook-token'];
     const expectedToken = process.env.webhook_token;
 
+    console.log('🔐 [WEBHOOK-AUTH] Provided token:', providedToken ? `${providedToken.substring(0, 4)}...` : 'NONE');
+    console.log('🔐 [WEBHOOK-AUTH] Expected token configured:', !!expectedToken);
+
     if (!expectedToken) {
-      console.error('Webhook token not configured in environment');
+      console.error('❌ [WEBHOOK-AUTH] Webhook token not configured in environment');
       return res.status(500).json({ 
         message: "Server configuration error" 
       });
     }
 
     if (!providedToken) {
-      console.error('Missing webhook token in request headers');
+      console.error('❌ [WEBHOOK-AUTH] Missing webhook token in request headers');
+      console.error('❌ [WEBHOOK-AUTH] Available headers:', Object.keys(req.headers));
       return res.status(401).json({ 
         message: "Unauthorized: Missing webhook token" 
       });
     }
 
     if (providedToken !== expectedToken) {
-      console.error('Invalid webhook token provided');
+      console.error('❌ [WEBHOOK-AUTH] Invalid webhook token provided');
+      console.error('❌ [WEBHOOK-AUTH] Expected vs provided length:', expectedToken.length, 'vs', providedToken.length);
       return res.status(401).json({ 
         message: "Unauthorized: Invalid webhook token" 
       });
     }
 
+    console.log('✅ [WEBHOOK-AUTH] Token validation successful!');
     // Token is valid, proceed to webhook handler
     next();
   } catch (error) {
-    console.error('Error validating webhook token:', error);
+    console.error('💥 [WEBHOOK-AUTH] Error validating webhook token:', error);
     return res.status(500).json({ 
       message: "Error validating token" 
     });
@@ -587,6 +596,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+
+
   // Test endpoint to simulate pour events from ESP32 (for debugging)
   app.post('/api/test/simulate-pour', requireAuth, async (req, res) => {
     try {
@@ -652,7 +663,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Set CORS headers for ESP32 compatibility
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'POST');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, x-webhook-token');
     
     // Set response timeout to prevent ESP32 timeouts
     res.setTimeout(5000); // 5 seconds - quicker response for ESP32
@@ -661,9 +672,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const startTime = Date.now();
     
     try {
-      console.log('=== WEBHOOK START ===');
-      console.log('Pour webhook received:', JSON.stringify(req.body, null, 2));
-      console.log('Request headers:', req.headers);
+      console.log('=== WEBHOOK POUR START ===');
+      console.log('🚀 ESP32 Pour webhook received!');
+      console.log('📡 Headers:', JSON.stringify(req.headers, null, 2));
+      console.log('📦 Body:', JSON.stringify(req.body, null, 2));
+      console.log('🌐 Remote IP:', req.ip);
+      console.log('🔍 User Agent:', req.get('User-Agent'));
       
       // Validate request body exists
       if (!req.body) {
