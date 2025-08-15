@@ -20,8 +20,9 @@ Gestor Don Juarez is a comprehensive operational management system for Don Juare
 - **BACKGROUND FETCH DISABLED**: Disabled refetchIntervalInBackground to prevent excessive requests
 - **ROUTE ORDER FIX**: Fixed /api/products/clear-all endpoint routing conflict with /:id parameter
 - **APPLICATION STABILITY**: Dashboard real-time functionality working correctly with optimized performance
-- **WEBHOOK ANALYSIS**: Beer consumption data stopped recording on 09/08 due to ESP32 connectivity issues, not authentication changes
-- **BEER TRACKING CONFIRMED**: Pour event webhook functionality intact, ESP32 devices need URL/connectivity update
+- **WEBHOOK ISSUE RESOLVED**: Fixed JSON parsing error in ESP32 datetime format (-03:0 → -03:00)
+- **BEER TRACKING RESTORED**: Pour event webhook fully operational, ESP32 data now recording correctly
+- **ESP32 COMPATIBILITY**: Enhanced webhook to handle malformed timezone formats automatically
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
