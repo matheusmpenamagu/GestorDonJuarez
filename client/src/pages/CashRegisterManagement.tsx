@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Calendar, Building2, Edit, Trash2, Search, ChevronUp, ChevronDown, ArrowUpDown, TrendingUp, Clock } from "lucide-react";
 import { format, startOfWeek, startOfDay, subDays, isWithinInterval } from "date-fns";
-import { zonedTimeToUtc, utcToZonedTime } from "date-fns-tz";
+import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { ptBR } from "date-fns/locale";
 
 import { Button } from "@/components/ui/button";
