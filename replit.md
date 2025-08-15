@@ -24,11 +24,6 @@ Testing contact: 33988286293 (número principal para testes de webhook WhatsApp)
 ## System Architecture
 The system employs a client-server architecture with a React 18+ TypeScript frontend and a Node.js Express.js TypeScript backend.
 
-### Database Architecture
-- **PostgreSQL Database**: Single Neon Database (serverless PostgreSQL)
-- **ORM**: Drizzle with type-safe operations
-- **Environment**: Unified database for all environments
-
 ### Frontend Architecture
 - **Framework**: React 18+ with TypeScript
 - **UI Library**: Radix UI components with shadcn/ui styling system
