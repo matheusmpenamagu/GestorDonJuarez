@@ -586,6 +586,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       timezone: "America/Sao_Paulo"
     });
   });
+
+  // Test endpoint to simulate pour events from ESP32 (for debugging)
+  app.post('/api/test/simulate-pour', requireAuth, async (req, res) => {
+    try {
+      const { device_id = "D8483", volume_ml = 350 } = req.body;
+      
+      console.log(`[TEST-POUR] Simulating pour event: ${volume_ml}ml from device ${device_id}`);
+      
+      // Create a test pour event with current datetime
+      const testData = {
+        device_id,
+        datetime: new Date().toISOString(),
+        total_volume_ml: volume_ml
+      };
+      
+      // Call the internal pour processing logic
+      const device = await storage.getDeviceByCode(device_id);
+      if (!device) {
+        return res.status(404).json({ message: `Device ${device_id} not found` });
+      }
+      
+      const taps = await storage.getTaps();
+      const tap = taps.find(t => t.deviceId === device.id);
+      if (!tap) {
+        return res.status(404).json({ message: `No tap found for device ${device_id}` });
+      }
+      
+      const pourDate = new Date();
+      const pourVolumeMl = Math.round(volume_ml);
+      
+      const pourEventData = insertPourEventSchema.parse({
+        tapId: tap.id,
+        totalVolumeMl: pourVolumeMl,
+        pourVolumeMl: pourVolumeMl,
+        datetime: pourDate,
+      });
+      
+      const pourEvent = await storage.createPourEvent(pourEventData);
+      
+      console.log(`[TEST-POUR] Pour event created: Tap ${tap.id}, ${pourVolumeMl}ml`);
+      
+      // Broadcast update
+      await broadcastUpdate('pour_event', pourEvent);
+      
+      res.json({ 
+        success: true, 
+        message: "Test pour event created successfully",
+        event: pourEvent,
+        device: device.code,
+        tap: tap.name
+      });
+      
+    } catch (error) {
+      console.error('[TEST-POUR] Error creating test pour event:', error);
+      res.status(500).json({ 
+        message: "Error creating test pour event",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
   
   // Flow meter webhook - receives pour data from ESP32
   app.post('/api/webhooks/pour', validateWebhookToken, async (req, res) => {
