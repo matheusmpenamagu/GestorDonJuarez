@@ -28,9 +28,10 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Save, QrCode, Calendar } from "lucide-react";
+import { Loader2, Save, QrCode, Calendar, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Product {
   id: number;
@@ -65,13 +66,11 @@ interface LabelFormProps {
   onOpenChange: (open: boolean) => void;
   label?: Label | null;
   products: Product[];
-  employees: Employee[];
   portions: ProductPortion[];
 }
 
 const labelSchema = z.object({
   productId: z.number({ required_error: "Selecione um produto" }),
-  responsibleId: z.number({ required_error: "Selecione um responsável" }),
   date: z.string().min(1, "Data é obrigatória"),
   portionId: z.number({ required_error: "Selecione uma porção" }),
   expiryDate: z.string().min(1, "Data de vencimento é obrigatória"),
@@ -84,18 +83,17 @@ export default function LabelForm({
   onOpenChange,
   label,
   products,
-  employees,
   portions,
 }: LabelFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const isEditing = !!label;
 
   const form = useForm<LabelFormData>({
     resolver: zodResolver(labelSchema),
     defaultValues: {
       productId: 0,
-      responsibleId: 0,
       date: format(new Date(), "yyyy-MM-dd"),
       portionId: 0,
       expiryDate: format(addDays(new Date(), 7), "yyyy-MM-dd"),
@@ -109,7 +107,6 @@ export default function LabelForm({
     if (label) {
       form.reset({
         productId: label.productId,
-        responsibleId: label.responsibleId,
         date: format(new Date(label.date), "yyyy-MM-dd"),
         portionId: label.portionId,
         expiryDate: format(new Date(label.expiryDate), "yyyy-MM-dd"),
@@ -117,7 +114,6 @@ export default function LabelForm({
     } else {
       form.reset({
         productId: 0,
-        responsibleId: 0,
         date: format(new Date(), "yyyy-MM-dd"),
         portionId: 0,
         expiryDate: format(addDays(new Date(), 7), "yyyy-MM-dd"),
@@ -134,6 +130,10 @@ export default function LabelForm({
 
   const mutation = useMutation({
     mutationFn: async (data: LabelFormData) => {
+      if (!user?.id) {
+        throw new Error("Usuário não autenticado");
+      }
+
       const url = isEditing
         ? `/api/labels/${label.id}`
         : "/api/labels";
@@ -141,6 +141,7 @@ export default function LabelForm({
 
       const payload = {
         ...data,
+        responsibleId: user.id,
         date: new Date(data.date + "T00:00:00").toISOString(),
         expiryDate: new Date(data.expiryDate + "T23:59:59").toISOString(),
       };
@@ -272,33 +273,20 @@ export default function LabelForm({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="responsibleId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Responsável</FormLabel>
-                  <Select 
-                    value={field.value.toString()} 
-                    onValueChange={(value) => field.onChange(parseInt(value))}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um responsável" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {employees.map((employee) => (
-                        <SelectItem key={employee.id} value={employee.id.toString()}>
-                          {employee.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-2">
+              <FormLabel className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Responsável
+              </FormLabel>
+              <div className="flex items-center gap-2 px-3 py-2 border rounded-md bg-gray-50 dark:bg-gray-800">
+                <span className="text-sm font-medium">
+                  {user ? `${user.firstName} ${user.lastName}` : "Carregando..."}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  (Usuário atual)
+                </span>
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <FormField

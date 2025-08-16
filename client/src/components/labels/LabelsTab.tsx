@@ -23,10 +23,7 @@ interface Product {
   category: string;
 }
 
-interface Employee {
-  id: number;
-  name: string;
-}
+
 
 interface ProductPortion {
   id: number;
@@ -57,9 +54,7 @@ export default function LabelsTab() {
     queryKey: ["/api/products"],
   });
 
-  const { data: employees = [] } = useQuery<Employee[]>({
-    queryKey: ["/api/employees"],
-  });
+
 
   const { data: portions = [] } = useQuery<ProductPortion[]>({
     queryKey: ["/api/labels/portions"],
@@ -117,8 +112,8 @@ export default function LabelsTab() {
   };
 
   const getEmployeeName = (employeeId: number) => {
-    const employee = employees.find(e => e.id === employeeId);
-    return employee?.name || "Funcionário não encontrado";
+    // Since we now use logged-in user, we'll show a generic message
+    return "Funcionário";
   };
 
   const getPortion = (portionId: number) => {
@@ -273,7 +268,6 @@ export default function LabelsTab() {
         onOpenChange={handleFormClose}
         label={editingLabel}
         products={products}
-        employees={employees}
         portions={portions}
       />
     </div>
