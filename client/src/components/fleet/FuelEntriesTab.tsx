@@ -105,11 +105,11 @@ export default function FuelEntriesTab() {
     if (vehicle.nextMaintenanceKm && lastEntry) {
       info.kmRemaining = vehicle.nextMaintenanceKm - lastEntry.currentKm;
       if (info.kmRemaining <= 0) {
-        info.status = 'overdue_km';
+        info.status = 'overdue';
       } else if (info.kmRemaining <= 1000) {
-        info.status = 'warning_km';
+        info.status = 'danger';
       } else {
-        info.status = 'ok_km';
+        info.status = 'ok';
       }
     }
 
@@ -119,9 +119,11 @@ export default function FuelEntriesTab() {
       info.daysRemaining = differenceInDays(maintenanceDate, today);
       
       if (info.daysRemaining <= 0) {
-        info.status = info.status === 'overdue_km' ? 'overdue_both' : 'overdue_date';
+        info.status = 'overdue';
       } else if (info.daysRemaining <= 30) {
-        info.status = info.status.includes('warning') || info.status.includes('overdue') ? info.status : 'warning_date';
+        info.status = 'danger';
+      } else if (info.status !== 'danger' && info.status !== 'overdue') {
+        info.status = 'ok';
       }
     }
 
@@ -157,8 +159,16 @@ export default function FuelEntriesTab() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {vehicles.map((vehicle: any) => {
           const maintenanceInfo = getMaintenanceInfo(vehicle);
+          const getBorderColor = () => {
+            switch (maintenanceInfo.status) {
+              case 'overdue': return 'border-l-red-600';
+              case 'danger': return 'border-l-red-500';
+              case 'ok': return 'border-l-green-500';
+              default: return 'border-l-gray-400';
+            }
+          };
           return (
-            <Card key={vehicle.id} className="border-l-4 border-l-blue-500">
+            <Card key={vehicle.id} className={`border-l-4 ${getBorderColor()}`}>
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Car className="h-5 w-5 text-blue-600" />
@@ -176,8 +186,8 @@ export default function FuelEntriesTab() {
                       <span className="text-sm">
                         Próxima revisão: 
                         <span className={`ml-1 font-medium ${
-                          maintenanceInfo.status.includes('overdue') ? 'text-red-600' :
-                          maintenanceInfo.status.includes('warning') ? 'text-orange-600' :
+                          maintenanceInfo.status === 'overdue' ? 'text-red-700' :
+                          maintenanceInfo.status === 'danger' ? 'text-red-600' :
                           'text-green-600'
                         }`}>
                           {maintenanceInfo.kmRemaining > 0 
@@ -193,8 +203,8 @@ export default function FuelEntriesTab() {
                       <Clock className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">
                         <span className={`font-medium ${
-                          maintenanceInfo.daysRemaining <= 0 ? 'text-red-600' :
-                          maintenanceInfo.daysRemaining <= 30 ? 'text-orange-600' :
+                          maintenanceInfo.status === 'overdue' ? 'text-red-700' :
+                          maintenanceInfo.status === 'danger' ? 'text-red-600' :
                           'text-green-600'
                         }`}>
                           {maintenanceInfo.daysRemaining > 0 
