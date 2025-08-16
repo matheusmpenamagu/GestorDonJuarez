@@ -18,6 +18,10 @@ import {
   stockCountItems,
   cashRegisterClosures,
   settings,
+  fuels,
+  gasStations,
+  vehicles,
+  fuelEntries,
   type User,
   type UpsertUser,
   type PointOfSale,
@@ -63,6 +67,14 @@ import {
   type EmployeeWithRelations,
   type Setting,
   type InsertSetting,
+  type Fuel,
+  type InsertFuel,
+  type GasStation,
+  type InsertGasStation,
+  type Vehicle,
+  type InsertVehicle,
+  type FuelEntry,
+  type InsertFuelEntry,
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, desc, and, or, gte, lte, lt, sql, sum } from "drizzle-orm";
@@ -223,6 +235,31 @@ export interface IStorage {
   getSetting(key: string): Promise<Setting | undefined>;
   setSetting(key: string, value: string, description?: string): Promise<Setting>;
   updateSetting(key: string, value: string): Promise<Setting>;
+  
+  // Fleet Management operations
+  // Fuels
+  getFuels(): Promise<Fuel[]>;
+  getFuel(id: number): Promise<Fuel | undefined>;
+  createFuel(fuel: InsertFuel): Promise<Fuel>;
+  updateFuel(id: number, fuel: Partial<InsertFuel>): Promise<Fuel>;
+  
+  // Gas Stations
+  getGasStations(): Promise<GasStation[]>;
+  getGasStation(id: number): Promise<GasStation | undefined>;
+  createGasStation(gasStation: InsertGasStation): Promise<GasStation>;
+  updateGasStation(id: number, gasStation: Partial<InsertGasStation>): Promise<GasStation>;
+  
+  // Vehicles
+  getVehicles(): Promise<Vehicle[]>;
+  getVehicle(id: number): Promise<Vehicle | undefined>;
+  createVehicle(vehicle: InsertVehicle): Promise<Vehicle>;
+  updateVehicle(id: number, vehicle: Partial<InsertVehicle>): Promise<Vehicle>;
+  
+  // Fuel Entries
+  getFuelEntries(): Promise<FuelEntry[]>;
+  getFuelEntry(id: number): Promise<FuelEntry | undefined>;
+  createFuelEntry(fuelEntry: InsertFuelEntry): Promise<FuelEntry>;
+  updateFuelEntry(id: number, fuelEntry: Partial<InsertFuelEntry>): Promise<FuelEntry>;
   
   // Cash Register Closures operations
   getCashRegisterClosures(): Promise<CashRegisterClosure[]>;
@@ -2018,6 +2055,144 @@ export class DatabaseStorage implements IStorage {
     console.log(`Storage: Attempting to delete cash register closure with ID: ${id}`);
     const result = await db.delete(cashRegisterClosures).where(eq(cashRegisterClosures.id, id));
     console.log(`Storage: Delete operation completed for ID: ${id}`, result);
+  }
+
+  // Fleet Management operations implementation
+  
+  // Fuels operations
+  async getFuels(): Promise<Fuel[]> {
+    return await db.select().from(fuels).orderBy(fuels.name);
+  }
+
+  async getFuel(id: number): Promise<Fuel | undefined> {
+    const [fuel] = await db.select().from(fuels).where(eq(fuels.id, id));
+    return fuel;
+  }
+
+  async createFuel(fuelData: InsertFuel): Promise<Fuel> {
+    const [fuel] = await db
+      .insert(fuels)
+      .values({
+        ...fuelData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return fuel;
+  }
+
+  async updateFuel(id: number, fuelData: Partial<InsertFuel>): Promise<Fuel> {
+    const [fuel] = await db
+      .update(fuels)
+      .set({
+        ...fuelData,
+        updatedAt: new Date(),
+      })
+      .where(eq(fuels.id, id))
+      .returning();
+    return fuel;
+  }
+
+  // Gas Stations operations
+  async getGasStations(): Promise<GasStation[]> {
+    return await db.select().from(gasStations).orderBy(gasStations.name);
+  }
+
+  async getGasStation(id: number): Promise<GasStation | undefined> {
+    const [gasStation] = await db.select().from(gasStations).where(eq(gasStations.id, id));
+    return gasStation;
+  }
+
+  async createGasStation(gasStationData: InsertGasStation): Promise<GasStation> {
+    const [gasStation] = await db
+      .insert(gasStations)
+      .values({
+        ...gasStationData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return gasStation;
+  }
+
+  async updateGasStation(id: number, gasStationData: Partial<InsertGasStation>): Promise<GasStation> {
+    const [gasStation] = await db
+      .update(gasStations)
+      .set({
+        ...gasStationData,
+        updatedAt: new Date(),
+      })
+      .where(eq(gasStations.id, id))
+      .returning();
+    return gasStation;
+  }
+
+  // Vehicles operations
+  async getVehicles(): Promise<Vehicle[]> {
+    return await db.select().from(vehicles).orderBy(vehicles.name);
+  }
+
+  async getVehicle(id: number): Promise<Vehicle | undefined> {
+    const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, id));
+    return vehicle;
+  }
+
+  async createVehicle(vehicleData: InsertVehicle): Promise<Vehicle> {
+    const [vehicle] = await db
+      .insert(vehicles)
+      .values({
+        ...vehicleData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return vehicle;
+  }
+
+  async updateVehicle(id: number, vehicleData: Partial<InsertVehicle>): Promise<Vehicle> {
+    const [vehicle] = await db
+      .update(vehicles)
+      .set({
+        ...vehicleData,
+        updatedAt: new Date(),
+      })
+      .where(eq(vehicles.id, id))
+      .returning();
+    return vehicle;
+  }
+
+  // Fuel Entries operations
+  async getFuelEntries(): Promise<FuelEntry[]> {
+    return await db.select().from(fuelEntries).orderBy(desc(fuelEntries.date));
+  }
+
+  async getFuelEntry(id: number): Promise<FuelEntry | undefined> {
+    const [fuelEntry] = await db.select().from(fuelEntries).where(eq(fuelEntries.id, id));
+    return fuelEntry;
+  }
+
+  async createFuelEntry(fuelEntryData: InsertFuelEntry): Promise<FuelEntry> {
+    const [fuelEntry] = await db
+      .insert(fuelEntries)
+      .values({
+        ...fuelEntryData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return fuelEntry;
+  }
+
+  async updateFuelEntry(id: number, fuelEntryData: Partial<InsertFuelEntry>): Promise<FuelEntry> {
+    const [fuelEntry] = await db
+      .update(fuelEntries)
+      .set({
+        ...fuelEntryData,
+        updatedAt: new Date(),
+      })
+      .where(eq(fuelEntries.id, id))
+      .returning();
+    return fuelEntry;
   }
 }
 

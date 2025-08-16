@@ -23,6 +23,7 @@ import ProductsManagement from "@/pages/ProductsManagement";
 import StockCountsManagement from "@/pages/StockCountsManagement";
 import StockCountDetail from "@/pages/StockCountDetail";
 import PublicStockCount from "@/pages/PublicStockCount";
+import FleetManagement from "@/pages/FleetManagement";
 import CompanySettings from "@/pages/CompanySettings";
 import CashRegisterManagement from "@/pages/CashRegisterManagement";
 import Privacy from "@/pages/Privacy";
@@ -136,6 +137,11 @@ function Router() {
           </Route>
 
           {/* Empresa */}
+          <Route path="/empresa/frota">
+            <Layout>
+              <FleetManagement />
+            </Layout>
+          </Route>
           <Route path="/empresa/unidades">
             <Layout>
               <UnitsManagement />

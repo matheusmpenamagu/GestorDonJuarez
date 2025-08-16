@@ -191,6 +191,55 @@ export const products = pgTable("products", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Fleet Management Tables
+
+// Fuels table (combustíveis)
+export const fuels = pgTable("fuels", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Gas stations table (postos autorizados)
+export const gasStations = pgTable("gas_stations", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  address: text("address"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Vehicles table (veículos)
+export const vehicles = pgTable("vehicles", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  licensePlate: varchar("license_plate", { length: 10 }).notNull(),
+  nextMaintenanceKm: integer("next_maintenance_km"),
+  nextMaintenanceDate: timestamp("next_maintenance_date"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Fuel entries table (abastecimentos)
+export const fuelEntries = pgTable("fuel_entries", {
+  id: serial("id").primaryKey(),
+  date: timestamp("date").notNull(),
+  employeeId: integer("employee_id").references(() => employees.id).notNull(),
+  vehicleId: integer("vehicle_id").references(() => vehicles.id).notNull(),
+  currentKm: integer("current_km").notNull(),
+  value: decimal("value", { precision: 10, scale: 2 }).notNull(),
+  liters: decimal("liters", { precision: 10, scale: 3 }).notNull(),
+  fuelId: integer("fuel_id").references(() => fuels.id).notNull(),
+  gasStationId: integer("gas_station_id").references(() => gasStations.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Tabela de relacionamento produto-unidade (many-to-many)
 export const productUnits = pgTable("product_units", {
   id: serial("id").primaryKey(),
@@ -289,6 +338,38 @@ export const freelancerTimeEntriesRelations = relations(freelancerTimeEntries, (
 export const productsRelations = relations(products, ({ many }) => ({
   productUnits: many(productUnits),
   stockCountItems: many(stockCountItems),
+}));
+
+// Fleet Management Relations
+export const vehiclesRelations = relations(vehicles, ({ many }) => ({
+  fuelEntries: many(fuelEntries),
+}));
+
+export const fuelsRelations = relations(fuels, ({ many }) => ({
+  fuelEntries: many(fuelEntries),
+}));
+
+export const gasStationsRelations = relations(gasStations, ({ many }) => ({
+  fuelEntries: many(fuelEntries),
+}));
+
+export const fuelEntriesRelations = relations(fuelEntries, ({ one }) => ({
+  employee: one(employees, {
+    fields: [fuelEntries.employeeId],
+    references: [employees.id],
+  }),
+  vehicle: one(vehicles, {
+    fields: [fuelEntries.vehicleId],
+    references: [vehicles.id],
+  }),
+  fuel: one(fuels, {
+    fields: [fuelEntries.fuelId],
+    references: [fuels.id],
+  }),
+  gasStation: one(gasStations, {
+    fields: [fuelEntries.gasStationId],
+    references: [gasStations.id],
+  }),
 }));
 
 export const productUnitsRelations = relations(productUnits, ({ one }) => ({
@@ -401,6 +482,35 @@ export const insertProductSchema = createInsertSchema(products).omit({
   currentValue: z.number().min(0),
 });
 
+// Fleet Management Insert Schemas
+export const insertFuelSchema = createInsertSchema(fuels).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertGasStationSchema = createInsertSchema(gasStations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertVehicleSchema = createInsertSchema(vehicles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertFuelEntrySchema = createInsertSchema(fuelEntries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  value: z.number().min(0),
+  liters: z.number().min(0),
+  currentKm: z.number().min(0),
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -430,6 +540,16 @@ export type ProductCategory = typeof productCategories.$inferSelect;
 export type InsertProductCategory = z.infer<typeof insertProductCategorySchema>;
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
+
+// Fleet Management Types
+export type Fuel = typeof fuels.$inferSelect;
+export type InsertFuel = z.infer<typeof insertFuelSchema>;
+export type GasStation = typeof gasStations.$inferSelect;
+export type InsertGasStation = z.infer<typeof insertGasStationSchema>;
+export type Vehicle = typeof vehicles.$inferSelect;
+export type InsertVehicle = z.infer<typeof insertVehicleSchema>;
+export type FuelEntry = typeof fuelEntries.$inferSelect;
+export type InsertFuelEntry = z.infer<typeof insertFuelEntrySchema>;
 export type ProductUnit = typeof productUnits.$inferSelect;
 export type InsertProductUnit = typeof productUnits.$inferInsert;
 

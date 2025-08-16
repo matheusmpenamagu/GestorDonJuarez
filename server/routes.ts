@@ -4196,6 +4196,152 @@ ${message}
     }
   });
 
+  // ============ FLEET MANAGEMENT ROUTES ============
+
+  // Fuels routes
+  app.get('/api/fleet/fuels', requireAuth, async (req, res) => {
+    try {
+      const fuels = await storage.getFuels();
+      res.json(fuels);
+    } catch (error) {
+      console.error("Error fetching fuels:", error);
+      res.status(500).json({ message: "Error fetching fuels" });
+    }
+  });
+
+  app.post('/api/fleet/fuels', requireAuth, async (req, res) => {
+    try {
+      const { insertFuelSchema } = await import("@shared/schema");
+      const fuelData = insertFuelSchema.parse(req.body);
+      const fuel = await storage.createFuel(fuelData);
+      res.status(201).json(fuel);
+    } catch (error) {
+      console.error("Error creating fuel:", error);
+      res.status(500).json({ message: "Error creating fuel" });
+    }
+  });
+
+  app.put('/api/fleet/fuels/:id', requireAuth, async (req, res) => {
+    try {
+      const { insertFuelSchema } = await import("@shared/schema");
+      const id = parseInt(req.params.id);
+      const fuelData = insertFuelSchema.partial().parse(req.body);
+      const fuel = await storage.updateFuel(id, fuelData);
+      res.json(fuel);
+    } catch (error) {
+      console.error("Error updating fuel:", error);
+      res.status(500).json({ message: "Error updating fuel" });
+    }
+  });
+
+  // Gas Stations routes
+  app.get('/api/fleet/gas-stations', requireAuth, async (req, res) => {
+    try {
+      const gasStations = await storage.getGasStations();
+      res.json(gasStations);
+    } catch (error) {
+      console.error("Error fetching gas stations:", error);
+      res.status(500).json({ message: "Error fetching gas stations" });
+    }
+  });
+
+  app.post('/api/fleet/gas-stations', requireAuth, async (req, res) => {
+    try {
+      const { insertGasStationSchema } = await import("@shared/schema");
+      const gasStationData = insertGasStationSchema.parse(req.body);
+      const gasStation = await storage.createGasStation(gasStationData);
+      res.status(201).json(gasStation);
+    } catch (error) {
+      console.error("Error creating gas station:", error);
+      res.status(500).json({ message: "Error creating gas station" });
+    }
+  });
+
+  app.put('/api/fleet/gas-stations/:id', requireAuth, async (req, res) => {
+    try {
+      const { insertGasStationSchema } = await import("@shared/schema");
+      const id = parseInt(req.params.id);
+      const gasStationData = insertGasStationSchema.partial().parse(req.body);
+      const gasStation = await storage.updateGasStation(id, gasStationData);
+      res.json(gasStation);
+    } catch (error) {
+      console.error("Error updating gas station:", error);
+      res.status(500).json({ message: "Error updating gas station" });
+    }
+  });
+
+  // Vehicles routes
+  app.get('/api/fleet/vehicles', requireAuth, async (req, res) => {
+    try {
+      const vehicles = await storage.getVehicles();
+      res.json(vehicles);
+    } catch (error) {
+      console.error("Error fetching vehicles:", error);
+      res.status(500).json({ message: "Error fetching vehicles" });
+    }
+  });
+
+  app.post('/api/fleet/vehicles', requireAuth, async (req, res) => {
+    try {
+      const { insertVehicleSchema } = await import("@shared/schema");
+      const vehicleData = insertVehicleSchema.parse(req.body);
+      const vehicle = await storage.createVehicle(vehicleData);
+      res.status(201).json(vehicle);
+    } catch (error) {
+      console.error("Error creating vehicle:", error);
+      res.status(500).json({ message: "Error creating vehicle" });
+    }
+  });
+
+  app.put('/api/fleet/vehicles/:id', requireAuth, async (req, res) => {
+    try {
+      const { insertVehicleSchema } = await import("@shared/schema");
+      const id = parseInt(req.params.id);
+      const vehicleData = insertVehicleSchema.partial().parse(req.body);
+      const vehicle = await storage.updateVehicle(id, vehicleData);
+      res.json(vehicle);
+    } catch (error) {
+      console.error("Error updating vehicle:", error);
+      res.status(500).json({ message: "Error updating vehicle" });
+    }
+  });
+
+  // Fuel Entries routes
+  app.get('/api/fleet/fuel-entries', requireAuth, async (req, res) => {
+    try {
+      const fuelEntries = await storage.getFuelEntries();
+      res.json(fuelEntries);
+    } catch (error) {
+      console.error("Error fetching fuel entries:", error);
+      res.status(500).json({ message: "Error fetching fuel entries" });
+    }
+  });
+
+  app.post('/api/fleet/fuel-entries', requireAuth, async (req, res) => {
+    try {
+      const { insertFuelEntrySchema } = await import("@shared/schema");
+      const fuelEntryData = insertFuelEntrySchema.parse(req.body);
+      const fuelEntry = await storage.createFuelEntry(fuelEntryData);
+      res.status(201).json(fuelEntry);
+    } catch (error) {
+      console.error("Error creating fuel entry:", error);
+      res.status(500).json({ message: "Error creating fuel entry" });
+    }
+  });
+
+  app.put('/api/fleet/fuel-entries/:id', requireAuth, async (req, res) => {
+    try {
+      const { insertFuelEntrySchema } = await import("@shared/schema");
+      const id = parseInt(req.params.id);
+      const fuelEntryData = insertFuelEntrySchema.partial().parse(req.body);
+      const fuelEntry = await storage.updateFuelEntry(id, fuelEntryData);
+      res.json(fuelEntry);
+    } catch (error) {
+      console.error("Error updating fuel entry:", error);
+      res.status(500).json({ message: "Error updating fuel entry" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket for real-time updates

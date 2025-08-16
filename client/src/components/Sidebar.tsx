@@ -19,7 +19,8 @@ import {
   Package,
   Settings,
   DollarSign,
-  CreditCard
+  CreditCard,
+  Car
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -54,6 +55,7 @@ const menuItems = [
     title: "Empresa",
     icon: Building2,
     items: [
+      { href: "/empresa/frota", icon: Car, label: "Frota" },
       { href: "/empresa/unidades", icon: Building2, label: "Unidades" },
       { href: "/empresa/configuracoes", icon: Settings, label: "Configurações" },
     ],
