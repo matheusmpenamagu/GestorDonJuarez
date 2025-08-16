@@ -72,8 +72,12 @@ export default function LabelsPage() {
       {/* Main Content */}
       <Card>
         <CardContent className="p-6">
-          <Tabs defaultValue="validades" className="w-full">
+          <Tabs defaultValue="etiquetas" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="etiquetas" className="flex items-center gap-2">
+                <Tags className="w-4 h-4" />
+                Etiquetas
+              </TabsTrigger>
               <TabsTrigger value="validades" className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 Validades
@@ -82,11 +86,11 @@ export default function LabelsPage() {
                 <Archive className="w-4 h-4" />
                 Porcionamentos
               </TabsTrigger>
-              <TabsTrigger value="etiquetas" className="flex items-center gap-2">
-                <Tags className="w-4 h-4" />
-                Etiquetas
-              </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="etiquetas" className="mt-6">
+              <LabelsTab />
+            </TabsContent>
 
             <TabsContent value="validades" className="mt-6">
               <ShelfLifesTab />
@@ -94,10 +98,6 @@ export default function LabelsPage() {
 
             <TabsContent value="porcionamentos" className="mt-6">
               <PortionsTab />
-            </TabsContent>
-
-            <TabsContent value="etiquetas" className="mt-6">
-              <LabelsTab />
             </TabsContent>
           </Tabs>
         </CardContent>
