@@ -578,6 +578,8 @@ export const insertLabelSchema = createInsertSchema(labels).omit({
   updatedAt: true,
 }).extend({
   identifier: z.string().length(6).regex(/^[A-Z0-9]{6}$/), // 6-character alphanumeric
+  date: z.string().or(z.date()).transform((val) => typeof val === 'string' ? new Date(val) : val),
+  expiryDate: z.string().or(z.date()).transform((val) => typeof val === 'string' ? new Date(val) : val),
 });
 
 // Fleet Management Insert Schemas

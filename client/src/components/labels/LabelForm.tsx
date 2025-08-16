@@ -33,6 +33,16 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 
+interface User {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  avatar: string;
+  employmentTypes: string[];
+  type: string;
+}
+
 interface Product {
   id: number;
   name: string;
@@ -87,7 +97,7 @@ export default function LabelForm({
 }: LabelFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user } = useAuth() as { user: User | null };
   const isEditing = !!label;
 
   const form = useForm<LabelFormData>({
@@ -135,15 +145,15 @@ export default function LabelForm({
       }
 
       const url = isEditing
-        ? `/api/labels/${label.id}`
+        ? `/api/labels/${label!.id}`
         : "/api/labels";
       const method = isEditing ? "PUT" : "POST";
 
       const payload = {
         ...data,
         responsibleId: user.id,
-        date: new Date(data.date + "T00:00:00").toISOString(),
-        expiryDate: new Date(data.expiryDate + "T23:59:59").toISOString(),
+        date: new Date(data.date + "T00:00:00"),
+        expiryDate: new Date(data.expiryDate + "T23:59:59"),
       };
 
       const response = await apiRequest(method, url, payload);
