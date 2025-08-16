@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { format, addDays } from "date-fns";
 import {
@@ -61,6 +61,14 @@ interface ProductPortion {
   unitOfMeasure: string;
 }
 
+interface ProductShelfLife {
+  id: number;
+  productId: number;
+  frozenDays: number;
+  chilledDays: number;
+  roomTemperatureDays: number;
+}
+
 interface Label {
   id: number;
   productId: number;
@@ -116,7 +124,31 @@ export default function LabelForm({
   });
 
   const selectedProductId = form.watch("productId");
+  const selectedStorageMethod = form.watch("storageMethod");
+  const selectedDate = form.watch("date");
   const availablePortions = portions.filter(p => p.productId === selectedProductId);
+
+  // Fetch shelf lifes data
+  const { data: shelfLifes = [] } = useQuery<ProductShelfLife[]>({
+    queryKey: ["/api/labels/shelf-lifes"],
+  });
+
+  // Function to calculate expiry date based on storage method
+  const calculateExpiryDate = (productId: number, storageMethod: string, baseDate: string) => {
+    const shelfLife = shelfLifes.find((sl: ProductShelfLife) => sl.productId === productId);
+    if (!shelfLife || !baseDate) return "";
+
+    const daysToAdd = {
+      'congelado': shelfLife.frozenDays,
+      'resfriado': shelfLife.chilledDays,
+      'temperatura_ambiente': shelfLife.roomTemperatureDays
+    }[storageMethod];
+
+    if (!daysToAdd) return "";
+
+    const expiryDate = addDays(new Date(baseDate), daysToAdd);
+    return format(expiryDate, "yyyy-MM-dd");
+  };
 
   useEffect(() => {
     if (label) {
@@ -144,6 +176,16 @@ export default function LabelForm({
       form.setValue("portionId", 0);
     }
   }, [selectedProductId, isEditing, form]);
+
+  // Auto-calculate expiry date when product, storage method, or date changes
+  useEffect(() => {
+    if (selectedProductId && selectedStorageMethod && selectedDate && !isEditing) {
+      const calculatedExpiryDate = calculateExpiryDate(selectedProductId, selectedStorageMethod, selectedDate);
+      if (calculatedExpiryDate) {
+        form.setValue("expiryDate", calculatedExpiryDate);
+      }
+    }
+  }, [selectedProductId, selectedStorageMethod, selectedDate, shelfLifes, isEditing, form, calculateExpiryDate]);
 
   const mutation = useMutation({
     mutationFn: async (data: LabelFormData) => {
@@ -357,11 +399,16 @@ export default function LabelForm({
                     <FormLabel className="flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
                       Data de Vencimento
+                      {!isEditing && (
+                        <span className="text-xs text-muted-foreground ml-1">(Calculada automaticamente)</span>
+                      )}
                     </FormLabel>
                     <FormControl>
                       <Input
                         type="date"
                         {...field}
+                        readOnly={!isEditing}
+                        className={!isEditing ? "bg-gray-50 dark:bg-gray-800" : ""}
                       />
                     </FormControl>
                     <FormMessage />
