@@ -68,6 +68,7 @@ interface Label {
   date: string;
   portionId: number;
   expiryDate: string;
+  storageMethod: string;
   identifier: string;
 }
 
@@ -84,6 +85,9 @@ const labelSchema = z.object({
   date: z.string().min(1, "Data é obrigatória"),
   portionId: z.number({ required_error: "Selecione uma porção" }),
   expiryDate: z.string().min(1, "Data de vencimento é obrigatória"),
+  storageMethod: z.enum(["congelado", "resfriado", "temperatura_ambiente"], {
+    required_error: "Selecione uma forma de armazenamento",
+  }),
 });
 
 type LabelFormData = z.infer<typeof labelSchema>;
@@ -107,6 +111,7 @@ export default function LabelForm({
       date: format(new Date(), "yyyy-MM-dd"),
       portionId: 0,
       expiryDate: format(addDays(new Date(), 7), "yyyy-MM-dd"),
+      storageMethod: "temperatura_ambiente" as const,
     },
   });
 
@@ -120,6 +125,7 @@ export default function LabelForm({
         date: format(new Date(label.date), "yyyy-MM-dd"),
         portionId: label.portionId,
         expiryDate: format(new Date(label.expiryDate), "yyyy-MM-dd"),
+        storageMethod: label.storageMethod as "congelado" | "resfriado" | "temperatura_ambiente",
       });
     } else {
       form.reset({
@@ -127,6 +133,7 @@ export default function LabelForm({
         date: format(new Date(), "yyyy-MM-dd"),
         portionId: 0,
         expiryDate: format(addDays(new Date(), 7), "yyyy-MM-dd"),
+        storageMethod: "temperatura_ambiente" as const,
       });
     }
   }, [label, form]);
@@ -276,6 +283,29 @@ export default function LabelForm({
                           {getPortionDisplay(portion)}
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="storageMethod"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Forma de Armazenamento</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a forma de armazenamento" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="congelado">🧊 Congelado</SelectItem>
+                      <SelectItem value="resfriado">❄️ Resfriado</SelectItem>
+                      <SelectItem value="temperatura_ambiente">🌡️ Temperatura Ambiente</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

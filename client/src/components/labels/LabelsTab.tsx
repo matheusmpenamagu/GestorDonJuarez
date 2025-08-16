@@ -39,6 +39,7 @@ interface Label {
   date: string;
   portionId: number;
   expiryDate: string;
+  storageMethod: string;
   identifier: string;
   createdAt: string;
   updatedAt: string;
@@ -146,6 +147,17 @@ export default function LabelsTab() {
     return expiry >= today && expiry <= tomorrow;
   };
 
+  const getStorageMethodDisplay = (storageMethod: string) => {
+    const methods = {
+      'congelado': { icon: '🧊', label: 'Congelado' },
+      'resfriado': { icon: '❄️', label: 'Resfriado' },
+      'temperatura_ambiente': { icon: '🌡️', label: 'Ambiente' }
+    };
+    
+    const method = methods[storageMethod as keyof typeof methods];
+    return method ? { icon: method.icon, label: method.label } : { icon: '❓', label: 'Desconhecido' };
+  };
+
 
 
   if (isLoading) {
@@ -186,6 +198,7 @@ export default function LabelsTab() {
                 <TableHead>Identificador</TableHead>
                 <TableHead>Produto</TableHead>
                 <TableHead>Porção</TableHead>
+                <TableHead>Armazenamento</TableHead>
                 <TableHead>Responsável</TableHead>
                 <TableHead>Data Produção</TableHead>
                 <TableHead>Vencimento</TableHead>
@@ -208,6 +221,12 @@ export default function LabelsTab() {
                     <Badge variant="secondary">
                       {getPortion(label.portionId)}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <span>{getStorageMethodDisplay(label.storageMethod).icon}</span>
+                      <span className="text-sm">{getStorageMethodDisplay(label.storageMethod).label}</span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">

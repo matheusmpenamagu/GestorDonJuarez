@@ -284,6 +284,7 @@ export const labels = pgTable("labels", {
   date: timestamp("date").notNull().defaultNow(),
   portionId: integer("portion_id").references(() => productPortions.id).notNull(),
   expiryDate: timestamp("expiry_date").notNull(), // Data de validade
+  storageMethod: varchar("storage_method", { length: 30 }).notNull(), // Forma de armazenamento: "congelado", "resfriado", "temperatura_ambiente"
   identifier: varchar("identifier", { length: 6 }).notNull().unique(), // Identificador alfanumérico de 6 dígitos
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -580,6 +581,7 @@ export const insertLabelSchema = createInsertSchema(labels).omit({
   identifier: z.string().length(6).regex(/^[A-Z0-9]{6}$/), // 6-character alphanumeric
   date: z.string().or(z.date()).transform((val) => typeof val === 'string' ? new Date(val) : val),
   expiryDate: z.string().or(z.date()).transform((val) => typeof val === 'string' ? new Date(val) : val),
+  storageMethod: z.enum(["congelado", "resfriado", "temperatura_ambiente"]),
 });
 
 // Fleet Management Insert Schemas
