@@ -21,7 +21,8 @@ import {
   DollarSign,
   CreditCard,
   Car,
-  Tags
+  Tags,
+  ChefHat
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -54,7 +55,7 @@ const menuItems = [
   },
   {
     title: "Produção",
-    icon: Tags,
+    icon: ChefHat,
     items: [
       { href: "/producao/etiquetas", icon: Tags, label: "Etiquetas" },
     ],
