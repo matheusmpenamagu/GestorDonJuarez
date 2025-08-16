@@ -123,6 +123,7 @@ export const employees = pgTable("employees", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: varchar("password", { length: 255 }).notNull(),
+  pin: varchar("pin", { length: 255 }), // Encrypted 4-digit PIN
   firstName: varchar("first_name", { length: 100 }).notNull(),
   lastName: varchar("last_name", { length: 100 }).notNull(),
   whatsapp: varchar("whatsapp", { length: 15 }),
@@ -252,6 +253,41 @@ export const productUnits = pgTable("product_units", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Label Module Tables
+
+// Product Shelf Life table (Validades)
+export const productShelfLifes = pgTable("product_shelf_lifes", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").references(() => products.id).notNull(),
+  frozenDays: integer("frozen_days").notNull(), // Validade congelado em dias
+  chilledDays: integer("chilled_days").notNull(), // Validade resfriado em dias
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Product Portions table (Porcionamentos)
+export const productPortions = pgTable("product_portions", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").references(() => products.id).notNull(),
+  quantity: integer("quantity").notNull(), // Quantidade
+  unitOfMeasure: varchar("unit_of_measure", { length: 20 }).notNull(), // Unidade de medida do produto
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Labels table (Etiquetas)
+export const labels = pgTable("labels", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").references(() => products.id).notNull(),
+  responsibleId: integer("responsible_id").references(() => employees.id).notNull(),
+  date: timestamp("date").notNull().defaultNow(),
+  portionId: integer("portion_id").references(() => productPortions.id).notNull(),
+  expiryDate: timestamp("expiry_date").notNull(), // Data de validade
+  identifier: varchar("identifier", { length: 6 }).notNull().unique(), // Identificador alfanumérico de 6 dígitos
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   // Add user-specific relations if needed
@@ -304,11 +340,12 @@ export const rolesRelations = relations(roles, ({ many }) => ({
   employees: many(employees),
 }));
 
-export const employeesRelations = relations(employees, ({ one }) => ({
+export const employeesRelations = relations(employees, ({ one, many }) => ({
   role: one(roles, {
     fields: [employees.roleId],
     references: [roles.id],
   }),
+  labels: many(labels),
 }));
 
 export const unitsRelations = relations(units, ({ many }) => ({
@@ -338,6 +375,9 @@ export const freelancerTimeEntriesRelations = relations(freelancerTimeEntries, (
 export const productsRelations = relations(products, ({ many }) => ({
   productUnits: many(productUnits),
   stockCountItems: many(stockCountItems),
+  productShelfLifes: many(productShelfLifes),
+  productPortions: many(productPortions),
+  labels: many(labels),
 }));
 
 // Fleet Management Relations
@@ -380,6 +420,36 @@ export const productUnitsRelations = relations(productUnits, ({ one }) => ({
   unit: one(units, {
     fields: [productUnits.unitId],
     references: [units.id],
+  }),
+}));
+
+// Label Module Relations
+export const productShelfLifesRelations = relations(productShelfLifes, ({ one }) => ({
+  product: one(products, {
+    fields: [productShelfLifes.productId],
+    references: [products.id],
+  }),
+}));
+
+export const productPortionsRelations = relations(productPortions, ({ one }) => ({
+  product: one(products, {
+    fields: [productPortions.productId],
+    references: [products.id],
+  }),
+}));
+
+export const labelsRelations = relations(labels, ({ one }) => ({
+  product: one(products, {
+    fields: [labels.productId],
+    references: [products.id],
+  }),
+  responsible: one(employees, {
+    fields: [labels.responsibleId],
+    references: [employees.id],
+  }),
+  portion: one(productPortions, {
+    fields: [labels.portionId],
+    references: [productPortions.id],
   }),
 }));
 
@@ -482,6 +552,32 @@ export const insertProductSchema = createInsertSchema(products).omit({
   currentValue: z.number().min(0),
 });
 
+// Label Module Insert Schemas
+export const insertProductShelfLifeSchema = createInsertSchema(productShelfLifes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  frozenDays: z.number().min(1),
+  chilledDays: z.number().min(1),
+});
+
+export const insertProductPortionSchema = createInsertSchema(productPortions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  quantity: z.number().min(1),
+});
+
+export const insertLabelSchema = createInsertSchema(labels).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  identifier: z.string().length(6).regex(/^[A-Z0-9]{6}$/), // 6-character alphanumeric
+});
+
 // Fleet Management Insert Schemas
 export const insertFuelSchema = createInsertSchema(fuels).omit({
   id: true,
@@ -554,6 +650,14 @@ export type FuelEntry = typeof fuelEntries.$inferSelect;
 export type InsertFuelEntry = z.infer<typeof insertFuelEntrySchema>;
 export type ProductUnit = typeof productUnits.$inferSelect;
 export type InsertProductUnit = typeof productUnits.$inferInsert;
+
+// Label Module Types
+export type ProductShelfLife = typeof productShelfLifes.$inferSelect;
+export type InsertProductShelfLife = z.infer<typeof insertProductShelfLifeSchema>;
+export type ProductPortion = typeof productPortions.$inferSelect;
+export type InsertProductPortion = z.infer<typeof insertProductPortionSchema>;
+export type Label = typeof labels.$inferSelect;
+export type InsertLabel = z.infer<typeof insertLabelSchema>;
 
 // Extended types for API responses
 export type Co2RefillWithRelations = Co2Refill & {

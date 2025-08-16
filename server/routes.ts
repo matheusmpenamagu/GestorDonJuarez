@@ -1989,6 +1989,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ============ EMPLOYEES ROUTES ============
 
+  // Verify employee PIN
+  app.post('/api/employees/verify-pin', requireAuth, async (req, res) => {
+    try {
+      const { pin } = req.body;
+      
+      if (!pin || pin.length !== 4) {
+        return res.status(400).json({ message: "PIN deve ter 4 dígitos" });
+      }
+      
+      const employees = await storage.getEmployees();
+      
+      for (const employee of employees) {
+        if (employee.pin) {
+          const bcrypt = await import('bcryptjs');
+          const isValid = await bcrypt.compare(pin, employee.pin);
+          if (isValid) {
+            // Remover PIN da resposta por segurança
+            const { pin: _, ...employeeWithoutPin } = employee;
+            return res.json(employeeWithoutPin);
+          }
+        }
+      }
+      
+      res.status(401).json({ message: "PIN inválido" });
+    } catch (error) {
+      console.error("Error verifying PIN:", error);
+      res.status(500).json({ message: "Erro ao verificar PIN" });
+    }
+  });
+
   // Get all employees
   app.get('/api/employees', requireAuth, async (req, res) => {
     try {
@@ -4321,6 +4351,179 @@ ${message}
     } catch (error) {
       console.error("Error updating vehicle:", error);
       res.status(500).json({ message: "Error updating vehicle" });
+    }
+  });
+
+  // Labels Module API Routes
+  
+  // Product Shelf Lifes routes
+  app.get('/api/labels/shelf-lifes', requireAuth, async (req, res) => {
+    try {
+      const shelfLifes = await storage.getProductShelfLifes();
+      res.json(shelfLifes);
+    } catch (error) {
+      console.error("Error fetching product shelf lifes:", error);
+      res.status(500).json({ message: "Error fetching product shelf lifes" });
+    }
+  });
+
+  app.get('/api/labels/shelf-lifes/product/:productId', requireAuth, async (req, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      const shelfLife = await storage.getProductShelfLifeByProduct(productId);
+      res.json(shelfLife);
+    } catch (error) {
+      console.error("Error fetching product shelf life:", error);
+      res.status(500).json({ message: "Error fetching product shelf life" });
+    }
+  });
+
+  app.post('/api/labels/shelf-lifes', requireAuth, async (req, res) => {
+    try {
+      const { insertProductShelfLifeSchema } = await import("@shared/schema");
+      const shelfLifeData = insertProductShelfLifeSchema.parse(req.body);
+      const shelfLife = await storage.createProductShelfLife(shelfLifeData);
+      res.status(201).json(shelfLife);
+    } catch (error) {
+      console.error("Error creating product shelf life:", error);
+      res.status(500).json({ message: "Error creating product shelf life" });
+    }
+  });
+
+  app.put('/api/labels/shelf-lifes/:id', requireAuth, async (req, res) => {
+    try {
+      const { insertProductShelfLifeSchema } = await import("@shared/schema");
+      const id = parseInt(req.params.id);
+      const shelfLifeData = insertProductShelfLifeSchema.partial().parse(req.body);
+      const shelfLife = await storage.updateProductShelfLife(id, shelfLifeData);
+      res.json(shelfLife);
+    } catch (error) {
+      console.error("Error updating product shelf life:", error);
+      res.status(500).json({ message: "Error updating product shelf life" });
+    }
+  });
+
+  app.delete('/api/labels/shelf-lifes/:id', requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteProductShelfLife(id);
+      res.json({ message: "Product shelf life deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting product shelf life:", error);
+      res.status(500).json({ message: "Error deleting product shelf life" });
+    }
+  });
+
+  // Product Portions routes
+  app.get('/api/labels/portions', requireAuth, async (req, res) => {
+    try {
+      const portions = await storage.getProductPortions();
+      res.json(portions);
+    } catch (error) {
+      console.error("Error fetching product portions:", error);
+      res.status(500).json({ message: "Error fetching product portions" });
+    }
+  });
+
+  app.get('/api/labels/portions/product/:productId', requireAuth, async (req, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      const portions = await storage.getProductPortionsByProduct(productId);
+      res.json(portions);
+    } catch (error) {
+      console.error("Error fetching product portions:", error);
+      res.status(500).json({ message: "Error fetching product portions" });
+    }
+  });
+
+  app.post('/api/labels/portions', requireAuth, async (req, res) => {
+    try {
+      const { insertProductPortionSchema } = await import("@shared/schema");
+      const portionData = insertProductPortionSchema.parse(req.body);
+      const portion = await storage.createProductPortion(portionData);
+      res.status(201).json(portion);
+    } catch (error) {
+      console.error("Error creating product portion:", error);
+      res.status(500).json({ message: "Error creating product portion" });
+    }
+  });
+
+  app.put('/api/labels/portions/:id', requireAuth, async (req, res) => {
+    try {
+      const { insertProductPortionSchema } = await import("@shared/schema");
+      const id = parseInt(req.params.id);
+      const portionData = insertProductPortionSchema.partial().parse(req.body);
+      const portion = await storage.updateProductPortion(id, portionData);
+      res.json(portion);
+    } catch (error) {
+      console.error("Error updating product portion:", error);
+      res.status(500).json({ message: "Error updating product portion" });
+    }
+  });
+
+  app.delete('/api/labels/portions/:id', requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteProductPortion(id);
+      res.json({ message: "Product portion deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting product portion:", error);
+      res.status(500).json({ message: "Error deleting product portion" });
+    }
+  });
+
+  // Labels routes
+  app.get('/api/labels', requireAuth, async (req, res) => {
+    try {
+      const labels = await storage.getLabels();
+      res.json(labels);
+    } catch (error) {
+      console.error("Error fetching labels:", error);
+      res.status(500).json({ message: "Error fetching labels" });
+    }
+  });
+
+  app.post('/api/labels', requireAuth, async (req, res) => {
+    try {
+      const { insertLabelSchema } = await import("@shared/schema");
+      
+      // Gerar um identificador único
+      const identifier = await storage.generateLabelIdentifier();
+      
+      const labelData = insertLabelSchema.parse({
+        ...req.body,
+        identifier
+      });
+      
+      const label = await storage.createLabel(labelData);
+      res.status(201).json(label);
+    } catch (error) {
+      console.error("Error creating label:", error);
+      res.status(500).json({ message: "Error creating label" });
+    }
+  });
+
+  app.put('/api/labels/:id', requireAuth, async (req, res) => {
+    try {
+      const { insertLabelSchema } = await import("@shared/schema");
+      const id = parseInt(req.params.id);
+      const labelData = insertLabelSchema.partial().parse(req.body);
+      const label = await storage.updateLabel(id, labelData);
+      res.json(label);
+    } catch (error) {
+      console.error("Error updating label:", error);
+      res.status(500).json({ message: "Error updating label" });
+    }
+  });
+
+  app.delete('/api/labels/:id', requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteLabel(id);
+      res.json({ message: "Label deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting label:", error);
+      res.status(500).json({ message: "Error deleting label" });
     }
   });
 

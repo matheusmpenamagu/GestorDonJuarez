@@ -26,6 +26,7 @@ import PublicStockCount from "@/pages/PublicStockCount";
 import FleetManagement from "@/pages/FleetManagement";
 import CompanySettings from "@/pages/CompanySettings";
 import CashRegisterManagement from "@/pages/CashRegisterManagement";
+import LabelsPage from "@/pages/LabelsPage";
 import Privacy from "@/pages/Privacy";
 import TermsOfUse from "@/pages/TermsOfUse";
 import NotFound from "@/pages/not-found";
@@ -133,6 +134,13 @@ function Router() {
           <Route path="/estoque/contagens/:id">
             <Layout>
               <StockCountDetail />
+            </Layout>
+          </Route>
+          
+          {/* Produção */}
+          <Route path="/producao/etiquetas">
+            <Layout>
+              <LabelsPage />
             </Layout>
           </Route>
 

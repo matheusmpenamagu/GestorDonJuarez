@@ -22,6 +22,9 @@ import {
   gasStations,
   vehicles,
   fuelEntries,
+  productShelfLifes,
+  productPortions,
+  labels,
   type User,
   type UpsertUser,
   type PointOfSale,
@@ -73,6 +76,12 @@ import {
   type InsertGasStation,
   type Vehicle,
   type InsertVehicle,
+  type ProductShelfLife,
+  type InsertProductShelfLife,
+  type ProductPortion,
+  type InsertProductPortion,
+  type Label,
+  type InsertLabel,
   type FuelEntry,
   type InsertFuelEntry,
 } from "@shared/schema";
@@ -267,6 +276,31 @@ export interface IStorage {
   createCashRegisterClosure(closure: InsertCashRegisterClosure): Promise<CashRegisterClosure>;
   updateCashRegisterClosure(id: number, closure: Partial<InsertCashRegisterClosure>): Promise<CashRegisterClosure>;
   deleteCashRegisterClosure(id: number): Promise<void>;
+
+  // Label Module operations
+  // Product Shelf Lifes
+  getProductShelfLifes(): Promise<ProductShelfLife[]>;
+  getProductShelfLife(id: number): Promise<ProductShelfLife | undefined>;
+  getProductShelfLifeByProduct(productId: number): Promise<ProductShelfLife | undefined>;
+  createProductShelfLife(shelfLife: InsertProductShelfLife): Promise<ProductShelfLife>;
+  updateProductShelfLife(id: number, shelfLife: Partial<InsertProductShelfLife>): Promise<ProductShelfLife>;
+  deleteProductShelfLife(id: number): Promise<void>;
+  
+  // Product Portions
+  getProductPortions(): Promise<ProductPortion[]>;
+  getProductPortion(id: number): Promise<ProductPortion | undefined>;
+  getProductPortionsByProduct(productId: number): Promise<ProductPortion[]>;
+  createProductPortion(portion: InsertProductPortion): Promise<ProductPortion>;
+  updateProductPortion(id: number, portion: Partial<InsertProductPortion>): Promise<ProductPortion>;
+  deleteProductPortion(id: number): Promise<void>;
+  
+  // Labels
+  getLabels(): Promise<Label[]>;
+  getLabel(id: number): Promise<Label | undefined>;
+  createLabel(label: InsertLabel): Promise<Label>;
+  updateLabel(id: number, label: Partial<InsertLabel>): Promise<Label>;
+  deleteLabel(id: number): Promise<void>;
+  generateLabelIdentifier(): Promise<string>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2193,6 +2227,151 @@ export class DatabaseStorage implements IStorage {
       .where(eq(fuelEntries.id, id))
       .returning();
     return fuelEntry;
+  }
+
+  // Label Module operations
+  // Product Shelf Lifes
+  async getProductShelfLifes(): Promise<ProductShelfLife[]> {
+    return await db.select().from(productShelfLifes);
+  }
+
+  async getProductShelfLife(id: number): Promise<ProductShelfLife | undefined> {
+    const [shelfLife] = await db.select().from(productShelfLifes).where(eq(productShelfLifes.id, id));
+    return shelfLife;
+  }
+
+  async getProductShelfLifeByProduct(productId: number): Promise<ProductShelfLife | undefined> {
+    const [shelfLife] = await db.select().from(productShelfLifes).where(eq(productShelfLifes.productId, productId));
+    return shelfLife;
+  }
+
+  async createProductShelfLife(shelfLifeData: InsertProductShelfLife): Promise<ProductShelfLife> {
+    const [shelfLife] = await db
+      .insert(productShelfLifes)
+      .values({
+        ...shelfLifeData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return shelfLife;
+  }
+
+  async updateProductShelfLife(id: number, shelfLifeData: Partial<InsertProductShelfLife>): Promise<ProductShelfLife> {
+    const [shelfLife] = await db
+      .update(productShelfLifes)
+      .set({
+        ...shelfLifeData,
+        updatedAt: new Date(),
+      })
+      .where(eq(productShelfLifes.id, id))
+      .returning();
+    return shelfLife;
+  }
+
+  async deleteProductShelfLife(id: number): Promise<void> {
+    await db.delete(productShelfLifes).where(eq(productShelfLifes.id, id));
+  }
+
+  // Product Portions
+  async getProductPortions(): Promise<ProductPortion[]> {
+    return await db.select().from(productPortions);
+  }
+
+  async getProductPortion(id: number): Promise<ProductPortion | undefined> {
+    const [portion] = await db.select().from(productPortions).where(eq(productPortions.id, id));
+    return portion;
+  }
+
+  async getProductPortionsByProduct(productId: number): Promise<ProductPortion[]> {
+    return await db.select().from(productPortions).where(eq(productPortions.productId, productId));
+  }
+
+  async createProductPortion(portionData: InsertProductPortion): Promise<ProductPortion> {
+    const [portion] = await db
+      .insert(productPortions)
+      .values({
+        ...portionData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return portion;
+  }
+
+  async updateProductPortion(id: number, portionData: Partial<InsertProductPortion>): Promise<ProductPortion> {
+    const [portion] = await db
+      .update(productPortions)
+      .set({
+        ...portionData,
+        updatedAt: new Date(),
+      })
+      .where(eq(productPortions.id, id))
+      .returning();
+    return portion;
+  }
+
+  async deleteProductPortion(id: number): Promise<void> {
+    await db.delete(productPortions).where(eq(productPortions.id, id));
+  }
+
+  // Labels
+  async getLabels(): Promise<Label[]> {
+    return await db.select().from(labels).orderBy(desc(labels.date));
+  }
+
+  async getLabel(id: number): Promise<Label | undefined> {
+    const [label] = await db.select().from(labels).where(eq(labels.id, id));
+    return label;
+  }
+
+  async createLabel(labelData: InsertLabel): Promise<Label> {
+    const [label] = await db
+      .insert(labels)
+      .values({
+        ...labelData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return label;
+  }
+
+  async updateLabel(id: number, labelData: Partial<InsertLabel>): Promise<Label> {
+    const [label] = await db
+      .update(labels)
+      .set({
+        ...labelData,
+        updatedAt: new Date(),
+      })
+      .where(eq(labels.id, id))
+      .returning();
+    return label;
+  }
+
+  async deleteLabel(id: number): Promise<void> {
+    await db.delete(labels).where(eq(labels.id, id));
+  }
+
+  async generateLabelIdentifier(): Promise<string> {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    
+    // Gerar um identificador único de 6 caracteres
+    do {
+      result = '';
+      for (let i = 0; i < 6; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      
+      // Verificar se já existe
+      const existing = await db.select().from(labels).where(eq(labels.identifier, result));
+      if (existing.length === 0) {
+        break;
+      }
+    } while (true);
+    
+    return result;
   }
 }
 

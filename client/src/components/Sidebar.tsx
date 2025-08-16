@@ -20,7 +20,8 @@ import {
   Settings,
   DollarSign,
   CreditCard,
-  Car
+  Car,
+  Tags
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +53,13 @@ const menuItems = [
     ],
   },
   {
+    title: "Produção",
+    icon: Tags,
+    items: [
+      { href: "/producao/etiquetas", icon: Tags, label: "Etiquetas" },
+    ],
+  },
+  {
     title: "Empresa",
     icon: Building2,
     items: [
@@ -75,6 +83,7 @@ export function Sidebar() {
     "Chopes": false,
     "Pessoas": false,
     "Estoque": false,
+    "Produção": false,
     "Empresa": false,
     "Financeiro": false
   });
