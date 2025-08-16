@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit, Trash2, MapPin } from "lucide-react";
+import { Plus, Edit, Trash2, MapPin, Fuel as FuelIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -142,7 +142,7 @@ export default function FleetConfigTab() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Fuel className="h-5 w-5 text-muted-foreground" />
+              <FuelIcon className="h-5 w-5 text-muted-foreground" />
               <CardTitle>Combustíveis</CardTitle>
             </div>
             <Dialog open={isFuelDialogOpen} onOpenChange={setIsFuelDialogOpen}>
