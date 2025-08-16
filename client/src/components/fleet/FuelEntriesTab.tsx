@@ -21,6 +21,16 @@ export default function FuelEntriesTab() {
     queryKey: ["/api/fleet/fuel-entries"],
   });
 
+  // Calcular km rodados para cada abastecimento
+  const fuelEntriesWithKmRodados = fuelEntries.map((entry, index) => {
+    let kmRodados = 0;
+    if (index < fuelEntries.length - 1) {
+      const previousEntry = fuelEntries[index + 1]; // Array está ordenado por data desc
+      kmRodados = entry.currentKm - previousEntry.currentKm;
+    }
+    return { ...entry, kmRodados };
+  });
+
   const { data: vehicles = [] } = useQuery({
     queryKey: ["/api/fleet/vehicles"],
   });
@@ -38,7 +48,7 @@ export default function FuelEntriesTab() {
   });
 
   // Filter fuel entries based on search
-  const filteredEntries = fuelEntries.filter((entry: any) => {
+  const filteredEntries = fuelEntriesWithKmRodados.filter((entry: any) => {
     const vehicle = vehicles.find((v: any) => v.id === entry.vehicleId);
     const searchTerm = search.toLowerCase();
     
@@ -199,13 +209,29 @@ export default function FuelEntriesTab() {
                   </div>
 
                   <div className="md:col-span-3">
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <span className="text-lg font-semibold text-primary">
-                        {formatCurrency(parseFloat(entry.value))}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        {formatCurrency(parseFloat(entry.value) / parseFloat(entry.liters))}/L
-                      </span>
+                    <div className="flex items-center justify-between pt-4 mt-4 border-t bg-muted/30 rounded-lg p-3">
+                      <div className="flex items-center gap-4">
+                        <div className="text-center">
+                          <span className="text-2xl font-bold text-primary">
+                            {formatCurrency(parseFloat(entry.value))}
+                          </span>
+                          <p className="text-xs text-muted-foreground">Total Pago</p>
+                        </div>
+                        <div className="text-center">
+                          <span className="text-lg font-semibold text-orange-600 bg-orange-100 px-2 py-1 rounded">
+                            {formatCurrency(parseFloat(entry.value) / parseFloat(entry.liters))}/L
+                          </span>
+                          <p className="text-xs text-muted-foreground">Preço por Litro</p>
+                        </div>
+                      </div>
+                      {entry.kmRodados > 0 && (
+                        <div className="text-center">
+                          <span className="text-lg font-medium text-blue-600">
+                            {entry.kmRodados.toLocaleString('pt-BR')} km
+                          </span>
+                          <p className="text-xs text-muted-foreground">Km Rodados</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
