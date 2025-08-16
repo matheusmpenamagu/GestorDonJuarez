@@ -4284,7 +4284,16 @@ ${message}
   app.post('/api/fleet/vehicles', requireAuth, async (req, res) => {
     try {
       const { insertVehicleSchema } = await import("@shared/schema");
-      const vehicleData = insertVehicleSchema.parse(req.body);
+      const parsedData = insertVehicleSchema.parse(req.body);
+      
+      // Convert string date to Date object if provided
+      const vehicleData = {
+        ...parsedData,
+        nextMaintenanceDate: parsedData.nextMaintenanceDate 
+          ? new Date(parsedData.nextMaintenanceDate) 
+          : null,
+      };
+      
       const vehicle = await storage.createVehicle(vehicleData);
       res.status(201).json(vehicle);
     } catch (error) {
@@ -4297,7 +4306,16 @@ ${message}
     try {
       const { insertVehicleSchema } = await import("@shared/schema");
       const id = parseInt(req.params.id);
-      const vehicleData = insertVehicleSchema.partial().parse(req.body);
+      const parsedData = insertVehicleSchema.partial().parse(req.body);
+      
+      // Convert string date to Date object if provided
+      const vehicleData = {
+        ...parsedData,
+        nextMaintenanceDate: parsedData.nextMaintenanceDate 
+          ? new Date(parsedData.nextMaintenanceDate) 
+          : null,
+      };
+      
       const vehicle = await storage.updateVehicle(id, vehicleData);
       res.json(vehicle);
     } catch (error) {

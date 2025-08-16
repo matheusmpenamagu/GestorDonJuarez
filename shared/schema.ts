@@ -499,6 +499,8 @@ export const insertVehicleSchema = createInsertSchema(vehicles).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  nextMaintenanceDate: z.string().optional().nullable(),
 });
 
 export const insertFuelEntrySchema = createInsertSchema(fuelEntries).omit({

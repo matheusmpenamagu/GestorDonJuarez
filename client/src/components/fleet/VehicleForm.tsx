@@ -46,9 +46,7 @@ export default function VehicleForm({ vehicle, onSuccess }: VehicleFormProps) {
       
       const payload = {
         ...data,
-        nextMaintenanceDate: data.nextMaintenanceDate 
-          ? new Date(data.nextMaintenanceDate).toISOString()
-          : null,
+        nextMaintenanceDate: data.nextMaintenanceDate || null,
       };
       
       return await apiRequest(method, endpoint, payload);
