@@ -261,6 +261,7 @@ export const productShelfLifes = pgTable("product_shelf_lifes", {
   productId: integer("product_id").references(() => products.id).notNull(),
   frozenDays: integer("frozen_days").notNull(), // Validade congelado em dias
   chilledDays: integer("chilled_days").notNull(), // Validade resfriado em dias
+  roomTemperatureDays: integer("room_temperature_days").notNull(), // Validade temperatura ambiente em dias
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -560,6 +561,7 @@ export const insertProductShelfLifeSchema = createInsertSchema(productShelfLifes
 }).extend({
   frozenDays: z.number().min(1),
   chilledDays: z.number().min(1),
+  roomTemperatureDays: z.number().min(1),
 });
 
 export const insertProductPortionSchema = createInsertSchema(productPortions).omit({

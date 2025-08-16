@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plus, Edit, Trash2, Clock, Snowflake, Refrigerator } from "lucide-react";
+import { Plus, Edit, Trash2, Clock, Snowflake, Refrigerator, Thermometer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ShelfLifeForm from "./ShelfLifeForm";
 
@@ -26,6 +26,7 @@ interface ProductShelfLife {
   productId: number;
   frozenDays: number;
   chilledDays: number;
+  roomTemperatureDays: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -104,7 +105,7 @@ export default function ShelfLifesTab() {
         <div>
           <h3 className="text-lg font-semibold">Validades dos Produtos</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Configure os prazos de validade para produtos congelados e refrigerados
+            Configure os prazos de validade para produtos congelados, refrigerados e em temperatura ambiente
           </p>
         </div>
         <Button
@@ -141,6 +142,12 @@ export default function ShelfLifesTab() {
                     Refrigerado (dias)
                   </div>
                 </TableHead>
+                <TableHead className="text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <Thermometer className="w-4 h-4" />
+                    Temp. Ambiente (dias)
+                  </div>
+                </TableHead>
                 <TableHead className="text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -160,6 +167,12 @@ export default function ShelfLifesTab() {
                     <Badge variant="secondary" className="flex items-center gap-1 w-fit mx-auto">
                       <Clock className="w-3 h-3" />
                       {shelfLife.chilledDays} dias
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="secondary" className="flex items-center gap-1 w-fit mx-auto">
+                      <Clock className="w-3 h-3" />
+                      {shelfLife.roomTemperatureDays} dias
                     </Badge>
                   </TableCell>
                   <TableCell className="text-center">

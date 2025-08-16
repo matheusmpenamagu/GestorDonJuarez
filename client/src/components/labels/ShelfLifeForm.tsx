@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Save, Snowflake, Refrigerator } from "lucide-react";
+import { Loader2, Save, Snowflake, Refrigerator, Thermometer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -42,6 +42,7 @@ interface ProductShelfLife {
   productId: number;
   frozenDays: number;
   chilledDays: number;
+  roomTemperatureDays: number;
 }
 
 interface ShelfLifeFormProps {
@@ -55,6 +56,7 @@ const shelfLifeSchema = z.object({
   productId: z.number({ required_error: "Selecione um produto" }),
   frozenDays: z.number().min(1, "Deve ser maior que 0"),
   chilledDays: z.number().min(1, "Deve ser maior que 0"),
+  roomTemperatureDays: z.number().min(1, "Deve ser maior que 0"),
 });
 
 type ShelfLifeFormData = z.infer<typeof shelfLifeSchema>;
@@ -75,6 +77,7 @@ export default function ShelfLifeForm({
       productId: 0,
       frozenDays: 1,
       chilledDays: 1,
+      roomTemperatureDays: 1,
     },
   });
 
@@ -84,12 +87,14 @@ export default function ShelfLifeForm({
         productId: shelfLife.productId,
         frozenDays: shelfLife.frozenDays,
         chilledDays: shelfLife.chilledDays,
+        roomTemperatureDays: shelfLife.roomTemperatureDays,
       });
     } else {
       form.reset({
         productId: 0,
         frozenDays: 1,
         chilledDays: 1,
+        roomTemperatureDays: 1,
       });
     }
   }, [shelfLife, form]);
@@ -141,7 +146,7 @@ export default function ShelfLifeForm({
             {isEditing ? "Editar Validade" : "Adicionar Validade"}
           </DialogTitle>
           <DialogDescription>
-            Configure os prazos de validade para produtos congelados e refrigerados
+            Configure os prazos de validade para produtos congelados, refrigerados e em temperatura ambiente
           </DialogDescription>
         </DialogHeader>
 
@@ -175,7 +180,7 @@ export default function ShelfLifeForm({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="frozenDays"
@@ -206,6 +211,28 @@ export default function ShelfLifeForm({
                     <FormLabel className="flex items-center gap-2">
                       <Refrigerator className="w-4 h-4" />
                       Refrigerado (dias)
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="1"
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="roomTemperatureDays"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Thermometer className="w-4 h-4" />
+                      Temp. Ambiente (dias)
                     </FormLabel>
                     <FormControl>
                       <Input
