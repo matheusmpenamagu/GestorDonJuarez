@@ -19,6 +19,7 @@ interface Product {
   id: number;
   name: string;
   category: string;
+  unitOfMeasure: string;
 }
 
 interface ProductPortion {

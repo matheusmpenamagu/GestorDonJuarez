@@ -35,6 +35,7 @@ interface Product {
   id: number;
   name: string;
   category: string;
+  unitOfMeasure: string;
 }
 
 interface ProductPortion {
@@ -54,20 +55,11 @@ interface PortionFormProps {
 const portionSchema = z.object({
   productId: z.number({ required_error: "Selecione um produto" }),
   quantity: z.number().min(1, "Deve ser maior que 0"),
-  unitOfMeasure: z.string().min(1, "Selecione uma unidade"),
 });
 
 type PortionFormData = z.infer<typeof portionSchema>;
 
-const units = [
-  { value: "g", label: "Gramas (g)" },
-  { value: "kg", label: "Quilos (kg)" },
-  { value: "ml", label: "Mililitros (ml)" },
-  { value: "l", label: "Litros (l)" },
-  { value: "un", label: "Unidades (un)" },
-  { value: "fatias", label: "Fatias" },
-  { value: "porções", label: "Porções" },
-];
+
 
 export default function PortionForm({
   open,
@@ -84,22 +76,24 @@ export default function PortionForm({
     defaultValues: {
       productId: 0,
       quantity: 1,
-      unitOfMeasure: "",
     },
   });
+
+  // Get selected product and its unit of measure
+  const selectedProductId = form.watch("productId");
+  const selectedProduct = products.find(p => p.id === selectedProductId);
+  const unitOfMeasure = selectedProduct?.unitOfMeasure || "";
 
   useEffect(() => {
     if (portion) {
       form.reset({
         productId: portion.productId,
         quantity: portion.quantity,
-        unitOfMeasure: portion.unitOfMeasure,
       });
     } else {
       form.reset({
         productId: 0,
         quantity: 1,
-        unitOfMeasure: "",
       });
     }
   }, [portion, form]);
@@ -135,7 +129,12 @@ export default function PortionForm({
   });
 
   const onSubmit = (data: PortionFormData) => {
-    mutation.mutate(data);
+    // Add the unit of measure from the selected product
+    const submitData = {
+      ...data,
+      unitOfMeasure: unitOfMeasure,
+    };
+    mutation.mutate(submitData);
   };
 
   const handleClose = () => {
@@ -151,7 +150,7 @@ export default function PortionForm({
             {isEditing ? "Editar Porcionamento" : "Adicionar Porcionamento"}
           </DialogTitle>
           <DialogDescription>
-            Configure a quantidade e unidade de medida para o produto
+            Configure a quantidade. A unidade de medida é definida pelo produto selecionado.
           </DialogDescription>
         </DialogHeader>
 
@@ -209,30 +208,15 @@ export default function PortionForm({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="unitOfMeasure"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Unidade</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {units.map((unit) => (
-                          <SelectItem key={unit.value} value={unit.value}>
-                            {unit.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-2">
+                <FormLabel>Unidade de Medida</FormLabel>
+                <div className="flex items-center gap-2 px-3 py-2 border rounded-md bg-gray-50 dark:bg-gray-800">
+                  <Scale className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm font-medium">
+                    {unitOfMeasure || "Selecione um produto primeiro"}
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col gap-3 pt-4">
