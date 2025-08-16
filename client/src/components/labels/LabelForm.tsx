@@ -67,7 +67,6 @@ interface LabelFormProps {
   products: Product[];
   employees: Employee[];
   portions: ProductPortion[];
-  activeEmployee: any;
 }
 
 const labelSchema = z.object({
@@ -87,7 +86,6 @@ export default function LabelForm({
   products,
   employees,
   portions,
-  activeEmployee,
 }: LabelFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -97,7 +95,7 @@ export default function LabelForm({
     resolver: zodResolver(labelSchema),
     defaultValues: {
       productId: 0,
-      responsibleId: activeEmployee?.id || 0,
+      responsibleId: 0,
       date: format(new Date(), "yyyy-MM-dd"),
       portionId: 0,
       expiryDate: format(addDays(new Date(), 7), "yyyy-MM-dd"),
@@ -119,13 +117,13 @@ export default function LabelForm({
     } else {
       form.reset({
         productId: 0,
-        responsibleId: activeEmployee?.id || 0,
+        responsibleId: 0,
         date: format(new Date(), "yyyy-MM-dd"),
         portionId: 0,
         expiryDate: format(addDays(new Date(), 7), "yyyy-MM-dd"),
       });
     }
-  }, [label, activeEmployee, form]);
+  }, [label, form]);
 
   // Reset portion when product changes
   useEffect(() => {

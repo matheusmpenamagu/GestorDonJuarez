@@ -151,15 +151,7 @@ export default function LabelsTab() {
     return expiry >= today && expiry <= tomorrow;
   };
 
-  if (!activeEmployee) {
-    return (
-      <Alert>
-        <AlertDescription>
-          Você precisa se autenticar para gerenciar as etiquetas.
-        </AlertDescription>
-      </Alert>
-    );
-  }
+
 
   if (isLoading) {
     return <div>Carregando etiquetas...</div>;
@@ -283,7 +275,6 @@ export default function LabelsTab() {
         products={products}
         employees={employees}
         portions={portions}
-        activeEmployee={activeEmployee}
       />
     </div>
   );

@@ -91,15 +91,7 @@ export default function ShelfLifesTab() {
     return product?.name || "Produto não encontrado";
   };
 
-  if (!activeEmployee) {
-    return (
-      <Alert>
-        <AlertDescription>
-          Você precisa se autenticar para gerenciar as validades dos produtos.
-        </AlertDescription>
-      </Alert>
-    );
-  }
+
 
   if (isLoading) {
     return <div>Carregando validades...</div>;

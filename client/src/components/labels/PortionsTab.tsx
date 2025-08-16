@@ -104,15 +104,7 @@ export default function PortionsTab() {
     return units[unit] || unit;
   };
 
-  if (!activeEmployee) {
-    return (
-      <Alert>
-        <AlertDescription>
-          Você precisa se autenticar para gerenciar os porcionamentos dos produtos.
-        </AlertDescription>
-      </Alert>
-    );
-  }
+
 
   if (isLoading) {
     return <div>Carregando porcionamentos...</div>;
