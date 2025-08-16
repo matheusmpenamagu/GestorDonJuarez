@@ -1,26 +1,11 @@
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, Tags, Archive, Plus } from "lucide-react";
+import { Calendar, Tags, Archive } from "lucide-react";
 import ShelfLifesTab from "@/components/labels/ShelfLifesTab";
 import PortionsTab from "@/components/labels/PortionsTab";
 import LabelsTab from "@/components/labels/LabelsTab";
-import EmployeePinDialog from "@/components/labels/EmployeePinDialog";
 
 export default function LabelsPage() {
-  const [showPinDialog, setShowPinDialog] = useState(false);
-  const [activeEmployee, setActiveEmployee] = useState<any>(null);
-
-  const handleEmployeeAuthenticated = (employee: any) => {
-    setActiveEmployee(employee);
-    setShowPinDialog(false);
-  };
-
-  const handleStartNewProcess = () => {
-    setShowPinDialog(true);
-  };
 
   const stats = [
     {
@@ -59,25 +44,7 @@ export default function LabelsPage() {
           </p>
         </div>
         
-        {activeEmployee ? (
-          <div className="flex items-center gap-2">
-            <Badge variant="success" className="px-3 py-1">
-              {activeEmployee.name}
-            </Badge>
-            <Button 
-              onClick={() => setActiveEmployee(null)}
-              variant="outline"
-              size="sm"
-            >
-              Sair
-            </Button>
-          </div>
-        ) : (
-          <Button onClick={handleStartNewProcess} className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Iniciar Processo
-          </Button>
-        )}
+
       </div>
 
       {/* Stats Cards */}
@@ -122,26 +89,21 @@ export default function LabelsPage() {
             </TabsList>
 
             <TabsContent value="validades" className="mt-6">
-              <ShelfLifesTab activeEmployee={activeEmployee} />
+              <ShelfLifesTab />
             </TabsContent>
 
             <TabsContent value="porcionamentos" className="mt-6">
-              <PortionsTab activeEmployee={activeEmployee} />
+              <PortionsTab />
             </TabsContent>
 
             <TabsContent value="etiquetas" className="mt-6">
-              <LabelsTab activeEmployee={activeEmployee} />
+              <LabelsTab />
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
 
-      {/* Employee PIN Dialog */}
-      <EmployeePinDialog
-        open={showPinDialog}
-        onOpenChange={setShowPinDialog}
-        onEmployeeAuthenticated={handleEmployeeAuthenticated}
-      />
+
     </div>
   );
 }

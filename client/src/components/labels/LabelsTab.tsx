@@ -47,11 +47,7 @@ interface Label {
   updatedAt: string;
 }
 
-interface LabelsTabProps {
-  activeEmployee: any;
-}
-
-export default function LabelsTab({ activeEmployee }: LabelsTabProps) {
+export default function LabelsTab() {
   const [editingLabel, setEditingLabel] = useState<Label | null>(null);
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();

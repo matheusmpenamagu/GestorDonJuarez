@@ -30,11 +30,7 @@ interface ProductShelfLife {
   updatedAt: string;
 }
 
-interface ShelfLifesTabProps {
-  activeEmployee: any;
-}
-
-export default function ShelfLifesTab({ activeEmployee }: ShelfLifesTabProps) {
+export default function ShelfLifesTab() {
   const [editingShelfLife, setEditingShelfLife] = useState<ProductShelfLife | null>(null);
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();

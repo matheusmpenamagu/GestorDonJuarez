@@ -30,11 +30,7 @@ interface ProductPortion {
   updatedAt: string;
 }
 
-interface PortionsTabProps {
-  activeEmployee: any;
-}
-
-export default function PortionsTab({ activeEmployee }: PortionsTabProps) {
+export default function PortionsTab() {
   const [editingPortion, setEditingPortion] = useState<ProductPortion | null>(null);
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();
