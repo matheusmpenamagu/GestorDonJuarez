@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit, Trash2, Search, Calendar } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Calendar, Car, Clock, Route } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import FuelEntryForm from "./FuelEntryForm";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { FuelEntry } from "@shared/schema";
 
@@ -90,6 +90,44 @@ export default function FuelEntriesTab() {
     return employee ? `${employee.firstName} ${employee.lastName}` : 'Funcionário não encontrado';
   };
 
+  // Calcular informações de revisão para cada veículo
+  const getMaintenanceInfo = (vehicle: any) => {
+    // Encontrar último abastecimento do veículo
+    const vehicleFuelEntries = fuelEntries.filter((entry: any) => entry.vehicleId === vehicle.id);
+    const lastEntry = vehicleFuelEntries.length > 0 ? vehicleFuelEntries[0] : null;
+    
+    const info: any = {
+      kmRemaining: null,
+      daysRemaining: null,
+      status: 'unknown'
+    };
+
+    if (vehicle.nextMaintenanceKm && lastEntry) {
+      info.kmRemaining = vehicle.nextMaintenanceKm - lastEntry.currentKm;
+      if (info.kmRemaining <= 0) {
+        info.status = 'overdue_km';
+      } else if (info.kmRemaining <= 1000) {
+        info.status = 'warning_km';
+      } else {
+        info.status = 'ok_km';
+      }
+    }
+
+    if (vehicle.nextMaintenanceDate) {
+      const maintenanceDate = new Date(vehicle.nextMaintenanceDate);
+      const today = new Date();
+      info.daysRemaining = differenceInDays(maintenanceDate, today);
+      
+      if (info.daysRemaining <= 0) {
+        info.status = info.status === 'overdue_km' ? 'overdue_both' : 'overdue_date';
+      } else if (info.daysRemaining <= 30) {
+        info.status = info.status.includes('warning') || info.status.includes('overdue') ? info.status : 'warning_date';
+      }
+    }
+
+    return info;
+  };
+
   const handleEdit = (entry: FuelEntry) => {
     setSelectedEntry(entry);
     setIsDialogOpen(true);
@@ -115,6 +153,73 @@ export default function FuelEntriesTab() {
 
   return (
     <div className="space-y-6">
+      {/* Cards de veículos com informações de revisão */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {vehicles.map((vehicle: any) => {
+          const maintenanceInfo = getMaintenanceInfo(vehicle);
+          return (
+            <Card key={vehicle.id} className="border-l-4 border-l-blue-500">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Car className="h-5 w-5 text-blue-600" />
+                  {vehicle.name}
+                  <Badge variant="outline" className="text-xs">
+                    {vehicle.licensePlate}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-2">
+                  {maintenanceInfo.kmRemaining !== null && (
+                    <div className="flex items-center gap-2">
+                      <Route className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">
+                        Próxima revisão: 
+                        <span className={`ml-1 font-medium ${
+                          maintenanceInfo.status.includes('overdue') ? 'text-red-600' :
+                          maintenanceInfo.status.includes('warning') ? 'text-orange-600' :
+                          'text-green-600'
+                        }`}>
+                          {maintenanceInfo.kmRemaining > 0 
+                            ? `${maintenanceInfo.kmRemaining.toLocaleString('pt-BR')} km`
+                            : `${Math.abs(maintenanceInfo.kmRemaining).toLocaleString('pt-BR')} km atrasado`
+                          }
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {maintenanceInfo.daysRemaining !== null && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">
+                        <span className={`font-medium ${
+                          maintenanceInfo.daysRemaining <= 0 ? 'text-red-600' :
+                          maintenanceInfo.daysRemaining <= 30 ? 'text-orange-600' :
+                          'text-green-600'
+                        }`}>
+                          {maintenanceInfo.daysRemaining > 0 
+                            ? `${maintenanceInfo.daysRemaining} dias restantes`
+                            : maintenanceInfo.daysRemaining === 0 
+                              ? 'Revisão hoje!'
+                              : `${Math.abs(maintenanceInfo.daysRemaining)} dias atrasado`
+                          }
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {maintenanceInfo.kmRemaining === null && maintenanceInfo.daysRemaining === null && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      <span className="text-sm">Próxima revisão não definida</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
