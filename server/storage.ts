@@ -1592,16 +1592,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProductsByCategory(categoryId: number): Promise<Product[]> {
+    console.log('🔍 [STORAGE] === GET PRODUCTS BY CATEGORY ===');
+    console.log('🔍 [STORAGE] Category ID:', categoryId);
+    
     // First get the category name
     const category = await this.getProductCategory(categoryId);
+    console.log('🔍 [STORAGE] Found category:', category);
+    
     if (!category) {
+      console.log('❌ [STORAGE] Category not found, returning empty array');
       return [];
     }
     
+    console.log('🔍 [STORAGE] Searching products with stockCategory:', category.name);
+    
     // Filter products by stockCategory matching the category name
-    return await db.select().from(products)
+    const filteredProducts = await db.select().from(products)
       .where(eq(products.stockCategory, category.name))
       .orderBy(products.name);
+    
+    console.log('🔍 [STORAGE] Found', filteredProducts.length, 'products with matching stockCategory');
+    
+    // Also try searching all products to see what stockCategories exist
+    const allProducts = await db.select().from(products).limit(10);
+    console.log('🔍 [STORAGE] Sample of all products with their stockCategories:');
+    allProducts.forEach(product => {
+      console.log(`🔍 [STORAGE] - Product: ${product.name}, stockCategory: "${product.stockCategory}"`);
+    });
+    
+    console.log('🔍 [STORAGE] === END GET PRODUCTS BY CATEGORY ===');
+    return filteredProducts;
   }
 
   async getProduct(id: number): Promise<Product | undefined> {

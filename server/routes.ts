@@ -2711,13 +2711,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🛍️ [PRODUCTS] Found', products.length, 'products before shelf life filter');
       
       // Filter products that have shelf life data (for label generation)
+      console.log('🔍 [PRODUCTS] === SHELF LIFE FILTERING ===');
       const productsWithShelfLife = [];
       
       for (const product of products) {
+        console.log(`🔍 [PRODUCTS] Checking shelf life for product: ${product.name} (ID: ${product.id})`);
         try {
           const shelfLifes = await storage.getProductShelfLifesByProductId(product.id);
+          console.log(`🔍 [PRODUCTS] Found ${shelfLifes.length} shelf life records for ${product.name}`);
+          
           if (shelfLifes.length > 0) {
-            console.log('✅ [PRODUCTS] Product', product.name, 'has shelf life data');
+            console.log('✅ [PRODUCTS] Product', product.name, 'has shelf life data:', shelfLifes[0]);
             productsWithShelfLife.push(product);
           } else {
             console.log('❌ [PRODUCTS] Product', product.name, 'has no shelf life data, excluding');
@@ -2726,6 +2730,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('⚠️ [PRODUCTS] Error checking shelf life for product', product.name, ':', error);
         }
       }
+      
+      console.log('🔍 [PRODUCTS] === END SHELF LIFE FILTERING ===');
       
       console.log('🛍️ [PRODUCTS] Found', productsWithShelfLife.length, 'products with shelf life data');
       
