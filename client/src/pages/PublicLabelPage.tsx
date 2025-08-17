@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Loader2, Check, LogOut, QrCode } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChevronLeft, Loader2, Check, LogOut, QrCode, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 type PinUser = {
@@ -84,6 +88,11 @@ export default function PublicLabelPage() {
   const [portions, setPortions] = useState<ProductPortion[]>([]);
   const [shelfLife, setShelfLife] = useState<ProductShelfLife | null>(null);
   const [generatedLabels, setGeneratedLabels] = useState<Label[]>([]);
+  
+  // Portion creation states
+  const [isCreatePortionOpen, setIsCreatePortionOpen] = useState(false);
+  const [newPortionQuantity, setNewPortionQuantity] = useState('');
+  const [newPortionUnit, setNewPortionUnit] = useState('');
 
   // Auto-logout after 5 minutes of inactivity
   useEffect(() => {
@@ -480,6 +489,64 @@ export default function PublicLabelPage() {
     setGeneratedLabels(labels);
   };
 
+  const handleCreatePortion = async () => {
+    if (!selectedProduct || !newPortionQuantity || !newPortionUnit || !pinUser) return;
+
+    const quantity = parseFloat(newPortionQuantity);
+    if (isNaN(quantity) || quantity <= 0) {
+      toast({
+        title: "Quantidade inválida",
+        description: "Digite uma quantidade válida maior que zero",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const sessionId = pinUser.sessionId;
+      const response = await fetch('/api/labels/portions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionId}`,
+        },
+        body: JSON.stringify({
+          productId: selectedProduct.id,
+          quantity,
+          unitOfMeasure: newPortionUnit,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao criar porção');
+      }
+
+      const newPortion = await response.json();
+      setPortions(prev => [...prev, newPortion]);
+      
+      // Reset form
+      setNewPortionQuantity('');
+      setNewPortionUnit('');
+      setIsCreatePortionOpen(false);
+
+      toast({
+        title: "Porção criada com sucesso!",
+        description: `Nova porção de ${quantity} ${newPortionUnit} foi adicionada`,
+      });
+      
+    } catch (error) {
+      console.error('Error creating portion:', error);
+      toast({
+        title: "Erro ao criar porção",
+        description: "Houve um problema ao criar a porção. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleConfirmGeneration = async () => {
     if (generatedLabels.length === 0) return;
 
@@ -725,7 +792,68 @@ export default function PublicLabelPage() {
 
           {step === 'portion' && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Selecione o Porcionamento</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Selecione o Porcionamento</h2>
+                <Dialog open={isCreatePortionOpen} onOpenChange={setIsCreatePortionOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar Porção
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Nova Porção</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="quantity">Quantidade</Label>
+                        <Input
+                          id="quantity"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="Ex: 0.5, 1.25, 2"
+                          value={newPortionQuantity}
+                          onChange={(e) => setNewPortionQuantity(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="unit">Unidade</Label>
+                        <Select value={newPortionUnit} onValueChange={setNewPortionUnit}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a unidade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="KG">KG</SelectItem>
+                            <SelectItem value="L">L</SelectItem>
+                            <SelectItem value="UN">UN</SelectItem>
+                            <SelectItem value="G">G</SelectItem>
+                            <SelectItem value="ML">ML</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsCreatePortionOpen(false)}
+                          className="flex-1"
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          onClick={handleCreatePortion}
+                          disabled={loading || !newPortionQuantity || !newPortionUnit}
+                          className="flex-1"
+                        >
+                          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Criar"}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {portions.map((portion) => {
                   const smartUnit = formatSmartUnit(portion.quantity, portion.unitOfMeasure);
