@@ -4,6 +4,54 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, Loader2, Check, LogOut, QrCode, Minus, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import QRCodeLib from "qrcode";
+
+// Componente para cada card de etiqueta
+const LabelCard = ({ label }: { label: any }) => {
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  
+  // Gerar identificador de 6 dígitos a partir do identifier completo
+  const generateSixDigitId = (identifier: string) => {
+    // Extrair apenas os últimos 6 dígitos numéricos do timestamp
+    const match = identifier.match(/(\d+)/g);
+    if (match && match.length > 0) {
+      const timestamp = match[match.length - 2]; // Pega o timestamp antes do número final
+      return timestamp.slice(-6); // Últimos 6 dígitos
+    }
+    return '000000';
+  };
+
+  const sixDigitId = generateSixDigitId(label.identifier);
+
+  useEffect(() => {
+    // Gerar QR code com o ID de 6 dígitos
+    QRCodeLib.toDataURL(sixDigitId, {
+      width: 80,
+      margin: 1,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      }
+    })
+    .then(url => setQrCodeUrl(url))
+    .catch(err => console.error('Error generating QR code:', err));
+  }, [sixDigitId]);
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-2 text-center shadow-sm">
+      <div className="text-xs font-bold text-orange-600 mb-1">
+        {sixDigitId}
+      </div>
+      {qrCodeUrl && (
+        <img 
+          src={qrCodeUrl} 
+          alt={`QR ${sixDigitId}`}
+          className="w-full h-auto"
+        />
+      )}
+    </div>
+  );
+};
 
 type PinUser = {
   id: number;
@@ -1015,13 +1063,10 @@ export default function PublicLabelPage() {
                   
                   {generatedLabels.length > 0 && (
                     <div className="border-t pt-4">
-                      <p className="font-semibold mb-2">Prévia das Etiquetas:</p>
-                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                      <p className="font-semibold mb-4">Prévia das Etiquetas:</p>
+                      <div className="grid grid-cols-6 md:grid-cols-8 gap-2">
                         {generatedLabels.map((label, index) => (
-                          <div key={index} className="flex justify-between text-xs bg-gray-50 p-2 rounded">
-                            <span>{label.identifier}</span>
-                            <span>Vence: {new Date(label.expiryDate).toLocaleDateString('pt-BR')}</span>
-                          </div>
+                          <LabelCard key={index} label={label} />
                         ))}
                       </div>
                     </div>
