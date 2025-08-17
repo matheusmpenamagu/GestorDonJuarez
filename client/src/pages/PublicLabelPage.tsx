@@ -509,10 +509,10 @@ export default function PublicLabelPage() {
         expiryDays = shelfLife.frozenDays;
         break;
       case 'cooled':
-        expiryDays = shelfLife.cooledDays;
+        expiryDays = shelfLife.chilledDays; // Correct property name
         break;
       case 'ambient':
-        expiryDays = shelfLife.ambientDays;
+        expiryDays = shelfLife.roomTemperatureDays; // Correct property name
         break;
     }
 

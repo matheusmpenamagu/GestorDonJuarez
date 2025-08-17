@@ -2710,28 +2710,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('🛍️ [PRODUCTS] Found', products.length, 'products before shelf life filter');
       
-      // Filter products that have shelf life data (for label generation)
-      console.log('🔍 [PRODUCTS] === SHELF LIFE FILTERING ===');
-      const productsWithShelfLife = [];
+      // OPTIMIZATION: Get all shelf lives in one query instead of N queries
+      console.log('🔍 [PRODUCTS] === OPTIMIZED SHELF LIFE FILTERING ===');
+      const allShelfLives = await storage.getProductShelfLives();
+      const shelfLifeMap = new Map(allShelfLives.map(sl => [sl.productId, sl]));
       
-      for (const product of products) {
-        console.log(`🔍 [PRODUCTS] Checking shelf life for product: ${product.name} (ID: ${product.id})`);
-        try {
-          const shelfLife = await storage.getProductShelfLifeByProduct(product.id);
-          console.log(`🔍 [PRODUCTS] Shelf life result for ${product.name}:`, shelfLife ? 'FOUND' : 'NOT FOUND');
-          
-          if (shelfLife) {
-            console.log('✅ [PRODUCTS] Product', product.name, 'has shelf life data:', shelfLife);
-            productsWithShelfLife.push(product);
-          } else {
-            console.log('❌ [PRODUCTS] Product', product.name, 'has no shelf life data, excluding');
-          }
-        } catch (error) {
-          console.log('⚠️ [PRODUCTS] Error checking shelf life for product', product.name, ':', error);
+      const productsWithShelfLife = products.filter(product => {
+        const hasShelfLife = shelfLifeMap.has(product.id);
+        if (hasShelfLife) {
+          console.log('✅ [PRODUCTS] Product', product.name, 'has shelf life data');
+        } else {
+          console.log('❌ [PRODUCTS] Product', product.name, 'has no shelf life data, excluding');
         }
-      }
+        return hasShelfLife;
+      });
       
-      console.log('🔍 [PRODUCTS] === END SHELF LIFE FILTERING ===');
+      console.log('🔍 [PRODUCTS] === END OPTIMIZED SHELF LIFE FILTERING ===');
       
       console.log('🛍️ [PRODUCTS] Found', productsWithShelfLife.length, 'products with shelf life data');
       
