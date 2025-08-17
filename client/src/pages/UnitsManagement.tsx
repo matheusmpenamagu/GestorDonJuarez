@@ -234,7 +234,7 @@ export default function UnitsManagement() {
                 <Label htmlFor="cnpj">CNPJ</Label>
                 <Input
                   id="cnpj"
-                  placeholder="99.999.999/9999-99"
+                  placeholder="XX.XXX.XXX/XXXX-XX"
                   value={formData.cnpj}
                   onChange={(e) => {
                     const maskedValue = applyCnpjMask(e.target.value);

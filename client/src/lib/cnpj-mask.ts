@@ -1,4 +1,4 @@
-// Função para aplicar máscara de CNPJ no formato 99.999.999/9999-99
+// Função para aplicar máscara de CNPJ no formato XX.XXX.XXX/XXXX-XX
 export function applyCnpjMask(value: string): string {
   // Remove todos os caracteres não numéricos
   const numbers = value.replace(/\D/g, '');
@@ -6,13 +6,18 @@ export function applyCnpjMask(value: string): string {
   // Limita a 14 dígitos
   const limitedNumbers = numbers.slice(0, 14);
   
-  // Aplica a máscara
-  return limitedNumbers
-    .replace(/^(\d{2})(\d)/, '$1.$2')
-    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-    .replace(/\.(\d{3})(\d)/, '.$1.$2')
-    .replace(/\.(\d{3})\.(\d{3})(\d)/, '.$1.$2/$3')
-    .replace(/(\d{4})(\d)/, '$1-$2');
+  // Aplica a máscara progressivamente
+  if (limitedNumbers.length <= 2) {
+    return limitedNumbers;
+  } else if (limitedNumbers.length <= 5) {
+    return limitedNumbers.replace(/^(\d{2})(\d+)/, '$1.$2');
+  } else if (limitedNumbers.length <= 8) {
+    return limitedNumbers.replace(/^(\d{2})(\d{3})(\d+)/, '$1.$2.$3');
+  } else if (limitedNumbers.length <= 12) {
+    return limitedNumbers.replace(/^(\d{2})(\d{3})(\d{3})(\d+)/, '$1.$2.$3/$4');
+  } else {
+    return limitedNumbers.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d+)/, '$1.$2.$3/$4-$5');
+  }
 }
 
 // Função para remover a máscara e retornar apenas números
