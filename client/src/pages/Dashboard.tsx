@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TapCard } from "@/components/TapCard";
 import { RealtimePours } from "@/components/RealtimePours";
+import LabelStatusCards from "@/components/LabelStatusCards";
 import { TapWithRelations } from "@shared/schema";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { Beer, TrendingUp, BarChart3, AlertTriangle, Wind, Activity, TrendingDown } from "lucide-react";
@@ -89,33 +90,6 @@ export default function Dashboard() {
     return { value: `${isPositive ? '+' : '-'}${formatted}%`, isPositive };
   };
 
-  const statsCards = [
-    {
-      title: "Torneiras Ativas",
-      value: stats?.activeTaps || 0,
-      icon: Beer,
-      color: "text-primary",
-    },
-    {
-      title: "Hoje (Litros)",
-      value: stats?.todayVolumeLiters || 0,
-      icon: BarChart3,
-      color: "text-green-600",
-    },
-    {
-      title: "Esta Semana",
-      value: stats?.weekVolumeLiters || 0,
-      icon: TrendingUp,
-      color: "text-blue-600",
-    },
-    {
-      title: "Barris Baixos",
-      value: stats?.lowKegs || 0,
-      icon: AlertTriangle,
-      color: "text-red-600",
-    },
-  ];
-
   return (
     <div className="space-y-8">
       {/* Consumo de Chopes Box */}
@@ -129,32 +103,9 @@ export default function Dashboard() {
         <CardContent className="space-y-6">
           {/* Top Row: Metrics and Real-time Activity */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left Half: Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {statsCards.map((stat, index) => {
-                const Icon = stat.icon;
-                return (
-                  <Card key={index} className="border-dashed">
-                    <CardContent className="p-4">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <Icon className={`h-5 w-5 ${stat.color}`} />
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-xs font-medium text-muted-foreground">
-                            {stat.title}
-                          </p>
-                          <p className="text-lg font-bold text-foreground">
-                            {typeof stat.value === "number"
-                              ? stat.value.toLocaleString("pt-BR")
-                              : stat.value}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+            {/* Left Half: Labels Status Overview */}
+            <div>
+              <LabelStatusCards compact={true} />
             </div>
 
             {/* Right Half: Real-time Activity */}

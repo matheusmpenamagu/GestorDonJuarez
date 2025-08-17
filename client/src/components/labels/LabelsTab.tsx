@@ -13,10 +13,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Edit, Trash2, Calendar, QrCode, User, AlertTriangle, Clock, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import LabelForm from "./LabelForm";
+import LabelStatusCards from "@/components/LabelStatusCards";
 
 interface Product {
   id: number;
@@ -52,7 +52,7 @@ interface Label {
   updatedAt: string;
 }
 
-type FilterType = 'all' | 'expiring_today' | 'expiring_tomorrow' | 'expiring_week';
+type FilterType = 'all' | 'expiring_today' | 'expiring_tomorrow' | 'valid_week';
 
 export default function LabelsTab() {
   const [editingLabel, setEditingLabel] = useState<Label | null>(null);
@@ -160,7 +160,7 @@ export default function LabelsTab() {
     return expiry >= today && expiry <= tomorrow;
   };
 
-  // Filter functions
+  // Filter functions (reused from LabelStatusCards component logic)
   const isExpiringToday = (expiryDate: string) => {
     const expiry = startOfDay(new Date(expiryDate));
     const today = startOfDay(new Date());
@@ -179,11 +179,6 @@ export default function LabelsTab() {
     return expiry.getTime() > weekFromNow.getTime();
   };
 
-  // Count labels by category
-  const expiringTodayCount = labels.filter(label => isExpiringToday(label.expiryDate)).length;
-  const expiringTomorrowCount = labels.filter(label => isExpiringTomorrow(label.expiryDate)).length;
-  const validMoreThan7DaysCount = labels.filter(label => isValidMoreThan7Days(label.expiryDate)).length;
-
   // Filter labels based on active filter
   const filteredLabels = labels.filter(label => {
     switch (activeFilter) {
@@ -191,7 +186,7 @@ export default function LabelsTab() {
         return isExpiringToday(label.expiryDate);
       case 'expiring_tomorrow':
         return isExpiringTomorrow(label.expiryDate);
-      case 'expiring_week':
+      case 'valid_week':
         return isValidMoreThan7Days(label.expiryDate);
       default:
         return true;
@@ -235,67 +230,10 @@ export default function LabelsTab() {
       </div>
 
       {/* Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-md border-l-4 border-l-red-500 ${
-            activeFilter === 'expiring_today' ? 'ring-2 ring-red-500 bg-red-50 dark:bg-red-950' : 'hover:bg-red-50 dark:hover:bg-red-950'
-          }`}
-          onClick={() => setActiveFilter(activeFilter === 'expiring_today' ? 'all' : 'expiring_today')}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-red-700 dark:text-red-300">
-              Vencendo Hoje
-            </CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-700 dark:text-red-300">{expiringTodayCount}</div>
-            <CardDescription className="text-red-600 dark:text-red-400">
-              {expiringTodayCount === 1 ? 'etiqueta vencendo' : 'etiquetas vencendo'}
-            </CardDescription>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-md border-l-4 border-l-yellow-500 ${
-            activeFilter === 'expiring_tomorrow' ? 'ring-2 ring-yellow-500 bg-yellow-50 dark:bg-yellow-950' : 'hover:bg-yellow-50 dark:hover:bg-yellow-950'
-          }`}
-          onClick={() => setActiveFilter(activeFilter === 'expiring_tomorrow' ? 'all' : 'expiring_tomorrow')}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
-              Vencendo Amanhã
-            </CardTitle>
-            <Clock className="h-4 w-4 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{expiringTomorrowCount}</div>
-            <CardDescription className="text-yellow-600 dark:text-yellow-400">
-              {expiringTomorrowCount === 1 ? 'etiqueta vencendo' : 'etiquetas vencendo'}
-            </CardDescription>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-md border-l-4 border-l-green-500 ${
-            activeFilter === 'expiring_week' ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950' : 'hover:bg-green-50 dark:hover:bg-green-950'
-          }`}
-          onClick={() => setActiveFilter(activeFilter === 'expiring_week' ? 'all' : 'expiring_week')}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300">
-              Válidas por +7 Dias
-            </CardTitle>
-            <CalendarDays className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700 dark:text-green-300">{validMoreThan7DaysCount}</div>
-            <CardDescription className="text-green-600 dark:text-green-400">
-              {validMoreThan7DaysCount === 1 ? 'etiqueta válida' : 'etiquetas válidas'}
-            </CardDescription>
-          </CardContent>
-        </Card>
-      </div>
+      <LabelStatusCards 
+        activeFilter={activeFilter}
+        onFilterChange={setActiveFilter}
+      />
 
       {/* Filter indicator */}
       {activeFilter !== 'all' && (
@@ -303,7 +241,7 @@ export default function LabelsTab() {
           <Badge variant="outline" className="flex items-center gap-1">
             {activeFilter === 'expiring_today' && <AlertTriangle className="w-3 h-3 text-red-600" />}
             {activeFilter === 'expiring_tomorrow' && <Clock className="w-3 h-3 text-yellow-600" />}
-            {activeFilter === 'expiring_week' && <CalendarDays className="w-3 h-3 text-green-600" />}
+            {activeFilter === 'valid_week' && <CalendarDays className="w-3 h-3 text-green-600" />}
             Filtro ativo: {
               activeFilter === 'expiring_today' ? 'Vencendo hoje' :
               activeFilter === 'expiring_tomorrow' ? 'Vencendo amanhã' :
