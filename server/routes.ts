@@ -4743,6 +4743,68 @@ ${message}
     }
   });
 
+  // Rota para buscar etiqueta pelo identificador QR
+  app.get('/api/labels/qr/:identifier', requireAuth, async (req, res) => {
+    try {
+      console.log('🔍 [QR-SEARCH] === SEARCHING LABEL BY QR ===');
+      console.log('🔍 [QR-SEARCH] Identifier:', req.params.identifier);
+      
+      const identifier = req.params.identifier;
+      const label = await storage.getLabelByIdentifier(identifier);
+      
+      if (!label) {
+        console.log('❌ [QR-SEARCH] Label not found');
+        return res.status(404).json({ message: "Etiqueta não encontrada" });
+      }
+      
+      console.log('✅ [QR-SEARCH] Label found:', JSON.stringify(label, null, 2));
+      console.log('🔍 [QR-SEARCH] === END QR SEARCH ===');
+      res.json(label);
+    } catch (error) {
+      console.error('❌ [QR-SEARCH] Error searching label:', error);
+      res.status(500).json({ message: "Error searching label" });
+    }
+  });
+
+  // Rota para dar baixa numa etiqueta
+  app.patch('/api/labels/:id/withdrawal', requireAuth, async (req, res) => {
+    try {
+      console.log('📤 [WITHDRAWAL] === PROCESSING LABEL WITHDRAWAL ===');
+      const id = parseInt(req.params.id);
+      console.log('📤 [WITHDRAWAL] Label ID:', id);
+      console.log('📤 [WITHDRAWAL] Request body:', JSON.stringify(req.body, null, 2));
+      
+      // Buscar dados do usuário autenticado
+      const user = (req as any).user;
+      const withdrawalResponsibleId = user?.employee?.id || user?.pinEmployee?.id || req.body.withdrawalResponsibleId;
+      
+      console.log('📤 [WITHDRAWAL] Withdrawal responsible ID:', withdrawalResponsibleId);
+      
+      if (!withdrawalResponsibleId) {
+        console.log('❌ [WITHDRAWAL] No responsible user found');
+        return res.status(400).json({ message: "Usuário responsável não identificado" });
+      }
+      
+      const withdrawalData = {
+        withdrawalDate: new Date(),
+        withdrawalResponsibleId,
+      };
+      
+      console.log('📤 [WITHDRAWAL] Withdrawal data:', JSON.stringify(withdrawalData, null, 2));
+      
+      const label = await storage.updateLabelWithdrawal(id, withdrawalData);
+      
+      console.log('✅ [WITHDRAWAL] Label withdrawal processed:', JSON.stringify(label, null, 2));
+      console.log('📤 [WITHDRAWAL] === END WITHDRAWAL PROCESSING ===');
+      
+      res.json(label);
+    } catch (error) {
+      console.error('❌ [WITHDRAWAL] Error processing withdrawal:', error);
+      console.log('📤 [WITHDRAWAL] === END WITHDRAWAL PROCESSING (WITH ERROR) ===');
+      res.status(500).json({ message: "Error processing withdrawal" });
+    }
+  });
+
   // Fuel Entries routes
   app.get('/api/fleet/fuel-entries', requireAuth, async (req, res) => {
     try {

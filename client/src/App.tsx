@@ -28,6 +28,7 @@ import CompanySettings from "@/pages/CompanySettings";
 import CashRegisterManagement from "@/pages/CashRegisterManagement";
 import LabelsPage from "@/pages/LabelsPage";
 import PublicLabelPage from "@/pages/PublicLabelPage";
+import WithdrawalPage from "@/pages/WithdrawalPage";
 import Privacy from "@/pages/Privacy";
 import TermsOfUse from "@/pages/TermsOfUse";
 import NotFound from "@/pages/not-found";
@@ -52,6 +53,7 @@ function Router() {
       <Route path="/contagem-publica/:token" component={PublicStockCount} />
       <Route path="/etiquetas" component={PublicLabelPage} />
       <Route path="/public/etiquetas" component={PublicLabelPage} />
+      <Route path="/public/baixa-etiquetas" component={WithdrawalPage} />
       <Route path="/privacidade" component={Privacy} />
       <Route path="/termos-de-uso" component={TermsOfUse} />
       

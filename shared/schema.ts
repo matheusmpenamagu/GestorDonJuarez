@@ -288,6 +288,9 @@ export const labels = pgTable("labels", {
   expiryDate: timestamp("expiry_date").notNull(), // Data de validade
   storageMethod: varchar("storage_method", { length: 30 }).notNull(), // Forma de armazenamento: "congelado", "resfriado", "temperatura_ambiente"
   identifier: varchar("identifier", { length: 6 }).notNull().unique(), // Identificador alfanumérico de 6 dígitos
+  // Campos de baixa do estoque (quando item é vendido)
+  withdrawalDate: timestamp("withdrawal_date"), // Data/hora da baixa
+  withdrawalResponsibleId: integer("withdrawal_responsible_id").references(() => employees.id), // Responsável pela baixa
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -449,6 +452,10 @@ export const labelsRelations = relations(labels, ({ one }) => ({
   }),
   responsible: one(employees, {
     fields: [labels.responsibleId],
+    references: [employees.id],
+  }),
+  withdrawalResponsible: one(employees, {
+    fields: [labels.withdrawalResponsibleId],
     references: [employees.id],
   }),
   portion: one(productPortions, {

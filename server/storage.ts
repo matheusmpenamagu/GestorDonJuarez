@@ -301,6 +301,8 @@ export interface IStorage {
   createLabel(label: InsertLabel): Promise<Label>;
   updateLabel(id: number, label: Partial<InsertLabel>): Promise<Label>;
   deleteLabel(id: number): Promise<void>;
+  getLabelByIdentifier(identifier: string): Promise<Label | null>;
+  updateLabelWithdrawal(id: number, withdrawalData: { withdrawalDate: Date; withdrawalResponsibleId: number }): Promise<Label>;
   generateLabelIdentifier(): Promise<string>;
 }
 
@@ -2441,6 +2443,34 @@ export class DatabaseStorage implements IStorage {
 
   async deleteLabel(id: number): Promise<void> {
     await db.delete(labels).where(eq(labels.id, id));
+  }
+
+  async getLabelByIdentifier(identifier: string): Promise<Label | null> {
+    const [label] = await db
+      .select()
+      .from(labels)
+      .where(eq(labels.identifier, identifier))
+      .limit(1);
+    
+    return label || null;
+  }
+
+  async updateLabelWithdrawal(id: number, withdrawalData: { withdrawalDate: Date; withdrawalResponsibleId: number }): Promise<Label> {
+    const [label] = await db
+      .update(labels)
+      .set({ 
+        withdrawalDate: withdrawalData.withdrawalDate,
+        withdrawalResponsibleId: withdrawalData.withdrawalResponsibleId,
+        updatedAt: new Date() 
+      })
+      .where(eq(labels.id, id))
+      .returning();
+    
+    if (!label) {
+      throw new Error(`Label with id ${id} not found`);
+    }
+    
+    return label;
   }
 
   async generateLabelIdentifier(): Promise<string> {
