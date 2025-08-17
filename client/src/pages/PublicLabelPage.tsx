@@ -500,8 +500,8 @@ export default function PublicLabelPage() {
     
     setSelectedQuantity(quantity);
     setStep('confirmation');
-    console.log('🔢 [QUANTITY] Calling generatePreview()...');
-    generatePreview();
+    console.log('🔢 [QUANTITY] Calling generatePreview() with quantity:', quantity);
+    generatePreview(quantity);
     console.log('🔢 [QUANTITY] === END QUANTITY SELECTION ===');
   };
 
@@ -532,7 +532,8 @@ export default function PublicLabelPage() {
     }
   };
 
-  const generatePreview = () => {
+  const generatePreview = (quantity?: number) => {
+    const quantityToUse = quantity || selectedQuantity;
     console.log('📋 [PREVIEW] === GENERATING PREVIEW LABELS ===');
     console.log('📋 [PREVIEW] Checking required data...');
     console.log('📋 [PREVIEW] - selectedProduct:', selectedProduct);
@@ -540,7 +541,7 @@ export default function PublicLabelPage() {
     console.log('📋 [PREVIEW] - selectedStorage:', selectedStorage);
     console.log('📋 [PREVIEW] - shelfLife:', shelfLife);
     console.log('📋 [PREVIEW] - pinUser:', pinUser);
-    console.log('📋 [PREVIEW] - selectedQuantity:', selectedQuantity);
+    console.log('📋 [PREVIEW] - quantityToUse:', quantityToUse);
     
     if (!selectedProduct || !selectedPortion || !selectedStorage || !shelfLife || !pinUser) {
       console.log('❌ [PREVIEW] Missing required data, aborting preview generation');
@@ -571,7 +572,7 @@ export default function PublicLabelPage() {
     console.log('📋 [PREVIEW] Expiry date:', expiryDate.toISOString().split('T')[0]);
 
     const labels: Label[] = [];
-    for (let i = 0; i < selectedQuantity; i++) {
+    for (let i = 0; i < quantityToUse; i++) {
       const label = {
         productId: selectedProduct.id,
         responsibleId: pinUser.id,
@@ -580,7 +581,7 @@ export default function PublicLabelPage() {
         quantity: 1,
         productionDate,
         expiryDate: expiryDate.toISOString().split('T')[0],
-        identifier: `${selectedProduct.code}-${Date.now()}-${i + 1}`,
+        identifier: `${selectedProduct.code}-${Date.now() + i}-${i + 1}`,
       };
       labels.push(label);
       console.log(`📋 [PREVIEW] Generated label ${i + 1}:`, label);
