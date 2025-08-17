@@ -1591,6 +1591,12 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(products).orderBy(products.name);
   }
 
+  async getProductsByCategory(categoryId: number): Promise<Product[]> {
+    return await db.select().from(products)
+      .where(eq(products.productCategoryId, categoryId))
+      .orderBy(products.name);
+  }
+
   async getProduct(id: number): Promise<Product | undefined> {
     const [product] = await db.select().from(products).where(eq(products.id, id));
     return product;

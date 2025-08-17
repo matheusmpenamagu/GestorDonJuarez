@@ -285,26 +285,42 @@ export default function PublicLabelPage() {
   };
 
   const fetchProducts = async (categoryId: number) => {
+    console.log('🛍️ [CLIENT] === FETCHING PRODUCTS ===');
+    console.log('🛍️ [CLIENT] Category ID:', categoryId);
+    
     try {
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       };
       
       if (pinUser?.sessionId) {
+        console.log('🛍️ [CLIENT] Using PIN sessionId:', pinUser.sessionId);
         headers['Authorization'] = `Bearer ${pinUser.sessionId}`;
       }
       
-      const response = await fetch(`/api/products?categoryId=${categoryId}`, {
+      const url = `/api/products?categoryId=${categoryId}`;
+      console.log('🛍️ [CLIENT] Request URL:', url);
+      
+      const response = await fetch(url, {
         credentials: 'include',
         headers
       });
+      
+      console.log('🛍️ [CLIENT] Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ [CLIENT] Products fetched successfully:', data.length, 'products');
+        console.log('🛍️ [CLIENT] First few products:', data.slice(0, 3));
         setProducts(data);
+      } else {
+        const errorData = await response.json();
+        console.log('❌ [CLIENT] Failed to fetch products:', errorData);
       }
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('❌ [CLIENT] Error fetching products:', error);
     }
+    console.log('🛍️ [CLIENT] === END FETCHING PRODUCTS ===');
   };
 
   const fetchPortions = async (productId: number) => {
@@ -344,6 +360,7 @@ export default function PublicLabelPage() {
   };
 
   const handleCategorySelect = (category: ProductCategory) => {
+    console.log('📋 [CLIENT] Selected category:', category);
     setSelectedCategory(category);
     setStep('product');
     fetchProducts(category.id);

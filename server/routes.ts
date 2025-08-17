@@ -2695,14 +2695,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Products routes
   app.get('/api/products', requireAuth, async (req, res) => {
     try {
-      const products = await storage.getProducts();
+      const { categoryId } = req.query;
+      console.log('🛍️ [PRODUCTS] Fetching products with filters:', { categoryId });
       
-      // For each product, get its associated units
+      // Get products, optionally filtered by category
+      const products = categoryId 
+        ? await storage.getProductsByCategory(Number(categoryId))
+        : await storage.getProducts();
+      
+      console.log('🛍️ [PRODUCTS] Found', products.length, 'products before shelf life filter');
+      
+      // Filter products that have shelf life data (for label generation)
+      const productsWithShelfLife = [];
+      
+      for (const product of products) {
+        try {
+          const shelfLifes = await storage.getProductShelfLifesByProductId(product.id);
+          if (shelfLifes.length > 0) {
+            console.log('✅ [PRODUCTS] Product', product.name, 'has shelf life data');
+            productsWithShelfLife.push(product);
+          } else {
+            console.log('❌ [PRODUCTS] Product', product.name, 'has no shelf life data, excluding');
+          }
+        } catch (error) {
+          console.log('⚠️ [PRODUCTS] Error checking shelf life for product', product.name, ':', error);
+        }
+      }
+      
+      console.log('🛍️ [PRODUCTS] Found', productsWithShelfLife.length, 'products with shelf life data');
+      
+      // For each product with shelf life, get its associated units
       const units = await storage.getUnits();
       const unitsMap = new Map(units.map(unit => [unit.id, unit.name]));
       
       const productsWithUnits = await Promise.all(
-        products.map(async (product) => {
+        productsWithShelfLife.map(async (product) => {
           // Get all associated units from product_units relationship table
           const productUnits = await storage.getProductUnits(product.id);
           
@@ -2718,6 +2745,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
       
+      console.log('🛍️ [PRODUCTS] Returning', productsWithUnits.length, 'final products');
       res.json(productsWithUnits);
     } catch (error) {
       console.error("Error fetching products:", error);
