@@ -301,7 +301,7 @@ export default function PublicLabelPage() {
         headers['Authorization'] = `Bearer ${pinUser.sessionId}`;
       }
       
-      const url = `/api/products?categoryId=${categoryId}`;
+      const url = `/api/products?categoryId=${categoryId}&includeShelfLifeFilter=true`;
       console.log('🛍️ [CLIENT] Request URL:', url);
       
       const response = await fetch(url, {

@@ -2695,8 +2695,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Products routes
   app.get('/api/products', requireAuth, async (req, res) => {
     try {
-      const { categoryId } = req.query;
-      console.log('🛍️ [PRODUCTS] Fetching products with filters:', { categoryId });
+      const { categoryId, includeShelfLifeFilter } = req.query;
+      console.log('🛍️ [PRODUCTS] Fetching products with filters:', { categoryId, includeShelfLifeFilter });
       
       // Get products, optionally filtered by category
       let products;
@@ -2708,33 +2708,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         products = await storage.getProducts();
       }
       
-      console.log('🛍️ [PRODUCTS] Found', products.length, 'products before shelf life filter');
+      console.log('🛍️ [PRODUCTS] Found', products.length, 'products');
       
-      // OPTIMIZATION: Get all shelf lives in one query instead of N queries
-      console.log('🔍 [PRODUCTS] === OPTIMIZED SHELF LIFE FILTERING ===');
-      const allShelfLives = await storage.getProductShelfLives();
-      const shelfLifeMap = new Map(allShelfLives.map(sl => [sl.productId, sl]));
-      
-      const productsWithShelfLife = products.filter(product => {
-        const hasShelfLife = shelfLifeMap.has(product.id);
-        if (hasShelfLife) {
-          console.log('✅ [PRODUCTS] Product', product.name, 'has shelf life data');
-        } else {
-          console.log('❌ [PRODUCTS] Product', product.name, 'has no shelf life data, excluding');
+      // Only filter by shelf life if explicitly requested (for label generation)
+      let finalProducts = products;
+      if (includeShelfLifeFilter === 'true') {
+        console.log('🔍 [PRODUCTS] === OPTIMIZED SHELF LIFE FILTERING ===');
+        try {
+          const allShelfLives = await storage.getProductShelfLifes();
+          const shelfLifeMap = new Map(allShelfLives.map((sl: any) => [sl.productId, sl]));
+          
+          finalProducts = products.filter(product => {
+            const hasShelfLife = shelfLifeMap.has(product.id);
+            return hasShelfLife;
+          });
+          
+          console.log('🔍 [PRODUCTS] === END OPTIMIZED SHELF LIFE FILTERING ===');
+          console.log('🛍️ [PRODUCTS] Found', finalProducts.length, 'products with shelf life data');
+        } catch (error) {
+          console.error('⚠️ [PRODUCTS] Error during shelf life filtering:', error);
+          // Fall back to all products if shelf life filtering fails
+          finalProducts = products;
         }
-        return hasShelfLife;
-      });
+      }
       
-      console.log('🔍 [PRODUCTS] === END OPTIMIZED SHELF LIFE FILTERING ===');
-      
-      console.log('🛍️ [PRODUCTS] Found', productsWithShelfLife.length, 'products with shelf life data');
-      
-      // For each product with shelf life, get its associated units
+      // For each product, get its associated units
       const units = await storage.getUnits();
       const unitsMap = new Map(units.map(unit => [unit.id, unit.name]));
       
       const productsWithUnits = await Promise.all(
-        productsWithShelfLife.map(async (product) => {
+        finalProducts.map(async (product) => {
           // Get all associated units from product_units relationship table
           const productUnits = await storage.getProductUnits(product.id);
           
