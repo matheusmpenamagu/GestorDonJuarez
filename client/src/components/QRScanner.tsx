@@ -104,21 +104,33 @@ export function QRScanner({ onScan, onClose, isActive = true }: QRScannerProps) 
 
   if (hasPermission === false) {
     return (
-      <Card className="w-full max-w-md mx-auto">
-        <CardContent className="p-6 text-center">
-          <Camera className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">Permissão da Câmera Necessária</h3>
-          <p className="text-muted-foreground mb-4">
-            Para escanear códigos QR, precisamos acessar sua câmera.
+      <Card className="w-full max-w-2xl mx-auto shadow-lg">
+        <CardContent className="p-12 text-center">
+          <Camera className="h-20 w-20 mx-auto mb-8 text-orange-400" />
+          <h3 className="text-3xl font-bold mb-6 text-gray-900">Permissão da Câmera Necessária</h3>
+          <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
+            Para escanear códigos QR das etiquetas, precisamos acessar a câmera do seu dispositivo.
           </p>
-          <Button onClick={startCamera} className="w-full">
-            Permitir Acesso à Câmera
-          </Button>
-          {onClose && (
-            <Button variant="outline" onClick={onClose} className="w-full mt-2">
-              Cancelar
+          <div className="space-y-4">
+            <Button 
+              onClick={startCamera} 
+              className="w-full text-xl py-6 bg-orange-600 hover:bg-orange-700 rounded-xl font-semibold"
+              size="lg"
+            >
+              <Camera className="h-6 w-6 mr-3" />
+              Permitir Acesso à Câmera
             </Button>
-          )}
+            {onClose && (
+              <Button 
+                variant="outline" 
+                onClick={onClose} 
+                className="w-full text-xl py-6 border-2 rounded-xl font-semibold hover:bg-gray-50"
+                size="lg"
+              >
+                Cancelar
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
     );
@@ -126,32 +138,43 @@ export function QRScanner({ onScan, onClose, isActive = true }: QRScannerProps) 
 
   if (error) {
     return (
-      <Card className="w-full max-w-md mx-auto">
-        <CardContent className="p-6 text-center">
-          <X className="h-12 w-12 mx-auto mb-4 text-red-500" />
-          <h3 className="text-lg font-semibold mb-2">Erro na Câmera</h3>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          <Button onClick={startCamera} className="w-full">
-            Tentar Novamente
-          </Button>
-          {onClose && (
-            <Button variant="outline" onClick={onClose} className="w-full mt-2">
-              Cancelar
+      <Card className="w-full max-w-2xl mx-auto shadow-lg">
+        <CardContent className="p-12 text-center">
+          <X className="h-20 w-20 mx-auto mb-8 text-red-500" />
+          <h3 className="text-3xl font-bold mb-6 text-red-700">Erro na Câmera</h3>
+          <p className="text-xl text-muted-foreground mb-8 leading-relaxed">{error}</p>
+          <div className="space-y-4">
+            <Button 
+              onClick={startCamera} 
+              className="w-full text-xl py-6 bg-orange-600 hover:bg-orange-700 rounded-xl font-semibold"
+              size="lg"
+            >
+              Tentar Novamente
             </Button>
-          )}
+            {onClose && (
+              <Button 
+                variant="outline" 
+                onClick={onClose} 
+                className="w-full text-xl py-6 border-2 rounded-xl font-semibold hover:bg-gray-50"
+                size="lg"
+              >
+                Cancelar
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <div className="w-full max-w-lg mx-auto">
-      <Card>
-        <CardContent className="p-4">
+    <div className="w-full max-w-2xl mx-auto">
+      <Card className="shadow-lg">
+        <CardContent className="p-8">
           <div className="relative">
             <video
               ref={videoRef}
-              className="w-full rounded-lg"
+              className="w-full rounded-xl border-4 border-orange-200"
               playsInline
               muted
               autoPlay
@@ -164,27 +187,33 @@ export function QRScanner({ onScan, onClose, isActive = true }: QRScannerProps) 
             {/* Scanner overlay */}
             <div className="absolute inset-0 pointer-events-none">
               <div className="flex items-center justify-center h-full">
-                <div className="w-48 h-48 border-2 border-primary rounded-lg bg-transparent relative">
-                  <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-primary"></div>
-                  <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-primary"></div>
-                  <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-primary"></div>
-                  <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-primary"></div>
+                <div className="w-64 h-64 border-4 border-orange-500 rounded-2xl bg-transparent relative animate-pulse">
+                  <div className="absolute -top-1 -left-1 w-12 h-12 border-t-8 border-l-8 border-orange-500 rounded-tl-2xl"></div>
+                  <div className="absolute -top-1 -right-1 w-12 h-12 border-t-8 border-r-8 border-orange-500 rounded-tr-2xl"></div>
+                  <div className="absolute -bottom-1 -left-1 w-12 h-12 border-b-8 border-l-8 border-orange-500 rounded-bl-2xl"></div>
+                  <div className="absolute -bottom-1 -right-1 w-12 h-12 border-b-8 border-r-8 border-orange-500 rounded-br-2xl"></div>
                 </div>
               </div>
             </div>
           </div>
           
-          <p className="text-center text-muted-foreground mt-4">
-            Aponte a câmera para o código QR da etiqueta
-          </p>
+          <div className="text-center mt-8 space-y-3">
+            <p className="text-2xl text-gray-700 font-semibold">
+              Posicione o QR Code dentro do quadrado
+            </p>
+            <p className="text-lg text-muted-foreground">
+              A leitura será automática quando detectado
+            </p>
+          </div>
           
           {onClose && (
             <Button 
               variant="outline" 
               onClick={onClose} 
-              className="w-full mt-4"
+              className="w-full mt-8 text-xl py-6 border-2 rounded-xl font-semibold hover:bg-gray-50"
+              size="lg"
             >
-              Cancelar
+              Cancelar Scanner
             </Button>
           )}
         </CardContent>
