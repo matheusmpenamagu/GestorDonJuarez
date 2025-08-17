@@ -366,19 +366,46 @@ export default function PublicLabelPage() {
   };
 
   const fetchShelfLife = async (productId: number) => {
+    console.log('⏰ [SHELF-LIFE] === FETCHING SHELF LIFE ===');
+    console.log('⏰ [SHELF-LIFE] Product ID:', productId);
+    
     try {
-      const response = await fetch(`/api/labels/shelf-lifes?productId=${productId}`, {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (pinUser?.sessionId) {
+        console.log('⏰ [SHELF-LIFE] Using PIN sessionId:', pinUser.sessionId);
+        headers['Authorization'] = `Bearer ${pinUser.sessionId}`;
+      }
+      
+      const url = `/api/labels/shelf-lifes?productId=${productId}`;
+      console.log('⏰ [SHELF-LIFE] Request URL:', url);
+      
+      const response = await fetch(url, {
         credentials: 'include',
+        headers
       });
+      
+      console.log('⏰ [SHELF-LIFE] Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('⏰ [SHELF-LIFE] Response data:', data);
         if (data.length > 0) {
+          console.log('✅ [SHELF-LIFE] Shelf life found:', data[0]);
           setShelfLife(data[0]);
+        } else {
+          console.log('❌ [SHELF-LIFE] No shelf life data found for product');
         }
+      } else {
+        const errorData = await response.json();
+        console.log('❌ [SHELF-LIFE] Failed to fetch shelf life:', errorData);
       }
     } catch (error) {
-      console.error('Error fetching shelf life:', error);
+      console.error('❌ [SHELF-LIFE] Error fetching shelf life:', error);
     }
+    console.log('⏰ [SHELF-LIFE] === END FETCHING SHELF LIFE ===');
   };
 
   const handleUnitSelect = (unit: Unit) => {
@@ -395,7 +422,9 @@ export default function PublicLabelPage() {
   };
 
   const handleProductSelect = (product: Product) => {
+    console.log('🛍️ [PRODUCT-SELECT] Selected product:', product);
     setSelectedProduct(product);
+    console.log('🛍️ [PRODUCT-SELECT] Fetching portions and shelf life...');
     fetchPortions(product.id);
     fetchShelfLife(product.id);
     setStep('portion');
