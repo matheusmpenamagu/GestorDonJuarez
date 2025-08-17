@@ -4805,6 +4805,68 @@ ${message}
     }
   });
 
+  // Rota para baixa em massa de etiquetas
+  app.post('/api/labels/bulk-withdrawal', requireAuth, async (req, res) => {
+    try {
+      console.log('📦 [BULK-WITHDRAWAL] === PROCESSING BULK LABEL WITHDRAWAL ===');
+      console.log('📦 [BULK-WITHDRAWAL] Request body:', JSON.stringify(req.body, null, 2));
+      
+      const { labelIds, withdrawalDateTime } = req.body;
+      
+      if (!labelIds || !Array.isArray(labelIds) || labelIds.length === 0) {
+        console.log('❌ [BULK-WITHDRAWAL] Invalid label IDs');
+        return res.status(400).json({ message: "IDs de etiquetas inválidos" });
+      }
+      
+      // Buscar dados do usuário autenticado
+      const user = (req as any).user;
+      const withdrawalResponsibleId = user?.employee?.id || user?.pinEmployee?.id || user?.id;
+      
+      console.log('📦 [BULK-WITHDRAWAL] Withdrawal responsible ID:', withdrawalResponsibleId);
+      
+      if (!withdrawalResponsibleId) {
+        console.log('❌ [BULK-WITHDRAWAL] No responsible user found');
+        return res.status(400).json({ message: "Usuário responsável não identificado" });
+      }
+      
+      const withdrawalDate = withdrawalDateTime ? new Date(withdrawalDateTime) : new Date();
+      console.log('📦 [BULK-WITHDRAWAL] Withdrawal date:', withdrawalDate);
+      
+      let processedCount = 0;
+      const errors: any[] = [];
+      
+      // Processar cada etiqueta individualmente
+      for (const labelId of labelIds) {
+        try {
+          const withdrawalData = {
+            withdrawalDate,
+            withdrawalResponsibleId,
+          };
+          
+          await storage.updateLabelWithdrawal(labelId, withdrawalData);
+          processedCount++;
+          console.log(`✅ [BULK-WITHDRAWAL] Label ${labelId} processed successfully`);
+        } catch (error) {
+          console.error(`❌ [BULK-WITHDRAWAL] Error processing label ${labelId}:`, error);
+          errors.push({ labelId, error: error instanceof Error ? error.message : 'Unknown error' });
+        }
+      }
+      
+      console.log(`📦 [BULK-WITHDRAWAL] Bulk withdrawal completed: ${processedCount}/${labelIds.length} processed`);
+      console.log('📦 [BULK-WITHDRAWAL] === END BULK WITHDRAWAL PROCESSING ===');
+      
+      res.json({
+        processedCount,
+        totalRequested: labelIds.length,
+        errors: errors.length > 0 ? errors : undefined
+      });
+    } catch (error) {
+      console.error('❌ [BULK-WITHDRAWAL] Error processing bulk withdrawal:', error);
+      console.log('📦 [BULK-WITHDRAWAL] === END BULK WITHDRAWAL PROCESSING (WITH ERROR) ===');
+      res.status(500).json({ message: "Error processing bulk withdrawal" });
+    }
+  });
+
   // Fuel Entries routes
   app.get('/api/fleet/fuel-entries', requireAuth, async (req, res) => {
     try {

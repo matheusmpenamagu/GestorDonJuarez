@@ -13,7 +13,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plus, Edit, Trash2, Calendar, QrCode, User, AlertTriangle, Clock, CalendarDays } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label as UILabel } from "@/components/ui/label";
+import { Plus, Edit, Trash2, Calendar, QrCode, User, AlertTriangle, Clock, CalendarDays, Download, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import LabelForm from "./LabelForm";
 import LabelStatusCards from "@/components/LabelStatusCards";
@@ -48,6 +52,8 @@ interface Label {
   expiryDate: string;
   storageMethod: string;
   identifier: string;
+  withdrawalDate?: string | null;
+  withdrawalResponsibleId?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -58,6 +64,12 @@ export default function LabelsTab() {
   const [editingLabel, setEditingLabel] = useState<Label | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [selectedLabels, setSelectedLabels] = useState<Set<number>>(new Set());
+  const [showBulkWithdrawalModal, setShowBulkWithdrawalModal] = useState(false);
+  const [withdrawalDate, setWithdrawalDate] = useState(() => {
+    const now = new Date();
+    return format(now, "yyyy-MM-dd'T'HH:mm");
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -124,6 +136,44 @@ export default function LabelsTab() {
     },
   });
 
+  const bulkWithdrawalMutation = useMutation({
+    mutationFn: async ({ labelIds, withdrawalDateTime }: { labelIds: number[], withdrawalDateTime: string }) => {
+      const response = await fetch('/api/labels/bulk-withdrawal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem("sessionId") || ""}`,
+        },
+        body: JSON.stringify({
+          labelIds,
+          withdrawalDateTime: new Date(withdrawalDateTime).toISOString()
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Falha na baixa em massa das etiquetas');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/labels"] });
+      setSelectedLabels(new Set());
+      setShowBulkWithdrawalModal(false);
+      toast({
+        title: "Baixa realizada com sucesso!",
+        description: `${data.processedCount} etiquetas processadas`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro na baixa em massa",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEdit = (label: Label) => {
     setEditingLabel(label);
     setShowForm(true);
@@ -138,6 +188,45 @@ export default function LabelsTab() {
   const handleFormClose = () => {
     setShowForm(false);
     setEditingLabel(null);
+  };
+
+  // Handlers para seleção em massa
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const availableLabels = filteredLabels.filter(label => !label.withdrawalDate);
+      setSelectedLabels(new Set(availableLabels.map(label => label.id)));
+    } else {
+      setSelectedLabels(new Set());
+    }
+  };
+
+  const handleSelectLabel = (labelId: number, checked: boolean) => {
+    const newSelectedLabels = new Set(selectedLabels);
+    if (checked) {
+      newSelectedLabels.add(labelId);
+    } else {
+      newSelectedLabels.delete(labelId);
+    }
+    setSelectedLabels(newSelectedLabels);
+  };
+
+  const handleBulkWithdrawal = () => {
+    if (selectedLabels.size === 0) {
+      toast({
+        title: "Seleção necessária",
+        description: "Selecione pelo menos uma etiqueta para dar baixa",
+        variant: "destructive",
+      });
+      return;
+    }
+    setShowBulkWithdrawalModal(true);
+  };
+
+  const handleConfirmBulkWithdrawal = () => {
+    bulkWithdrawalMutation.mutate({
+      labelIds: Array.from(selectedLabels),
+      withdrawalDateTime: withdrawalDate
+    });
   };
 
   const getProductName = (productId: number) => {
@@ -241,13 +330,26 @@ export default function LabelsTab() {
             Visualize e gerencie todas as etiquetas criadas
           </p>
         </div>
-        <Button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Gerar Etiqueta
-        </Button>
+        <div className="flex items-center gap-2">
+          {selectedLabels.size > 0 && (
+            <Button
+              onClick={handleBulkWithdrawal}
+              variant="destructive"
+              className="flex items-center gap-2"
+              disabled={bulkWithdrawalMutation.isPending}
+            >
+              <Download className="w-4 h-4" />
+              Baixar Selecionadas ({selectedLabels.size})
+            </Button>
+          )}
+          <Button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Gerar Etiqueta
+          </Button>
+        </div>
       </div>
 
       {/* Filter indicator */}
@@ -292,6 +394,13 @@ export default function LabelsTab() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedLabels.size > 0 && selectedLabels.size === filteredLabels.filter(label => !label.withdrawalDate).length}
+                    onCheckedChange={handleSelectAll}
+                    disabled={filteredLabels.filter(label => !label.withdrawalDate).length === 0}
+                  />
+                </TableHead>
                 <TableHead>Identificador</TableHead>
                 <TableHead>Produto</TableHead>
                 <TableHead>Porção</TableHead>
@@ -299,12 +408,20 @@ export default function LabelsTab() {
                 <TableHead>Responsável</TableHead>
                 <TableHead>Data Produção</TableHead>
                 <TableHead>Vencimento</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredLabels.map((label) => (
-                <TableRow key={label.id}>
+                <TableRow key={label.id} className={label.withdrawalDate ? "opacity-60" : ""}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedLabels.has(label.id)}
+                      onCheckedChange={(checked) => handleSelectLabel(label.id, checked)}
+                      disabled={!!label.withdrawalDate}
+                    />
+                  </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="flex items-center gap-1 w-fit">
                       <QrCode className="w-3 h-3" />
@@ -352,6 +469,19 @@ export default function LabelsTab() {
                       {format(new Date(label.expiryDate), "dd/MM/yyyy", { locale: ptBR })}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    {label.withdrawalDate ? (
+                      <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                        <Check className="w-3 h-3" />
+                        Baixada em {format(new Date(label.withdrawalDate), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                        <Clock className="w-3 h-3" />
+                        Disponível
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-2">
                       <Button
@@ -386,6 +516,54 @@ export default function LabelsTab() {
         products={products}
         portions={portions}
       />
+
+      {/* Bulk Withdrawal Modal */}
+      <Dialog open={showBulkWithdrawalModal} onOpenChange={setShowBulkWithdrawalModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Baixar Etiquetas em Massa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Você está prestes a dar baixa em <strong>{selectedLabels.size}</strong> etiqueta(s) selecionada(s).
+            </div>
+            
+            <div className="space-y-2">
+              <UILabel htmlFor="withdrawalDateTime">Data e Hora da Baixa</UILabel>
+              <Input
+                id="withdrawalDateTime"
+                type="datetime-local"
+                value={withdrawalDate}
+                onChange={(e) => setWithdrawalDate(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              O responsável pela baixa será registrado como o usuário logado.
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowBulkWithdrawalModal(false)}
+              disabled={bulkWithdrawalMutation.isPending}
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmBulkWithdrawal}
+              disabled={bulkWithdrawalMutation.isPending}
+            >
+              <Check className="w-4 h-4 mr-2" />
+              {bulkWithdrawalMutation.isPending ? "Processando..." : "Confirmar Baixa"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
