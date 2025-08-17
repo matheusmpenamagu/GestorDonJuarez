@@ -2717,11 +2717,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const product of products) {
         console.log(`🔍 [PRODUCTS] Checking shelf life for product: ${product.name} (ID: ${product.id})`);
         try {
-          const shelfLifes = await storage.getProductShelfLifesByProductId(product.id);
-          console.log(`🔍 [PRODUCTS] Found ${shelfLifes.length} shelf life records for ${product.name}`);
+          const shelfLife = await storage.getProductShelfLifeByProduct(product.id);
+          console.log(`🔍 [PRODUCTS] Shelf life result for ${product.name}:`, shelfLife ? 'FOUND' : 'NOT FOUND');
           
-          if (shelfLifes.length > 0) {
-            console.log('✅ [PRODUCTS] Product', product.name, 'has shelf life data:', shelfLifes[0]);
+          if (shelfLife) {
+            console.log('✅ [PRODUCTS] Product', product.name, 'has shelf life data:', shelfLife);
             productsWithShelfLife.push(product);
           } else {
             console.log('❌ [PRODUCTS] Product', product.name, 'has no shelf life data, excluding');
