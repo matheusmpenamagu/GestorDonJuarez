@@ -907,7 +907,7 @@ export default function PublicLabelPage() {
                     <div className="text-4xl mb-2">❄️</div>
                     <h3 className="font-semibold text-lg">Resfriado</h3>
                     {shelfLife && (
-                      <p className="text-gray-600">{shelfLife.cooledDays} dias</p>
+                      <p className="text-gray-600">{shelfLife.chilledDays} dias</p>
                     )}
                   </CardContent>
                 </Card>
@@ -919,7 +919,7 @@ export default function PublicLabelPage() {
                     <div className="text-4xl mb-2">🌡️</div>
                     <h3 className="font-semibold text-lg">Ambiente</h3>
                     {shelfLife && (
-                      <p className="text-gray-600">{shelfLife.ambientDays} dias</p>
+                      <p className="text-gray-600">{shelfLife.roomTemperatureDays} dias</p>
                     )}
                   </CardContent>
                 </Card>
@@ -996,14 +996,20 @@ export default function PublicLabelPage() {
                       <p><strong>Unidade:</strong> {selectedUnit?.name}</p>
                       <p><strong>Categoria:</strong> {selectedCategory?.name}</p>
                       <p><strong>Produto:</strong> {selectedProduct?.name}</p>
+                      <p><strong>Porção:</strong> {selectedPortion?.quantity} {selectedPortion?.unitOfMeasure}</p>
                     </div>
                     <div>
-                      <p><strong>Porção:</strong> {selectedPortion?.quantity} {selectedPortion?.unitOfMeasure}</p>
                       <p><strong>Armazenamento:</strong> {
                         selectedStorage === 'frozen' ? 'Congelado' :
                         selectedStorage === 'cooled' ? 'Resfriado' : 'Ambiente'
                       }</p>
                       <p><strong>Quantidade:</strong> {selectedQuantity} etiqueta(s)</p>
+                      <p><strong>Data de Manipulação:</strong> {new Date().toLocaleDateString('pt-BR')}</p>
+                      <p><strong>Data de Validade:</strong> {
+                        generatedLabels.length > 0 
+                          ? new Date(generatedLabels[0].expiryDate).toLocaleDateString('pt-BR')
+                          : '-'
+                      }</p>
                     </div>
                   </div>
                   
