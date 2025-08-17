@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label as UILabel } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Plus, Edit, Trash2, Calendar, QrCode, User, AlertTriangle, Clock, CalendarDays, Download, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import LabelForm from "./LabelForm";
@@ -397,7 +398,7 @@ export default function LabelsTab() {
                 <TableHead className="w-12">
                   <Checkbox
                     checked={selectedLabels.size > 0 && selectedLabels.size === filteredLabels.filter(label => !label.withdrawalDate).length}
-                    onCheckedChange={handleSelectAll}
+                    onCheckedChange={(checked) => handleSelectAll(!!checked)}
                     disabled={filteredLabels.filter(label => !label.withdrawalDate).length === 0}
                   />
                 </TableHead>
@@ -418,7 +419,7 @@ export default function LabelsTab() {
                   <TableCell>
                     <Checkbox
                       checked={selectedLabels.has(label.id)}
-                      onCheckedChange={(checked) => handleSelectLabel(label.id, checked)}
+                      onCheckedChange={(checked) => handleSelectLabel(label.id, !!checked)}
                       disabled={!!label.withdrawalDate}
                     />
                   </TableCell>
@@ -471,10 +472,23 @@ export default function LabelsTab() {
                   </TableCell>
                   <TableCell>
                     {label.withdrawalDate ? (
-                      <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                        <Check className="w-3 h-3" />
-                        Baixada em {format(new Date(label.withdrawalDate), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                      </Badge>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Badge variant="secondary" className="flex items-center gap-1 w-fit cursor-help">
+                            <Check className="w-3 h-3" />
+                            Baixada
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="text-sm">
+                            <div><strong>Data:</strong> {format(new Date(label.withdrawalDate), "dd/MM/yyyy", { locale: ptBR })}</div>
+                            <div><strong>Hora:</strong> {format(new Date(label.withdrawalDate), "HH:mm", { locale: ptBR })}</div>
+                            {label.withdrawalResponsibleId && (
+                              <div><strong>Responsável:</strong> {getEmployeeName(label.withdrawalResponsibleId)}</div>
+                            )}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
                     ) : (
                       <Badge variant="outline" className="flex items-center gap-1 w-fit">
                         <Clock className="w-3 h-3" />
