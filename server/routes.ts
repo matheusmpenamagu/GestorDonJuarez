@@ -4675,20 +4675,46 @@ ${message}
 
   app.post('/api/labels', requireAuth, async (req, res) => {
     try {
+      console.log('🏷️ [SERVER] === LABEL CREATION DEBUG ===');
+      console.log('🏷️ [SERVER] Raw request body:', JSON.stringify(req.body, null, 2));
+      
       const { insertLabelSchema } = await import("@shared/schema");
       
-      // Gerar um identificador único
-      const identifier = await storage.generateLabelIdentifier();
+      // Converter storageMethod de inglês para português
+      const storageMethodMap = {
+        'frozen': 'congelado',
+        'cooled': 'resfriado', 
+        'ambient': 'temperatura_ambiente'
+      };
       
-      const labelData = insertLabelSchema.parse({
+      const translatedStorageMethod = storageMethodMap[req.body.storageMethod] || req.body.storageMethod;
+      console.log('🏷️ [SERVER] Storage method translation:', req.body.storageMethod, '->', translatedStorageMethod);
+      
+      // Gerar identificador de 6 dígitos único
+      const identifier = await storage.generateLabelIdentifier();
+      console.log('🏷️ [SERVER] Generated identifier:', identifier);
+      
+      // Preparar dados para validação
+      const dataToValidate = {
         ...req.body,
-        identifier
-      });
+        identifier,
+        storageMethod: translatedStorageMethod,
+        date: req.body.productionDate, // Usar productionDate como date
+      };
+      
+      console.log('🏷️ [SERVER] Data to validate:', JSON.stringify(dataToValidate, null, 2));
+      
+      const labelData = insertLabelSchema.parse(dataToValidate);
+      console.log('🏷️ [SERVER] Validated data:', JSON.stringify(labelData, null, 2));
       
       const label = await storage.createLabel(labelData);
+      console.log('🏷️ [SERVER] Created label:', JSON.stringify(label, null, 2));
+      console.log('🏷️ [SERVER] === END LABEL CREATION DEBUG ===');
+      
       res.status(201).json(label);
     } catch (error) {
-      console.error("Error creating label:", error);
+      console.error('❌ [SERVER] Error creating label:', error);
+      console.log('🏷️ [SERVER] === END LABEL CREATION DEBUG (WITH ERROR) ===');
       res.status(500).json({ message: "Error creating label" });
     }
   });
