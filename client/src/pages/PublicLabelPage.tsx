@@ -227,8 +227,21 @@ export default function PublicLabelPage() {
     
     try {
       console.log('🏢 [CLIENT] Making request to /api/units...');
+      
+      // Build headers with session ID if available
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Use sessionId from pinUser if available
+      if (pinUser?.sessionId) {
+        console.log('🏢 [CLIENT] Using PIN sessionId:', pinUser.sessionId);
+        headers['Authorization'] = `Bearer ${pinUser.sessionId}`;
+      }
+      
       const response = await fetch('/api/units', {
         credentials: 'include',
+        headers
       });
       
       console.log('🏢 [CLIENT] Response status:', response.status);
@@ -250,8 +263,17 @@ export default function PublicLabelPage() {
 
   const fetchCategories = async () => {
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (pinUser?.sessionId) {
+        headers['Authorization'] = `Bearer ${pinUser.sessionId}`;
+      }
+      
       const response = await fetch('/api/product-categories', {
         credentials: 'include',
+        headers
       });
       if (response.ok) {
         const data = await response.json();
@@ -264,8 +286,17 @@ export default function PublicLabelPage() {
 
   const fetchProducts = async (categoryId: number) => {
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (pinUser?.sessionId) {
+        headers['Authorization'] = `Bearer ${pinUser.sessionId}`;
+      }
+      
       const response = await fetch(`/api/products?categoryId=${categoryId}`, {
         credentials: 'include',
+        headers
       });
       if (response.ok) {
         const data = await response.json();
