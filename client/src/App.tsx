@@ -48,9 +48,10 @@ function Router() {
 
   return (
     <Switch>
-      {/* Rotas públicas */}
+      {/* Rotas públicas - sempre acessíveis */}
       <Route path="/contagem-publica/:token" component={PublicStockCount} />
       <Route path="/etiquetas" component={PublicLabelPage} />
+      <Route path="/public/etiquetas" component={PublicLabelPage} />
       <Route path="/privacidade" component={Privacy} />
       <Route path="/termos-de-uso" component={TermsOfUse} />
       
