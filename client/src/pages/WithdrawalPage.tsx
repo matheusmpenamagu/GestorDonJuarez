@@ -162,14 +162,24 @@ export default function WithdrawalPage() {
     }
   });
 
-  const handlePinSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pin.length >= 4) {
+  // PIN handlers
+  const handlePinEntry = (digit: string) => {
+    if (pin.length < 4) {
+      setPin(pin + digit);
+    }
+  };
+
+  const handlePinBackspace = () => {
+    setPin(pin.slice(0, -1));
+  };
+
+  const handlePinSubmit = () => {
+    if (pin.length === 4) {
       pinLoginMutation.mutate(pin);
     }
   };
 
-  const handleQRScan = (data: string) => {
+  const handleQRScanned = (data: string) => {
     console.log('📱 [QR-SCAN] Scanned data:', data);
     
     // Extrair o identificador do QR code
@@ -207,59 +217,77 @@ export default function WithdrawalPage() {
     });
   };
 
-  // PIN Entry Screen
+  // PIN Entry Screen - Exact copy from PublicLabelPage
   if (pinState === 'entry') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200 flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl mx-auto">
-          {/* Logo and Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-6xl font-bold text-orange-600 mb-4" style={{ fontFamily: 'Montserrat' }}>
-              Don Juarez
-            </h1>
-            <p className="text-2xl text-orange-800 font-medium">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-orange-600">
               Sistema de Baixa de Etiquetas
-            </p>
-          </div>
-
-          {/* PIN Entry Card */}
-          <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-            <CardContent className="p-12">
-              <form onSubmit={handlePinSubmit} className="space-y-8">
-                <div className="text-center space-y-6">
-                  <Label className="text-3xl font-semibold text-gray-800 block">
-                    Digite seu PIN de Acesso
-                  </Label>
-                  <Input
-                    type="password"
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value)}
-                    placeholder="••••••"
-                    className="text-center text-6xl tracking-[0.5em] h-24 border-4 border-orange-300 focus:border-orange-500 rounded-2xl font-mono bg-gray-50 max-w-md mx-auto"
-                    maxLength={6}
-                    autoFocus
-                    disabled={pinLoginMutation.isPending}
-                  />
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full h-20 text-3xl font-bold bg-orange-600 hover:bg-orange-700 active:bg-orange-800 rounded-2xl shadow-xl transform active:scale-[0.98] transition-all duration-200"
-                  disabled={pin.length < 4 || pinLoginMutation.isPending}
+            </CardTitle>
+            <p className="text-gray-600">Digite seu PIN de 4 dígitos</p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* PIN Display */}
+            <div className="flex justify-center space-x-2">
+              {[...Array(4)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-12 h-12 border-2 rounded-lg flex items-center justify-center text-xl font-bold ${
+                    pin.length > i
+                      ? 'border-orange-500 bg-orange-50 text-orange-600'
+                      : 'border-gray-300 bg-white'
+                  }`}
                 >
-                  {pinLoginMutation.isPending ? (
-                    <div className="flex items-center justify-center gap-4">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-4 border-white"></div>
-                      Verificando...
-                    </div>
-                  ) : (
-                    'ENTRAR'
-                  )}
+                  {pin.length > i ? '●' : ''}
+                </div>
+              ))}
+            </div>
+
+            {/* Number Pad */}
+            <div className="grid grid-cols-3 gap-3">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                <Button
+                  key={num}
+                  variant="outline"
+                  size="lg"
+                  className="h-16 text-xl font-semibold"
+                  onClick={() => handlePinEntry(num.toString())}
+                  disabled={pinLoginMutation.isPending}
+                >
+                  {num}
                 </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
+              ))}
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-16 text-xl font-semibold"
+                onClick={handlePinBackspace}
+                disabled={pinLoginMutation.isPending || pin.length === 0}
+              >
+                ←
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-16 text-xl font-semibold"
+                onClick={() => handlePinEntry('0')}
+                disabled={pinLoginMutation.isPending}
+              >
+                0
+              </Button>
+              <Button
+                size="lg"
+                className="h-16 text-xl font-semibold bg-orange-600 hover:bg-orange-700"
+                onClick={handlePinSubmit}
+                disabled={pinLoginMutation.isPending || pin.length !== 4}
+              >
+                {pinLoginMutation.isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : '✓'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
