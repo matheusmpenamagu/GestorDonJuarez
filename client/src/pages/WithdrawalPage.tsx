@@ -4,13 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { QRScanner } from '@/components/QRScanner';
-import { CheckCircle, Package, User, Calendar, LogOut, ArrowLeft, Loader2 } from 'lucide-react';
+import { CheckCircle, Package, User, Calendar, LogOut, ArrowLeft, Loader2, Tag } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 type PinState = 'entry' | 'authenticated';
-type ScanState = 'scanning' | 'found' | 'confirmed';
+type ScanState = 'scanning';
 
 interface Label {
   id: number;
@@ -41,6 +44,7 @@ export default function WithdrawalPage() {
   const [pin, setPin] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [scannedLabel, setScannedLabel] = useState<Label | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -113,12 +117,11 @@ export default function WithdrawalPage() {
           description: "Esta etiqueta já teve baixa realizada anteriormente.",
           variant: "destructive",
         });
-        setScanState('scanning');
         return;
       }
       
       setScannedLabel(label);
-      setScanState('found');
+      setShowConfirmModal(true);
     },
     onError: (error) => {
       console.error('❌ [LABEL-LOOKUP] Error:', error);
@@ -155,8 +158,8 @@ export default function WithdrawalPage() {
       });
       
       // Reset states to continue scanning
+      setShowConfirmModal(false);
       setScannedLabel(null);
-      setScanState('scanning');
       
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['/api/labels'] });
@@ -207,6 +210,11 @@ export default function WithdrawalPage() {
     if (scannedLabel) {
       withdrawalMutation.mutate(scannedLabel.id);
     }
+  };
+
+  const handleCancelConfirmation = () => {
+    setShowConfirmModal(false);
+    setScannedLabel(null);
   };
 
   const handleLogout = () => {
@@ -326,102 +334,97 @@ export default function WithdrawalPage() {
           />
         )}
 
-        {/* Scanner State: Found Label */}
-        {scanState === 'found' && scannedLabel && (
-          <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-            <CardContent className="p-12">
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 mb-4">
-                  <Package className="h-10 w-10 text-green-600" />
-                </div>
-                <h2 className="text-4xl font-bold text-gray-800 mb-2">
-                  Etiqueta Encontrada
-                </h2>
-                <p className="text-xl text-gray-600">
-                  Confirme os dados antes de dar baixa
-                </p>
-              </div>
-
-              <div className="space-y-8">
-                <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-8 rounded-3xl border border-orange-200">
-                  <h3 className="text-2xl font-bold text-orange-800 mb-4">Produto</h3>
-                  <p className="text-4xl font-bold text-gray-900 mb-3">
-                    {scannedLabel.product?.name || 'Produto não identificado'}
+        {/* Confirmation Modal */}
+        <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                <Package className="h-8 w-8 text-orange-600" />
+                Confirmar Baixa da Etiqueta
+              </DialogTitle>
+            </DialogHeader>
+            
+            {scannedLabel && (
+              <div className="space-y-6 py-4">
+                {/* Product Info */}
+                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Package className="h-5 w-5 text-orange-600" />
+                    <h3 className="font-semibold text-gray-800">Produto</h3>
+                  </div>
+                  <p className="text-lg font-medium text-gray-900">
+                    {scannedLabel.product?.name || 'Nome não disponível'}
                   </p>
-                  {scannedLabel.product?.code && (
-                    <p className="text-xl text-orange-700 font-medium">
-                      Código: {scannedLabel.product.code}
+                  {scannedLabel.portion && (
+                    <p className="text-gray-600">
+                      Porção: {scannedLabel.portion.quantity} {scannedLabel.portion.unitOfMeasure}
                     </p>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-8 rounded-3xl border border-blue-200">
-                    <h3 className="text-2xl font-bold text-blue-800 mb-4">Produção</h3>
-                    <p className="text-3xl font-bold text-blue-900">{formatDate(scannedLabel.date)}</p>
+                {/* Label Details */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Tag className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium text-gray-600">Identificador</span>
+                    </div>
+                    <p className="text-lg font-bold text-blue-800">{scannedLabel.identifier}</p>
                   </div>
-                  <div className="bg-gradient-to-r from-red-50 to-red-100 p-8 rounded-3xl border border-red-200">
-                    <h3 className="text-2xl font-bold text-red-800 mb-4">Validade</h3>
-                    <p className="text-3xl font-bold text-red-900">{formatDate(scannedLabel.expiryDate)}</p>
+
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calendar className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-medium text-gray-600">Data de Produção</span>
+                    </div>
+                    <p className="text-lg font-semibold text-green-800">
+                      {format(new Date(scannedLabel.date), 'dd/MM/yyyy', { locale: ptBR })}
+                    </p>
                   </div>
-                </div>
 
-                <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-8 rounded-3xl border border-gray-300 text-center">
-                  <h3 className="text-2xl font-bold text-gray-800 mb-4">Identificador</h3>
-                  <p className="font-mono text-4xl font-bold tracking-widest text-gray-900 bg-white p-6 rounded-2xl border-4 border-gray-300 shadow-inner">
-                    {scannedLabel.identifier}
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-6 mt-12">
-                  <Button 
-                    onClick={handleConfirmWithdrawal}
-                    disabled={withdrawalMutation.isPending}
-                    className="w-full h-20 text-3xl font-bold bg-green-600 hover:bg-green-700 active:bg-green-800 rounded-3xl shadow-xl transform active:scale-[0.98] transition-all duration-200"
-                  >
-                    {withdrawalMutation.isPending ? (
-                      <div className="flex items-center gap-4">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-4 border-white"></div>
-                        Processando Baixa...
-                      </div>
-                    ) : (
-                      <>
-                        <CheckCircle className="h-8 w-8 mr-4" />
-                        CONFIRMAR BAIXA
-                      </>
-                    )}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setScanState('scanning');
-                      setScannedLabel(null);
-                    }}
-                    className="w-full h-16 text-2xl font-semibold border-4 border-gray-300 hover:border-gray-400 active:border-gray-500 rounded-3xl hover:bg-gray-50 active:bg-gray-100 shadow-lg transform active:scale-[0.98] transition-all duration-200"
-                  >
-                    <ArrowLeft className="h-6 w-6 mr-3" />
-                    Voltar ao Scanner
-                  </Button>
+                  <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calendar className="h-4 w-4 text-red-600" />
+                      <span className="text-sm font-medium text-gray-600">Data de Validade</span>
+                    </div>
+                    <p className="text-lg font-semibold text-red-800">
+                      {format(new Date(scannedLabel.expiryDate), 'dd/MM/yyyy', { locale: ptBR })}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
 
-        {/* Loading states */}
-        {(labelLookupMutation.isPending) && (
-          <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-            <CardContent className="p-16 text-center">
-              <div className="animate-spin rounded-full h-24 w-24 border-b-6 border-orange-600 mx-auto mb-8"></div>
-              <h2 className="text-4xl font-bold text-gray-800 mb-4">
-                Buscando Etiqueta
-              </h2>
-              <p className="text-2xl text-gray-600">
-                Processando código escaneado...
-              </p>
-            </CardContent>
-          </Card>
-        )}
+            <DialogFooter className="gap-4">
+              <Button
+                variant="outline"
+                onClick={handleCancelConfirmation}
+                className="h-14 px-8 text-lg font-semibold"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleConfirmWithdrawal}
+                disabled={withdrawalMutation.isPending}
+                className="h-14 px-8 text-lg font-semibold bg-green-600 hover:bg-green-700"
+              >
+                {withdrawalMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    Confirmar Baixa
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+
       </div>
     </div>
   );
