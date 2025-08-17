@@ -173,17 +173,16 @@ export default function LabelsTab() {
     return expiry.getTime() === tomorrow.getTime();
   };
 
-  const isExpiringInWeek = (expiryDate: string) => {
+  const isValidMoreThan7Days = (expiryDate: string) => {
     const expiry = startOfDay(new Date(expiryDate));
-    const today = startOfDay(new Date());
     const weekFromNow = startOfDay(addDays(new Date(), 7));
-    return expiry.getTime() > today.getTime() && expiry.getTime() <= weekFromNow.getTime();
+    return expiry.getTime() > weekFromNow.getTime();
   };
 
   // Count labels by category
   const expiringTodayCount = labels.filter(label => isExpiringToday(label.expiryDate)).length;
   const expiringTomorrowCount = labels.filter(label => isExpiringTomorrow(label.expiryDate)).length;
-  const expiringWeekCount = labels.filter(label => isExpiringInWeek(label.expiryDate)).length;
+  const validMoreThan7DaysCount = labels.filter(label => isValidMoreThan7Days(label.expiryDate)).length;
 
   // Filter labels based on active filter
   const filteredLabels = labels.filter(label => {
@@ -193,7 +192,7 @@ export default function LabelsTab() {
       case 'expiring_tomorrow':
         return isExpiringTomorrow(label.expiryDate);
       case 'expiring_week':
-        return isExpiringInWeek(label.expiryDate);
+        return isValidMoreThan7Days(label.expiryDate);
       default:
         return true;
     }
@@ -278,21 +277,21 @@ export default function LabelsTab() {
         </Card>
 
         <Card 
-          className={`cursor-pointer transition-all hover:shadow-md border-l-4 border-l-blue-500 ${
-            activeFilter === 'expiring_week' ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950' : 'hover:bg-blue-50 dark:hover:bg-blue-950'
+          className={`cursor-pointer transition-all hover:shadow-md border-l-4 border-l-green-500 ${
+            activeFilter === 'expiring_week' ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950' : 'hover:bg-green-50 dark:hover:bg-green-950'
           }`}
           onClick={() => setActiveFilter(activeFilter === 'expiring_week' ? 'all' : 'expiring_week')}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300">
-              Vencendo em 7 Dias
+            <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300">
+              Válidas por +7 Dias
             </CardTitle>
-            <CalendarDays className="h-4 w-4 text-blue-600" />
+            <CalendarDays className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{expiringWeekCount}</div>
-            <CardDescription className="text-blue-600 dark:text-blue-400">
-              {expiringWeekCount === 1 ? 'etiqueta vencendo' : 'etiquetas vencendo'}
+            <div className="text-2xl font-bold text-green-700 dark:text-green-300">{validMoreThan7DaysCount}</div>
+            <CardDescription className="text-green-600 dark:text-green-400">
+              {validMoreThan7DaysCount === 1 ? 'etiqueta válida' : 'etiquetas válidas'}
             </CardDescription>
           </CardContent>
         </Card>
@@ -304,11 +303,11 @@ export default function LabelsTab() {
           <Badge variant="outline" className="flex items-center gap-1">
             {activeFilter === 'expiring_today' && <AlertTriangle className="w-3 h-3 text-red-600" />}
             {activeFilter === 'expiring_tomorrow' && <Clock className="w-3 h-3 text-yellow-600" />}
-            {activeFilter === 'expiring_week' && <CalendarDays className="w-3 h-3 text-blue-600" />}
+            {activeFilter === 'expiring_week' && <CalendarDays className="w-3 h-3 text-green-600" />}
             Filtro ativo: {
               activeFilter === 'expiring_today' ? 'Vencendo hoje' :
               activeFilter === 'expiring_tomorrow' ? 'Vencendo amanhã' :
-              'Vencendo em 7 dias'
+              'Válidas por +7 dias'
             }
           </Badge>
           <Button 
