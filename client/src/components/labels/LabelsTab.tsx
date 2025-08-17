@@ -62,7 +62,28 @@ export default function LabelsTab() {
   const queryClient = useQueryClient();
 
   const { data: products = [] } = useQuery<Product[]>({
-    queryKey: ["/api/products"],
+    queryKey: ["/api/products", { includeShelfLifeFilter: true }],
+    queryFn: async () => {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      const sessionId = localStorage.getItem('sessionId');
+      if (sessionId) {
+        headers['Authorization'] = `Bearer ${sessionId}`;
+      }
+      
+      const response = await fetch('/api/products?includeShelfLifeFilter=true', {
+        headers,
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
+      }
+      
+      return response.json();
+    },
   });
 
   const { data: employees = [] } = useQuery<Employee[]>({
