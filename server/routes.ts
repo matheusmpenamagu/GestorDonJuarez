@@ -36,6 +36,12 @@ const requireAuth = async (req: any, res: any, next: any) => {
       return next();
     }
 
+    // Check for PIN session (for public tablet access)
+    if (req.session?.pinEmployee) {
+      req.user = req.session.pinEmployee;
+      return next();
+    }
+
     // Check for session ID in Authorization header (fallback for Replit proxy issues)
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -55,6 +61,12 @@ const requireAuth = async (req: any, res: any, next: any) => {
 
         if (sessionData?.employee) {
           req.user = sessionData.employee;
+          return next();
+        }
+
+        // Check for PIN session in session store
+        if (sessionData?.pinEmployee) {
+          req.user = sessionData.pinEmployee;
           return next();
         }
       } catch (sessionError) {

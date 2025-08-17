@@ -141,6 +141,7 @@ export default function PublicLabelPage() {
       const response = await fetch('/api/auth/pin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ pin }),
       });
 
@@ -175,7 +176,10 @@ export default function PublicLabelPage() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/pin-logout', { method: 'POST' });
+      await fetch('/api/auth/pin-logout', { 
+        method: 'POST',
+        credentials: 'include',
+      });
     } catch (error) {
       console.error('Error during logout:', error);
     }
@@ -200,7 +204,9 @@ export default function PublicLabelPage() {
 
   const fetchUnits = async () => {
     try {
-      const response = await fetch('/api/units');
+      const response = await fetch('/api/units', {
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         setUnits(data);
@@ -212,7 +218,9 @@ export default function PublicLabelPage() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/product-categories');
+      const response = await fetch('/api/product-categories', {
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         setCategories(data);
@@ -224,7 +232,9 @@ export default function PublicLabelPage() {
 
   const fetchProducts = async (categoryId: number) => {
     try {
-      const response = await fetch(`/api/products?categoryId=${categoryId}`);
+      const response = await fetch(`/api/products?categoryId=${categoryId}`, {
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         setProducts(data);
@@ -236,7 +246,9 @@ export default function PublicLabelPage() {
 
   const fetchPortions = async (productId: number) => {
     try {
-      const response = await fetch(`/api/labels/portions?productId=${productId}`);
+      const response = await fetch(`/api/labels/portions?productId=${productId}`, {
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         setPortions(data);
@@ -248,7 +260,9 @@ export default function PublicLabelPage() {
 
   const fetchShelfLife = async (productId: number) => {
     try {
-      const response = await fetch(`/api/labels/shelf-lifes?productId=${productId}`);
+      const response = await fetch(`/api/labels/shelf-lifes?productId=${productId}`, {
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         if (data.length > 0) {
@@ -343,6 +357,7 @@ export default function PublicLabelPage() {
         fetch('/api/labels', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify(label),
         })
       );
