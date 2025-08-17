@@ -152,6 +152,7 @@ export interface IStorage {
   getEmployees(): Promise<EmployeeWithRelations[]>;
   getEmployee(id: number): Promise<EmployeeWithRelations | undefined>;
   getEmployeeByEmail(email: string): Promise<EmployeeWithRelations | undefined>;
+  authenticateEmployeeByPin(pin: string): Promise<EmployeeWithRelations | null>;
   createEmployee(employee: InsertEmployee): Promise<Employee>;
   updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee>;
   deleteEmployee(id: number): Promise<void>;
@@ -939,11 +940,69 @@ export class DatabaseStorage implements IStorage {
     } as EmployeeWithRelations;
   }
 
+  async authenticateEmployeeByPin(pin: string): Promise<EmployeeWithRelations | null> {
+    try {
+      const bcrypt = await import('bcryptjs');
+      
+      const result = await db.execute(sql`
+        SELECT 
+          e.id, e.email, e.password, e.pin, e.first_name as "firstName", e.last_name as "lastName",
+          e.whatsapp, e.role_id as "roleId", e.employment_types as "employmentTypes", 
+          e.avatar, e.is_active as "isActive", e.created_at as "createdAt", e.updated_at as "updatedAt",
+          r.id as "role_id", r.name as "role_name", r.description as "role_description", 
+          r.permissions as "role_permissions", r.created_at as "role_createdAt", r.updated_at as "role_updatedAt"
+        FROM employees e
+        LEFT JOIN roles r ON e.role_id = r.id
+        WHERE e.is_active = true AND e.pin IS NOT NULL
+      `);
+
+      // Check all active employees with PINs
+      for (const row of result.rows) {
+        const employee: any = row;
+        if (employee.pin && await bcrypt.compare(pin, employee.pin)) {
+          return {
+            id: employee.id,
+            email: employee.email,
+            password: employee.password,
+            firstName: employee.firstName,
+            lastName: employee.lastName,
+            whatsapp: employee.whatsapp,
+            roleId: employee.roleId,
+            employmentTypes: employee.employmentTypes || ["Funcionário"],
+            avatar: employee.avatar,
+            isActive: employee.isActive,
+            createdAt: employee.createdAt,
+            updatedAt: employee.updatedAt,
+            role: employee.role_id ? {
+              id: employee.role_id,
+              name: employee.role_name,
+              description: employee.role_description,
+              permissions: employee.role_permissions,
+              createdAt: employee.role_createdAt,
+              updatedAt: employee.role_updatedAt,
+            } : undefined,
+          } as EmployeeWithRelations;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error authenticating employee by PIN:', error);
+      return null;
+    }
+  }
+
   async createEmployee(employeeData: InsertEmployee): Promise<Employee> {
     // Hash password if provided
     if (employeeData.password) {
       const { hashPassword } = await import('./localAuth');
       employeeData.password = await hashPassword(employeeData.password);
+    }
+    
+    // Hash PIN if provided
+    if (employeeData.pin && employeeData.pin.trim() !== '') {
+      const { hashPassword } = await import('./localAuth');
+      employeeData.pin = await hashPassword(employeeData.pin);
     }
     
     const [employee] = await db
@@ -961,6 +1020,15 @@ export class DatabaseStorage implements IStorage {
     } else if (employeeData.password === '') {
       // Don't update password if empty string is provided
       delete employeeData.password;
+    }
+    
+    // Hash PIN if provided and not empty
+    if (employeeData.pin && employeeData.pin.trim() !== '') {
+      const { hashPassword } = await import('./localAuth');
+      employeeData.pin = await hashPassword(employeeData.pin);
+    } else if (employeeData.pin === '') {
+      // Don't update PIN if empty string is provided
+      delete employeeData.pin;
     }
     
     const [employee] = await db

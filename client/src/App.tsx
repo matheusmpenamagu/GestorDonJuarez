@@ -27,6 +27,7 @@ import FleetManagement from "@/pages/FleetManagement";
 import CompanySettings from "@/pages/CompanySettings";
 import CashRegisterManagement from "@/pages/CashRegisterManagement";
 import LabelsPage from "@/pages/LabelsPage";
+import PublicLabelPage from "@/pages/PublicLabelPage";
 import Privacy from "@/pages/Privacy";
 import TermsOfUse from "@/pages/TermsOfUse";
 import NotFound from "@/pages/not-found";
@@ -49,6 +50,7 @@ function Router() {
     <Switch>
       {/* Rotas públicas */}
       <Route path="/contagem-publica/:token" component={PublicStockCount} />
+      <Route path="/etiquetas-publicas" component={PublicLabelPage} />
       <Route path="/privacidade" component={Privacy} />
       <Route path="/termos-de-uso" component={TermsOfUse} />
       

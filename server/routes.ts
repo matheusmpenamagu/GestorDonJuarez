@@ -489,6 +489,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PIN authentication for public tablet interface
+  app.post('/api/auth/pin', async (req, res) => {
+    try {
+      const { pin } = req.body;
+      
+      if (!pin || pin.length !== 4) {
+        return res.status(400).json({ message: 'PIN deve ter 4 dígitos' });
+      }
+
+      const employee = await storage.authenticateEmployeeByPin(pin);
+      if (!employee) {
+        return res.status(401).json({ message: 'PIN inválido' });
+      }
+
+      // Create a temporary session for PIN-based access
+      (req.session as any).pinEmployee = {
+        id: employee.id,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        avatar: employee.avatar,
+        type: 'pin-session'
+      };
+      
+      // Save session and respond
+      req.session.save((err) => {
+        if (err) {
+          console.error('🚨 [PIN-AUTH] Session save error:', err);
+          return res.status(500).json({ message: 'Session save failed' });
+        }
+        
+        res.json({
+          id: employee.id,
+          firstName: employee.firstName,
+          lastName: employee.lastName,
+          avatar: employee.avatar,
+          type: 'pin-session',
+          sessionId: req.sessionID
+        });
+      });
+
+    } catch (error) {
+      console.error('🚨 [PIN-AUTH] Error during PIN authentication:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Logout from PIN session
+  app.post('/api/auth/pin-logout', async (req, res) => {
+    try {
+      // Clear PIN session
+      if ((req.session as any).pinEmployee) {
+        delete (req.session as any).pinEmployee;
+      }
+      
+      req.session.save((err) => {
+        if (err) {
+          console.error('🚨 [PIN-LOGOUT] Session save error:', err);
+          return res.status(500).json({ message: 'Logout failed' });
+        }
+        res.json({ message: 'PIN session ended' });
+      });
+    } catch (error) {
+      console.error('🚨 [PIN-LOGOUT] Error during PIN logout:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Webhook endpoints for ESP32 hardware
   
   // Test endpoint for ESP32 webhook

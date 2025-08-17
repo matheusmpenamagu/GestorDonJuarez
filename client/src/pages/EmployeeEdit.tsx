@@ -14,6 +14,7 @@ import { EmployeeWithRelations } from "@shared/schema";
 interface EmployeeFormData {
   email: string;
   password: string;
+  pin: string;
   firstName: string;
   lastName: string;
   whatsapp: string;
@@ -50,6 +51,7 @@ export default function EmployeeEdit() {
   const [formData, setFormData] = useState<EmployeeFormData>({
     email: "",
     password: "",
+    pin: "",
     firstName: "",
     lastName: "",
     whatsapp: "",
@@ -119,6 +121,7 @@ export default function EmployeeEdit() {
       const newFormData = {
         email: employee.email || "",
         password: "",
+        pin: "", // PIN is not loaded for security
         firstName: employee.firstName || "",
         lastName: employee.lastName || "",
         whatsapp: formatWhatsApp(employee.whatsapp || ""),
@@ -270,18 +273,35 @@ export default function EmployeeEdit() {
               </div>
 
               <div>
-                <Label htmlFor="password">
-                  {!isNew ? "Nova Senha (deixe em branco para manter)" : "Senha *"}
-                </Label>
+                <Label htmlFor="pin">PIN (4 dígitos para tablet)</Label>
                 <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="Digite a senha"
-                  required={isNew}
+                  id="pin"
+                  type="text"
+                  value={formData.pin}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, '');
+                    if (digits.length <= 4) {
+                      setFormData({ ...formData, pin: digits });
+                    }
+                  }}
+                  placeholder="0000"
+                  maxLength={4}
                 />
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="password">
+                {!isNew ? "Nova Senha (deixe em branco para manter)" : "Senha *"}
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Digite a senha"
+                required={isNew}
+              />
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
