@@ -324,17 +324,42 @@ export default function PublicLabelPage() {
   };
 
   const fetchPortions = async (productId: number) => {
+    console.log('🥄 [CLIENT] === FETCHING PORTIONS ===');
+    console.log('🥄 [CLIENT] Product ID:', productId);
+    
     try {
-      const response = await fetch(`/api/labels/portions?productId=${productId}`, {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (pinUser?.sessionId) {
+        console.log('🥄 [CLIENT] Using PIN sessionId:', pinUser.sessionId);
+        headers['Authorization'] = `Bearer ${pinUser.sessionId}`;
+      }
+      
+      const url = `/api/labels/portions/product/${productId}`;
+      console.log('🥄 [CLIENT] Request URL:', url);
+      
+      const response = await fetch(url, {
         credentials: 'include',
+        headers
       });
+      
+      console.log('🥄 [CLIENT] Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ [CLIENT] Portions fetched successfully:', data.length, 'portions');
+        console.log('🥄 [CLIENT] Portions:', data);
         setPortions(data);
+      } else {
+        const errorData = await response.json();
+        console.log('❌ [CLIENT] Failed to fetch portions:', errorData);
       }
     } catch (error) {
-      console.error('Error fetching portions:', error);
+      console.error('❌ [CLIENT] Error fetching portions:', error);
     }
+    console.log('🥄 [CLIENT] === END FETCHING PORTIONS ===');
   };
 
   const fetchShelfLife = async (productId: number) => {
