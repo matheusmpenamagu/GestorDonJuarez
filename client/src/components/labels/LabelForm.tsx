@@ -160,9 +160,10 @@ export default function LabelForm({
         storageMethod: label.storageMethod as "congelado" | "resfriado" | "temperatura_ambiente",
       });
     } else {
+      const today = format(new Date(), "yyyy-MM-dd");
       form.reset({
         productId: 0,
-        date: format(new Date(), "yyyy-MM-dd"),
+        date: today,
         portionId: 0,
         expiryDate: format(addDays(new Date(), 7), "yyyy-MM-dd"),
         storageMethod: "temperatura_ambiente" as const,
@@ -186,6 +187,14 @@ export default function LabelForm({
       }
     }
   }, [selectedProductId, selectedStorageMethod, selectedDate, shelfLifes, isEditing, form, calculateExpiryDate]);
+
+  // Ensure date is always today when form opens for new labels
+  useEffect(() => {
+    if (!isEditing && open) {
+      const today = format(new Date(), "yyyy-MM-dd");
+      form.setValue("date", today);
+    }
+  }, [open, isEditing, form]);
 
   const mutation = useMutation({
     mutationFn: async (data: LabelFormData) => {
@@ -384,6 +393,8 @@ export default function LabelForm({
                       <Input
                         type="date"
                         {...field}
+                        readOnly
+                        className="bg-gray-50 dark:bg-gray-800"
                       />
                     </FormControl>
                     <FormMessage />
@@ -399,9 +410,6 @@ export default function LabelForm({
                     <FormLabel className="flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
                       Data de Vencimento
-                      {!isEditing && (
-                        <span className="text-xs text-muted-foreground ml-1">(Calculada automaticamente)</span>
-                      )}
                     </FormLabel>
                     <FormControl>
                       <Input
