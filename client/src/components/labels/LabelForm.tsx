@@ -123,6 +123,11 @@ export default function LabelForm({
     },
   });
 
+  // Fetch shelf lifes data
+  const { data: shelfLifes = [] } = useQuery<ProductShelfLife[]>({
+    queryKey: ["/api/labels/shelf-lifes"],
+  });
+
   const selectedProductId = form.watch("productId");
   const selectedStorageMethod = form.watch("storageMethod");
   const selectedDate = form.watch("date");
@@ -130,11 +135,6 @@ export default function LabelForm({
   
   // Get shelf life for selected product
   const selectedProductShelfLife = shelfLifes.find(sl => sl.productId === selectedProductId);
-
-  // Fetch shelf lifes data
-  const { data: shelfLifes = [] } = useQuery<ProductShelfLife[]>({
-    queryKey: ["/api/labels/shelf-lifes"],
-  });
 
   // Function to calculate expiry date based on storage method
   const calculateExpiryDate = (productId: number, storageMethod: string, baseDate: string) => {
