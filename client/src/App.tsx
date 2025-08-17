@@ -50,7 +50,7 @@ function Router() {
     <Switch>
       {/* Rotas públicas */}
       <Route path="/contagem-publica/:token" component={PublicStockCount} />
-      <Route path="/etiquetas-publicas" component={PublicLabelPage} />
+      <Route path="/public/etiquetas" component={PublicLabelPage} />
       <Route path="/privacidade" component={Privacy} />
       <Route path="/termos-de-uso" component={TermsOfUse} />
       
