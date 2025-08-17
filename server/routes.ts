@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { setupWebSocket, broadcastUpdate } from "./websocket";
 import { storage } from "./storage";
@@ -9,6 +10,9 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import multer from "multer";
+import sharp from "sharp";
+import path from "path";
+import fs from "fs/promises";
 
 const SAO_PAULO_TZ = "America/Sao_Paulo";
 
@@ -335,6 +339,8 @@ const validateWebhookToken = (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Serve uploaded files statically
+  app.use('/uploads', express.static(path.join(process.cwd(), 'client', 'public', 'uploads')));
   // Real authentication route - returns authenticated user info
   // Local employee authentication
   app.post('/api/auth/login', async (req, res) => {
@@ -2218,6 +2224,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting unit:", error);
       res.status(500).json({ message: "Error deleting unit" });
+    }
+  });
+
+  // Unit logo upload endpoint
+  app.post('/api/units/upload-logo', requireAuth, async (req, res) => {
+    try {
+      const { imageBlob } = req.body;
+      
+      if (!imageBlob) {
+        return res.status(400).json({ message: "Image blob is required" });
+      }
+
+      // Remove data URL prefix (data:image/jpeg;base64,...)
+      const base64Data = imageBlob.replace(/^data:image\/[a-z]+;base64,/, '');
+      const imageBuffer = Buffer.from(base64Data, 'base64');
+
+      // Ensure uploads directory exists
+      const uploadsDir = path.join(process.cwd(), 'client', 'public', 'uploads');
+      try {
+        await fs.access(uploadsDir);
+      } catch {
+        await fs.mkdir(uploadsDir, { recursive: true });
+      }
+
+      // Generate unique filename
+      const timestamp = Date.now();
+      const filename = `unit-logo-${timestamp}.jpg`;
+      const filepath = path.join(uploadsDir, filename);
+
+      // Process image with Sharp - ensure 100x100px square
+      await sharp(imageBuffer)
+        .resize(100, 100, {
+          fit: 'cover',
+          position: 'center'
+        })
+        .jpeg({ quality: 90 })
+        .toFile(filepath);
+
+      // Return the public URL
+      const publicUrl = `/uploads/${filename}`;
+      res.json({ logoUrl: publicUrl });
+
+    } catch (error) {
+      console.error("Error processing unit logo:", error);
+      res.status(500).json({ message: "Error processing image" });
     }
   });
 

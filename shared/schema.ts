@@ -139,6 +139,8 @@ export const units = pgTable("units", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   address: text("address").notNull(),
+  logoUrl: varchar("logo_url", { length: 500 }), // URL para logo (JPEG/PNG 100x100px)
+  cnpj: varchar("cnpj", { length: 18 }).unique(), // CNPJ com máscara 99.999.999/9999-99
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -522,6 +524,8 @@ export const insertUnitSchema = createInsertSchema(units).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  cnpj: z.string().regex(/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/, "CNPJ deve estar no formato 99.999.999/9999-99").optional(),
 });
 
 export const insertCo2RefillSchema = createInsertSchema(co2Refills).omit({

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,14 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Pencil, Trash2, Building2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Building2, Upload, Image } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { ImageCropper } from "@/components/ui/image-cropper";
+import { applyCnpjMask, isValidCnpjFormat } from "@/lib/cnpj-mask";
 
 interface Unit {
   id: number;
   name: string;
   address: string;
+  logoUrl?: string;
+  cnpj?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -21,6 +25,8 @@ interface Unit {
 interface UnitFormData {
   name: string;
   address: string;
+  logoUrl?: string;
+  cnpj?: string;
 }
 
 export default function UnitsManagement() {
@@ -28,8 +34,14 @@ export default function UnitsManagement() {
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [formData, setFormData] = useState<UnitFormData>({
     name: "",
-    address: ""
+    address: "",
+    logoUrl: "",
+    cnpj: ""
   });
+  const [showImageCropper, setShowImageCropper] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [croppedImageUrl, setCroppedImageUrl] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const { data: units = [], isLoading } = useQuery({
@@ -99,18 +111,31 @@ export default function UnitsManagement() {
   });
 
   const resetForm = () => {
-    setFormData({ name: "", address: "" });
+    setFormData({
+      name: "",
+      address: "",
+      logoUrl: "",
+      cnpj: ""
+    });
     setEditingUnit(null);
     setShowForm(false);
+    setSelectedFile(null);
+    setCroppedImageUrl("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleEdit = (unit: Unit) => {
     setFormData({
       name: unit.name,
-      address: unit.address
+      address: unit.address,
+      logoUrl: unit.logoUrl || "",
+      cnpj: unit.cnpj || ""
     });
     setEditingUnit(unit);
     setShowForm(true);
+    setCroppedImageUrl(unit.logoUrl || "");
   };
 
   const handleSubmit = () => {
@@ -124,6 +149,49 @@ export default function UnitsManagement() {
   const handleDelete = (id: number) => {
     if (confirm("Tem certeza que deseja remover esta unidade?")) {
       deleteUnitMutation.mutate(id);
+    }
+  };
+
+  const handleImageCrop = async (croppedImageUrl: string) => {
+    try {
+      // Convert blob URL to base64
+      const response = await fetch(croppedImageUrl);
+      const blob = await response.blob();
+      
+      // Convert blob to base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result as string;
+        
+        try {
+          // Upload to server
+          const uploadResponse = await apiRequest("POST", "/api/units/upload-logo", {
+            imageBlob: base64String
+          });
+          
+          const { logoUrl } = await uploadResponse.json();
+          setCroppedImageUrl(logoUrl);
+          setFormData({ ...formData, logoUrl });
+          
+          toast({
+            title: "Sucesso",
+            description: "Logo carregada com sucesso!",
+          });
+        } catch (error) {
+          toast({
+            title: "Erro",
+            description: "Erro ao carregar a logo",
+            variant: "destructive",
+          });
+        }
+      };
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao processar a imagem",
+        variant: "destructive",
+      });
     }
   };
 
@@ -162,6 +230,20 @@ export default function UnitsManagement() {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="cnpj">CNPJ</Label>
+                <Input
+                  id="cnpj"
+                  placeholder="99.999.999/9999-99"
+                  value={formData.cnpj}
+                  onChange={(e) => {
+                    const maskedValue = applyCnpjMask(e.target.value);
+                    setFormData({ ...formData, cnpj: maskedValue });
+                  }}
+                  maxLength={18}
+                />
+              </div>
+              
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="address">Endereço</Label>
                 <Textarea
@@ -172,11 +254,76 @@ export default function UnitsManagement() {
                   rows={3}
                 />
               </div>
+              
+              {/* Upload de Logo */}
+              <div className="space-y-2 md:col-span-2">
+                <Label>Logo da Unidade</Label>
+                <div className="flex items-center gap-4">
+                  {croppedImageUrl && (
+                    <div className="relative">
+                      <img 
+                        src={croppedImageUrl} 
+                        alt="Logo da unidade" 
+                        className="w-20 h-20 rounded-lg border object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                        onClick={() => {
+                          setCroppedImageUrl("");
+                          setFormData({ ...formData, logoUrl: "" });
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = "";
+                          }
+                        }}
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <div className="flex flex-col gap-2">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept="image/jpeg,image/png"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setSelectedFile(file);
+                          setShowImageCropper(true);
+                        }
+                      }}
+                      style={{ display: 'none' }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-2"
+                    >
+                      <Upload className="h-4 w-4" />
+                      {croppedImageUrl ? "Alterar Logo" : "Adicionar Logo"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      JPEG ou PNG. Será recortada em 100x100px.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="flex gap-2">
               <Button 
                 onClick={handleSubmit}
-                disabled={!formData.name || !formData.address || createUnitMutation.isPending || updateUnitMutation.isPending}
+                disabled={
+                  !formData.name || 
+                  !formData.address || 
+                  (formData.cnpj && !isValidCnpjFormat(formData.cnpj)) ||
+                  createUnitMutation.isPending || 
+                  updateUnitMutation.isPending
+                }
               >
                 {createUnitMutation.isPending || updateUnitMutation.isPending 
                   ? "Salvando..." 
@@ -212,9 +359,22 @@ export default function UnitsManagement() {
                 <Card key={unit.id} className="relative">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-5 w-5 text-primary" />
-                        <h3 className="font-medium text-foreground">{unit.name}</h3>
+                      <div className="flex items-center gap-3">
+                        {unit.logoUrl ? (
+                          <img 
+                            src={unit.logoUrl} 
+                            alt={`Logo ${unit.name}`}
+                            className="w-10 h-10 rounded-lg object-cover border"
+                          />
+                        ) : (
+                          <Building2 className="h-5 w-5 text-primary" />
+                        )}
+                        <div>
+                          <h3 className="font-medium text-foreground">{unit.name}</h3>
+                          {unit.cnpj && (
+                            <p className="text-xs text-muted-foreground">CNPJ: {unit.cnpj}</p>
+                          )}
+                        </div>
                       </div>
                       <div className="flex gap-1">
                         <Button
@@ -249,6 +409,14 @@ export default function UnitsManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de Recorte de Imagem */}
+      <ImageCropper
+        isOpen={showImageCropper}
+        onClose={() => setShowImageCropper(false)}
+        onCrop={handleImageCrop}
+        file={selectedFile}
+      />
     </div>
   );
 }
