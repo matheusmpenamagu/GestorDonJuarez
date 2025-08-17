@@ -210,164 +210,181 @@ export default function WithdrawalPage() {
   // PIN Entry Screen
   if (pinState === 'entry') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100 p-6 flex items-center justify-center">
-        <Card className="w-full max-w-lg">
-          <CardHeader className="text-center pb-8">
-            <CardTitle className="text-4xl font-bold text-orange-600 mb-4">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200 flex items-center justify-center p-4">
+        <div className="w-full max-w-2xl mx-auto">
+          {/* Logo and Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-6xl font-bold text-orange-600 mb-4" style={{ fontFamily: 'Montserrat' }}>
               Don Juarez
-            </CardTitle>
-            <p className="text-xl text-muted-foreground">Sistema de Baixa de Etiquetas</p>
-          </CardHeader>
-          <CardContent className="px-8 pb-8">
-            <form onSubmit={handlePinSubmit} className="space-y-8">
-              <div className="space-y-4">
-                <Label htmlFor="pin" className="text-2xl font-medium text-center block">
-                  Digite seu PIN de Acesso
-                </Label>
-                <Input
-                  id="pin"
-                  type="password"
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value)}
-                  placeholder="••••••"
-                  className="text-center text-4xl tracking-widest h-20 border-2 border-orange-200 focus:border-orange-500 rounded-xl"
-                  maxLength={6}
-                  autoFocus
-                  disabled={pinLoginMutation.isPending}
-                />
-              </div>
-              <Button 
-                type="submit" 
-                className="w-full text-2xl py-8 bg-orange-600 hover:bg-orange-700 active:bg-orange-800 rounded-2xl font-bold shadow-lg transform active:scale-[0.98] transition-all duration-150"
-                disabled={pin.length < 4 || pinLoginMutation.isPending}
-              >
-                {pinLoginMutation.isPending ? (
-                  <div className="flex items-center gap-4">
-                    <div className="animate-spin rounded-full h-7 w-7 border-b-3 border-white"></div>
-                    Verificando PIN...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <span>Entrar no Sistema</span>
-                  </div>
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            </h1>
+            <p className="text-2xl text-orange-800 font-medium">
+              Sistema de Baixa de Etiquetas
+            </p>
+          </div>
+
+          {/* PIN Entry Card */}
+          <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+            <CardContent className="p-12">
+              <form onSubmit={handlePinSubmit} className="space-y-8">
+                <div className="text-center space-y-6">
+                  <Label className="text-3xl font-semibold text-gray-800 block">
+                    Digite seu PIN de Acesso
+                  </Label>
+                  <Input
+                    type="password"
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value)}
+                    placeholder="••••••"
+                    className="text-center text-6xl tracking-[0.5em] h-24 border-4 border-orange-300 focus:border-orange-500 rounded-2xl font-mono bg-gray-50 max-w-md mx-auto"
+                    maxLength={6}
+                    autoFocus
+                    disabled={pinLoginMutation.isPending}
+                  />
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full h-20 text-3xl font-bold bg-orange-600 hover:bg-orange-700 active:bg-orange-800 rounded-2xl shadow-xl transform active:scale-[0.98] transition-all duration-200"
+                  disabled={pin.length < 4 || pinLoginMutation.isPending}
+                >
+                  {pinLoginMutation.isPending ? (
+                    <div className="flex items-center justify-center gap-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-4 border-white"></div>
+                      Verificando...
+                    </div>
+                  ) : (
+                    'ENTRAR'
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   // Main scanning interface
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100 p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200 p-6">
+      <div className="max-w-6xl mx-auto">
         
         {/* Header */}
-        <Card className="shadow-lg">
-          <CardContent className="p-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-orange-600 mb-2">Baixa de Etiquetas</h1>
-                <p className="text-lg text-muted-foreground">
-                  Escaneie o QR code da etiqueta para dar baixa no estoque
-                </p>
-              </div>
-              <Button 
-                variant="outline" 
-                onClick={handleLogout}
-                className="flex items-center gap-3 text-lg px-8 py-6 border-3 border-red-300 hover:border-red-400 active:border-red-500 rounded-2xl font-semibold hover:bg-red-50 active:bg-red-100 shadow-md transform active:scale-[0.98] transition-all duration-150"
-                size="lg"
-              >
-                <LogOut className="h-6 w-6" />
-                Finalizar Sessão
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-bold text-orange-600 mb-4" style={{ fontFamily: 'Montserrat' }}>
+            Don Juarez
+          </h1>
+          <p className="text-2xl text-orange-800 font-medium mb-6">
+            Sistema de Baixa de Etiquetas
+          </p>
+          <Button 
+            onClick={handleLogout}
+            className="h-16 px-8 text-xl font-semibold bg-red-500 hover:bg-red-600 active:bg-red-700 rounded-2xl shadow-lg transform active:scale-[0.98] transition-all duration-200"
+          >
+            <LogOut className="h-6 w-6 mr-3" />
+            Finalizar Sessão
+          </Button>
+        </div>
 
         {/* Scanner State: Scanning */}
         {scanState === 'scanning' && (
-          <QRScanner 
-            onScan={handleQRScan} 
-            isActive={true}
-          />
+          <div className="space-y-8">
+            <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+              <CardContent className="p-8">
+                <div className="text-center mb-6">
+                  <h2 className="text-3xl font-bold text-gray-800 mb-2">
+                    Scanner de QR Code
+                  </h2>
+                  <p className="text-xl text-gray-600">
+                    Posicione o código QR da etiqueta dentro do quadrado
+                  </p>
+                </div>
+                <QRScanner 
+                  onQRScanned={handleQRScanned} 
+                  isActive={true}
+                />
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* Scanner State: Found Label */}
         {scanState === 'found' && scannedLabel && (
-          <Card className="shadow-lg">
-            <CardHeader className="pb-6">
-              <CardTitle className="flex items-center gap-4 text-2xl">
-                <Package className="h-8 w-8 text-orange-600" />
-                Etiqueta Encontrada
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-8 px-8 pb-8">
-              <div className="grid grid-cols-1 gap-8">
-                <div className="bg-orange-50 p-6 rounded-xl border border-orange-200">
-                  <Label className="text-lg font-medium text-muted-foreground mb-2 block">Produto</Label>
-                  <p className="text-2xl font-bold text-gray-900 mb-2">
+          <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+            <CardContent className="p-12">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 mb-4">
+                  <Package className="h-10 w-10 text-green-600" />
+                </div>
+                <h2 className="text-4xl font-bold text-gray-800 mb-2">
+                  Etiqueta Encontrada
+                </h2>
+                <p className="text-xl text-gray-600">
+                  Confirme os dados antes de dar baixa
+                </p>
+              </div>
+
+              <div className="space-y-8">
+                <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-8 rounded-3xl border border-orange-200">
+                  <h3 className="text-2xl font-bold text-orange-800 mb-4">Produto</h3>
+                  <p className="text-4xl font-bold text-gray-900 mb-3">
                     {scannedLabel.product?.name || 'Produto não identificado'}
                   </p>
                   {scannedLabel.product?.code && (
-                    <p className="text-lg text-muted-foreground">
+                    <p className="text-xl text-orange-700 font-medium">
                       Código: {scannedLabel.product.code}
                     </p>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
-                    <Label className="text-lg font-medium text-muted-foreground mb-2 block">Data de Produção</Label>
-                    <p className="text-xl font-bold text-blue-900">{formatDate(scannedLabel.date)}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-8 rounded-3xl border border-blue-200">
+                    <h3 className="text-2xl font-bold text-blue-800 mb-4">Produção</h3>
+                    <p className="text-3xl font-bold text-blue-900">{formatDate(scannedLabel.date)}</p>
                   </div>
-                  <div className="bg-red-50 p-6 rounded-xl border border-red-200">
-                    <Label className="text-lg font-medium text-muted-foreground mb-2 block">Validade</Label>
-                    <p className="text-xl font-bold text-red-900">{formatDate(scannedLabel.expiryDate)}</p>
+                  <div className="bg-gradient-to-r from-red-50 to-red-100 p-8 rounded-3xl border border-red-200">
+                    <h3 className="text-2xl font-bold text-red-800 mb-4">Validade</h3>
+                    <p className="text-3xl font-bold text-red-900">{formatDate(scannedLabel.expiryDate)}</p>
                   </div>
                 </div>
 
-                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 text-center">
-                  <Label className="text-lg font-medium text-muted-foreground mb-3 block">Identificador da Etiqueta</Label>
-                  <p className="font-mono text-3xl font-bold tracking-widest text-gray-900 bg-white p-4 rounded-lg border-2 border-gray-300">
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-8 rounded-3xl border border-gray-300 text-center">
+                  <h3 className="text-2xl font-bold text-gray-800 mb-4">Identificador</h3>
+                  <p className="font-mono text-4xl font-bold tracking-widest text-gray-900 bg-white p-6 rounded-2xl border-4 border-gray-300 shadow-inner">
                     {scannedLabel.identifier}
                   </p>
                 </div>
-              </div>
 
-              <div className="flex flex-col gap-6 mt-8">
-                <Button 
-                  onClick={handleConfirmWithdrawal}
-                  disabled={withdrawalMutation.isPending}
-                  className="w-full text-2xl py-8 bg-green-600 hover:bg-green-700 active:bg-green-800 rounded-2xl font-bold shadow-lg transform active:scale-[0.98] transition-all duration-150"
-                  size="lg"
-                >
-                  {withdrawalMutation.isPending ? (
-                    <div className="flex items-center gap-4">
-                      <div className="animate-spin rounded-full h-7 w-7 border-b-3 border-white"></div>
-                      Processando Baixa...
-                    </div>
-                  ) : (
-                    <>
-                      <CheckCircle className="h-8 w-8 mr-4" />
-                      Confirmar Baixa no Estoque
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setScanState('scanning');
-                    setScannedLabel(null);
-                  }}
-                  className="w-full text-xl py-6 border-3 border-gray-300 hover:border-gray-400 active:border-gray-500 rounded-2xl font-semibold hover:bg-gray-50 active:bg-gray-100 shadow-md transform active:scale-[0.98] transition-all duration-150"
-                  size="lg"
-                >
-                  <ArrowLeft className="h-6 w-6 mr-3" />
-                  Voltar ao Scanner
-                </Button>
+                <div className="flex flex-col gap-6 mt-12">
+                  <Button 
+                    onClick={handleConfirmWithdrawal}
+                    disabled={withdrawalMutation.isPending}
+                    className="w-full h-20 text-3xl font-bold bg-green-600 hover:bg-green-700 active:bg-green-800 rounded-3xl shadow-xl transform active:scale-[0.98] transition-all duration-200"
+                  >
+                    {withdrawalMutation.isPending ? (
+                      <div className="flex items-center gap-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-4 border-white"></div>
+                        Processando Baixa...
+                      </div>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-8 w-8 mr-4" />
+                        CONFIRMAR BAIXA
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setScanState('scanning');
+                      setScannedLabel(null);
+                    }}
+                    className="w-full h-16 text-2xl font-semibold border-4 border-gray-300 hover:border-gray-400 active:border-gray-500 rounded-3xl hover:bg-gray-50 active:bg-gray-100 shadow-lg transform active:scale-[0.98] transition-all duration-200"
+                  >
+                    <ArrowLeft className="h-6 w-6 mr-3" />
+                    Voltar ao Scanner
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -375,14 +392,14 @@ export default function WithdrawalPage() {
 
         {/* Loading states */}
         {(labelLookupMutation.isPending) && (
-          <Card className="shadow-lg">
-            <CardContent className="p-12 text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-600 mx-auto mb-6"></div>
-              <p className="text-2xl text-muted-foreground font-medium">
-                Buscando etiqueta escaneada...
-              </p>
-              <p className="text-lg text-muted-foreground mt-2">
-                Aguarde um momento
+          <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+            <CardContent className="p-16 text-center">
+              <div className="animate-spin rounded-full h-24 w-24 border-b-6 border-orange-600 mx-auto mb-8"></div>
+              <h2 className="text-4xl font-bold text-gray-800 mb-4">
+                Buscando Etiqueta
+              </h2>
+              <p className="text-2xl text-gray-600">
+                Processando código escaneado...
               </p>
             </CardContent>
           </Card>

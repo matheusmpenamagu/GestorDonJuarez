@@ -104,120 +104,124 @@ export function QRScanner({ onScan, onClose, isActive = true }: QRScannerProps) 
 
   if (hasPermission === false) {
     return (
-      <Card className="w-full max-w-2xl mx-auto shadow-lg">
-        <CardContent className="p-12 text-center">
-          <Camera className="h-20 w-20 mx-auto mb-8 text-orange-400" />
-          <h3 className="text-3xl font-bold mb-6 text-gray-900">Permissão da Câmera Necessária</h3>
-          <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
+      <div className="text-center space-y-8">
+        <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-orange-100 mb-8">
+          <Camera className="h-16 w-16 text-orange-600" />
+        </div>
+        <div className="space-y-4">
+          <h3 className="text-4xl font-bold text-gray-800">Permissão da Câmera</h3>
+          <p className="text-2xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
             Para escanear códigos QR das etiquetas, precisamos acessar a câmera do seu dispositivo.
           </p>
-          <div className="space-y-4">
+        </div>
+        <div className="space-y-6">
+          <Button 
+            onClick={startCamera} 
+            className="h-20 px-12 text-3xl font-bold bg-orange-600 hover:bg-orange-700 active:bg-orange-800 rounded-3xl shadow-xl transform active:scale-[0.98] transition-all duration-200"
+          >
+            <Camera className="h-8 w-8 mr-4" />
+            PERMITIR CÂMERA
+          </Button>
+          {onClose && (
             <Button 
-              onClick={startCamera} 
-              className="w-full text-xl py-6 bg-orange-600 hover:bg-orange-700 rounded-xl font-semibold"
-              size="lg"
+              variant="outline" 
+              onClick={onClose} 
+              className="h-16 px-8 text-2xl font-semibold border-4 border-gray-300 hover:border-gray-400 active:border-gray-500 rounded-3xl hover:bg-gray-50 active:bg-gray-100 shadow-lg transform active:scale-[0.98] transition-all duration-200"
             >
-              <Camera className="h-6 w-6 mr-3" />
-              Permitir Acesso à Câmera
+              Cancelar
             </Button>
-            {onClose && (
-              <Button 
-                variant="outline" 
-                onClick={onClose} 
-                className="w-full text-xl py-6 border-2 rounded-xl font-semibold hover:bg-gray-50"
-                size="lg"
-              >
-                Cancelar
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card className="w-full max-w-2xl mx-auto shadow-lg">
-        <CardContent className="p-12 text-center">
-          <X className="h-20 w-20 mx-auto mb-8 text-red-500" />
-          <h3 className="text-3xl font-bold mb-6 text-red-700">Erro na Câmera</h3>
-          <p className="text-xl text-muted-foreground mb-8 leading-relaxed">{error}</p>
-          <div className="space-y-4">
-            <Button 
-              onClick={startCamera} 
-              className="w-full text-xl py-6 bg-orange-600 hover:bg-orange-700 rounded-xl font-semibold"
-              size="lg"
-            >
-              Tentar Novamente
-            </Button>
-            {onClose && (
-              <Button 
-                variant="outline" 
-                onClick={onClose} 
-                className="w-full text-xl py-6 border-2 rounded-xl font-semibold hover:bg-gray-50"
-                size="lg"
-              >
-                Cancelar
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <div className="w-full max-w-2xl mx-auto">
-      <Card className="shadow-lg">
-        <CardContent className="p-8">
-          <div className="relative">
-            <video
-              ref={videoRef}
-              className="w-full rounded-xl border-4 border-orange-200"
-              playsInline
-              muted
-              autoPlay
-            />
-            <canvas
-              ref={canvasRef}
-              className="hidden"
-            />
-            
-            {/* Scanner overlay */}
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="flex items-center justify-center h-full">
-                <div className="w-64 h-64 border-4 border-orange-500 rounded-2xl bg-transparent relative animate-pulse">
-                  <div className="absolute -top-1 -left-1 w-12 h-12 border-t-8 border-l-8 border-orange-500 rounded-tl-2xl"></div>
-                  <div className="absolute -top-1 -right-1 w-12 h-12 border-t-8 border-r-8 border-orange-500 rounded-tr-2xl"></div>
-                  <div className="absolute -bottom-1 -left-1 w-12 h-12 border-b-8 border-l-8 border-orange-500 rounded-bl-2xl"></div>
-                  <div className="absolute -bottom-1 -right-1 w-12 h-12 border-b-8 border-r-8 border-orange-500 rounded-br-2xl"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="text-center mt-8 space-y-3">
-            <p className="text-2xl text-gray-700 font-semibold">
-              Posicione o QR Code dentro do quadrado
-            </p>
-            <p className="text-lg text-muted-foreground">
-              A leitura será automática quando detectado
-            </p>
-          </div>
-          
+      <div className="text-center space-y-8">
+        <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-red-100 mb-8">
+          <X className="h-16 w-16 text-red-600" />
+        </div>
+        <div className="space-y-4">
+          <h3 className="text-4xl font-bold text-red-700">Erro na Câmera</h3>
+          <p className="text-2xl text-gray-600 max-w-2xl mx-auto leading-relaxed">{error}</p>
+        </div>
+        <div className="space-y-6">
+          <Button 
+            onClick={startCamera} 
+            className="h-20 px-12 text-3xl font-bold bg-orange-600 hover:bg-orange-700 active:bg-orange-800 rounded-3xl shadow-xl transform active:scale-[0.98] transition-all duration-200"
+          >
+            TENTAR NOVAMENTE
+          </Button>
           {onClose && (
             <Button 
               variant="outline" 
               onClick={onClose} 
-              className="w-full mt-8 text-xl py-6 border-2 rounded-xl font-semibold hover:bg-gray-50"
-              size="lg"
+              className="h-16 px-8 text-2xl font-semibold border-4 border-gray-300 hover:border-gray-400 active:border-gray-500 rounded-3xl hover:bg-gray-50 active:bg-gray-100 shadow-lg transform active:scale-[0.98] transition-all duration-200"
             >
-              Cancelar Scanner
+              Cancelar
             </Button>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full">
+      <div className="relative max-w-3xl mx-auto">
+        <video
+          ref={videoRef}
+          className="w-full h-auto rounded-3xl border-4 border-orange-300 shadow-2xl"
+          playsInline
+          muted
+          autoPlay
+        />
+        <canvas
+          ref={canvasRef}
+          className="hidden"
+        />
+        
+        {/* Scanner overlay */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="flex items-center justify-center h-full">
+            <div className="w-80 h-80 border-6 border-orange-500 rounded-3xl bg-transparent relative animate-pulse shadow-2xl">
+              <div className="absolute -top-2 -left-2 w-16 h-16 border-t-8 border-l-8 border-orange-600 rounded-tl-3xl"></div>
+              <div className="absolute -top-2 -right-2 w-16 h-16 border-t-8 border-r-8 border-orange-600 rounded-tr-3xl"></div>
+              <div className="absolute -bottom-2 -left-2 w-16 h-16 border-b-8 border-l-8 border-orange-600 rounded-bl-3xl"></div>
+              <div className="absolute -bottom-2 -right-2 w-16 h-16 border-b-8 border-r-8 border-orange-600 rounded-br-3xl"></div>
+              
+              {/* Scanning animation line */}
+              <div className="absolute inset-4 overflow-hidden rounded-2xl">
+                <div className="w-full h-1 bg-orange-500 opacity-75 animate-bounce" style={{
+                  animation: 'scanLine 2s linear infinite'
+                }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="text-center mt-8 space-y-4">
+        <p className="text-3xl text-gray-800 font-bold">
+          Escaneie o QR Code da Etiqueta
+        </p>
+        <p className="text-xl text-gray-600 font-medium">
+          Posicione o código dentro do quadrado laranja
+        </p>
+      </div>
+      
+      {onClose && (
+        <div className="mt-8 text-center">
+          <Button 
+            variant="outline" 
+            onClick={onClose} 
+            className="h-16 px-12 text-2xl font-semibold border-4 border-gray-300 hover:border-gray-400 active:border-gray-500 rounded-3xl hover:bg-gray-50 active:bg-gray-100 shadow-lg transform active:scale-[0.98] transition-all duration-200"
+          >
+            Cancelar Scanner
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
