@@ -272,7 +272,7 @@ export const productShelfLifes = pgTable("product_shelf_lifes", {
 export const productPortions = pgTable("product_portions", {
   id: serial("id").primaryKey(),
   productId: integer("product_id").references(() => products.id).notNull(),
-  quantity: integer("quantity").notNull(), // Quantidade
+  quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(), // Quantidade com suporte a decimais
   unitOfMeasure: varchar("unit_of_measure", { length: 20 }).notNull(), // Unidade de medida do produto
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

@@ -38,7 +38,7 @@ type ProductPortion = {
   id: number;
   productId: number;
   quantity: number;
-  unit: string;
+  unitOfMeasure: string;
   description?: string;
 };
 
@@ -414,6 +414,33 @@ export default function PublicLabelPage() {
     generatePreview();
   };
 
+  // Função para converter unidades automaticamente baseado na quantidade
+  const formatSmartUnit = (quantity: number, originalUnit: string): { quantity: number; unit: string } => {
+    const normalizedUnit = originalUnit.toUpperCase();
+    
+    // Se a quantidade é >= 1, usa a unidade original
+    if (quantity >= 1) {
+      return { quantity, unit: originalUnit };
+    }
+    
+    // Para quantidades < 1, converte para unidade menor
+    switch (normalizedUnit) {
+      case 'KG':
+        return { 
+          quantity: quantity * 1000, 
+          unit: 'g' 
+        };
+      case 'L':
+        return { 
+          quantity: quantity * 1000, 
+          unit: 'ml' 
+        };
+      default:
+        // Para outras unidades, mantém como está
+        return { quantity, unit: originalUnit };
+    }
+  };
+
   const generatePreview = () => {
     if (!selectedProduct || !selectedPortion || !selectedStorage || !shelfLife || !pinUser) return;
 
@@ -700,22 +727,25 @@ export default function PublicLabelPage() {
             <div>
               <h2 className="text-xl font-semibold mb-4">Selecione o Porcionamento</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {portions.map((portion) => (
-                  <Card
-                    key={portion.id}
-                    className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => handlePortionSelect(portion)}
-                  >
-                    <CardContent className="p-6">
-                      <h3 className="font-semibold text-lg">
-                        {portion.quantity} {portion.unit}
-                      </h3>
-                      {portion.description && (
-                        <p className="text-gray-600 text-sm">{portion.description}</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                {portions.map((portion) => {
+                  const smartUnit = formatSmartUnit(portion.quantity, portion.unitOfMeasure);
+                  return (
+                    <Card
+                      key={portion.id}
+                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => handlePortionSelect(portion)}
+                    >
+                      <CardContent className="p-6">
+                        <h3 className="font-semibold text-lg">
+                          {smartUnit.quantity} {smartUnit.unit}
+                        </h3>
+                        {portion.description && (
+                          <p className="text-gray-600 text-sm">{portion.description}</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           )}
