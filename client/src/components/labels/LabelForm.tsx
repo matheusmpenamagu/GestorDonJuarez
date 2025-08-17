@@ -127,6 +127,9 @@ export default function LabelForm({
   const selectedStorageMethod = form.watch("storageMethod");
   const selectedDate = form.watch("date");
   const availablePortions = portions.filter(p => p.productId === selectedProductId);
+  
+  // Get shelf life for selected product
+  const selectedProductShelfLife = shelfLifes.find(sl => sl.productId === selectedProductId);
 
   // Fetch shelf lifes data
   const { data: shelfLifes = [] } = useQuery<ProductShelfLife[]>({
@@ -148,6 +151,27 @@ export default function LabelForm({
 
     const expiryDate = addDays(new Date(baseDate), daysToAdd);
     return format(expiryDate, "yyyy-MM-dd");
+  };
+
+  // Function to get storage option display with days
+  const getStorageOptionDisplay = (method: string, shelfLife: ProductShelfLife | undefined) => {
+    const methodInfo = {
+      'congelado': { icon: '🧊', label: 'Congelado' },
+      'resfriado': { icon: '❄️', label: 'Resfriado' },
+      'temperatura_ambiente': { icon: '🌡️', label: 'Temperatura Ambiente' }
+    }[method];
+
+    if (!methodInfo || !shelfLife) {
+      return methodInfo ? `${methodInfo.icon} ${methodInfo.label}` : method;
+    }
+
+    const days = {
+      'congelado': shelfLife.frozenDays,
+      'resfriado': shelfLife.chilledDays,
+      'temperatura_ambiente': shelfLife.roomTemperatureDays
+    }[method];
+
+    return `${methodInfo.icon} ${methodInfo.label} (${days} dias)`;
   };
 
   useEffect(() => {
@@ -354,9 +378,15 @@ export default function LabelForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="congelado">🧊 Congelado</SelectItem>
-                      <SelectItem value="resfriado">❄️ Resfriado</SelectItem>
-                      <SelectItem value="temperatura_ambiente">🌡️ Temperatura Ambiente</SelectItem>
+                      <SelectItem value="congelado">
+                        {getStorageOptionDisplay('congelado', selectedProductShelfLife)}
+                      </SelectItem>
+                      <SelectItem value="resfriado">
+                        {getStorageOptionDisplay('resfriado', selectedProductShelfLife)}
+                      </SelectItem>
+                      <SelectItem value="temperatura_ambiente">
+                        {getStorageOptionDisplay('temperatura_ambiente', selectedProductShelfLife)}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
