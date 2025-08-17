@@ -48,8 +48,10 @@ export function useAuth() {
         // Clear stored session if authentication fails
         localStorage.removeItem('sessionId');
         setUser(null);
-        // Only redirect if we're not already on login page
-        if (window.location.pathname !== '/' && window.location.pathname !== '/dashboard') {
+        // Only redirect if we're not already on login page or public pages
+        const publicPaths = ['/', '/dashboard', '/etiquetas', '/public/etiquetas', '/contagem-publica', '/privacidade', '/termos-de-uso'];
+        const isPublicPath = publicPaths.some(path => window.location.pathname.startsWith(path));
+        if (!isPublicPath) {
           setLocation('/');
         }
       }
