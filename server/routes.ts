@@ -33,23 +33,39 @@ const upload = multer({
 
 // Employee authentication middleware for hybrid auth (cookies + headers)
 const requireAuth = async (req: any, res: any, next: any) => {
+  console.log('🔐 [REQUIRE-AUTH] === AUTHENTICATION CHECK ===');
+  console.log('🔐 [REQUIRE-AUTH] Method:', req.method);
+  console.log('🔐 [REQUIRE-AUTH] Path:', req.path);
+  console.log('🔐 [REQUIRE-AUTH] Session ID:', req.sessionID);
+  console.log('🔐 [REQUIRE-AUTH] Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('🔐 [REQUIRE-AUTH] Cookies:', req.headers.cookie);
+  
   try {
     // Check for employee session in regular session
+    console.log('🔐 [REQUIRE-AUTH] Checking regular employee session...');
+    console.log('🔐 [REQUIRE-AUTH] Session data:', JSON.stringify(req.session, null, 2));
+    
     if (req.session?.employee) {
+      console.log('✅ [REQUIRE-AUTH] Found regular employee session:', req.session.employee);
       req.user = req.session.employee;
       return next();
     }
 
     // Check for PIN session (for public tablet access)
+    console.log('🔐 [REQUIRE-AUTH] Checking PIN employee session...');
     if (req.session?.pinEmployee) {
+      console.log('✅ [REQUIRE-AUTH] Found PIN employee session:', req.session.pinEmployee);
       req.user = req.session.pinEmployee;
       return next();
     }
 
     // Check for session ID in Authorization header (fallback for Replit proxy issues)
     const authHeader = req.headers.authorization;
+    console.log('🔐 [REQUIRE-AUTH] Authorization header:', authHeader);
+    
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const sessionId = authHeader.substring(7);
+      console.log('🔐 [REQUIRE-AUTH] Extracted session ID from Bearer token:', sessionId);
       
       // Get session data from store directly with proper Promise handling
       try {
@@ -63,13 +79,17 @@ const requireAuth = async (req: any, res: any, next: any) => {
           });
         });
 
+        console.log('🔐 [REQUIRE-AUTH] Session store data for Bearer token:', JSON.stringify(sessionData, null, 2));
+
         if (sessionData?.employee) {
+          console.log('✅ [REQUIRE-AUTH] Found employee in session store via Bearer token');
           req.user = sessionData.employee;
           return next();
         }
 
         // Check for PIN session in session store
         if (sessionData?.pinEmployee) {
+          console.log('✅ [REQUIRE-AUTH] Found PIN employee in session store via Bearer token');
           req.user = sessionData.pinEmployee;
           return next();
         }
@@ -79,9 +99,12 @@ const requireAuth = async (req: any, res: any, next: any) => {
     }
 
     // No valid authentication found
+    console.log('❌ [REQUIRE-AUTH] No valid authentication found');
+    console.log('🔐 [REQUIRE-AUTH] === END AUTHENTICATION CHECK ===');
     return res.status(401).json({ message: 'Unauthorized' });
   } catch (error) {
-    console.error('Auth middleware error:', error);
+    console.error('❌ [REQUIRE-AUTH] Auth middleware error:', error);
+    console.log('🔐 [REQUIRE-AUTH] === END AUTHENTICATION CHECK ===');
     return res.status(500).json({ message: 'Internal server error' });
   }
 };

@@ -136,8 +136,13 @@ export default function PublicLabelPage() {
       return;
     }
 
+    console.log('📌 [CLIENT] === PIN SUBMIT ===');
+    console.log('📌 [CLIENT] PIN entered:', pin);
+    console.log('📌 [CLIENT] Document cookies before PIN:', document.cookie);
+
     setLoading(true);
     try {
+      console.log('📌 [CLIENT] Making PIN request...');
       const response = await fetch('/api/auth/pin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -145,16 +150,27 @@ export default function PublicLabelPage() {
         body: JSON.stringify({ pin }),
       });
 
+      console.log('📌 [CLIENT] PIN response status:', response.status);
+      console.log('📌 [CLIENT] PIN response headers:', Array.from(response.headers.entries()));
+      console.log('📌 [CLIENT] Document cookies after PIN:', document.cookie);
+
       if (response.ok) {
         const user = await response.json();
+        console.log('✅ [CLIENT] PIN authenticated successfully:', user);
         setPinUser(user);
         setStep('unit');
+        
+        // Immediately fetch units after successful PIN
+        console.log('📌 [CLIENT] Triggering units fetch...');
+        await fetchUnits();
+        
         toast({
           title: "Acesso autorizado",
           description: `Olá, ${user.firstName}!`,
         });
       } else {
         const error = await response.json();
+        console.log('❌ [CLIENT] PIN authentication failed:', error);
         toast({
           title: "PIN inválido",
           description: error.message || "Verifique o PIN e tente novamente",
@@ -163,6 +179,7 @@ export default function PublicLabelPage() {
         setPin('');
       }
     } catch (error) {
+      console.error('❌ [CLIENT] PIN request error:', error);
       toast({
         title: "Erro de conexão",
         description: "Não foi possível validar o PIN",
@@ -171,6 +188,7 @@ export default function PublicLabelPage() {
       setPin('');
     } finally {
       setLoading(false);
+      console.log('📌 [CLIENT] === END PIN SUBMIT ===');
     }
   };
 
@@ -203,17 +221,31 @@ export default function PublicLabelPage() {
   };
 
   const fetchUnits = async () => {
+    console.log('🏢 [CLIENT] === FETCHING UNITS ===');
+    console.log('🏢 [CLIENT] PIN User:', pinUser);
+    console.log('🏢 [CLIENT] Document cookies:', document.cookie);
+    
     try {
+      console.log('🏢 [CLIENT] Making request to /api/units...');
       const response = await fetch('/api/units', {
         credentials: 'include',
       });
+      
+      console.log('🏢 [CLIENT] Response status:', response.status);
+      console.log('🏢 [CLIENT] Response headers:', Array.from(response.headers.entries()));
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ [CLIENT] Units fetched successfully:', data);
         setUnits(data);
+      } else {
+        const errorData = await response.json();
+        console.log('❌ [CLIENT] Failed to fetch units:', errorData);
       }
     } catch (error) {
-      console.error('Error fetching units:', error);
+      console.error('❌ [CLIENT] Error fetching units:', error);
     }
+    console.log('🏢 [CLIENT] === END FETCHING UNITS ===');
   };
 
   const fetchCategories = async () => {
