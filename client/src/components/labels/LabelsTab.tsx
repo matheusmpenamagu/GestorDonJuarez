@@ -229,12 +229,6 @@ export default function LabelsTab() {
         </Button>
       </div>
 
-      {/* Status Cards */}
-      <LabelStatusCards 
-        activeFilter={activeFilter}
-        onFilterChange={setActiveFilter}
-      />
-
       {/* Filter indicator */}
       {activeFilter !== 'all' && (
         <div className="flex items-center gap-2">
