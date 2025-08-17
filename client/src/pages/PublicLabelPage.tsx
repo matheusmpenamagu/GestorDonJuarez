@@ -490,31 +490,71 @@ export default function PublicLabelPage() {
 
     setLoading(true);
     try {
-      const promises = generatedLabels.map(label =>
-        fetch('/api/labels', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(label),
-        })
-      );
+      const sessionId = pinUser?.sessionId;
+      if (!sessionId) {
+        throw new Error('Usuário não autenticado');
+      }
 
-      await Promise.all(promises);
+      // Create labels in database one by one
+      let successCount = 0;
+      for (const label of generatedLabels) {
+        try {
+          const response = await fetch('/api/labels', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${sessionId}`,
+            },
+            body: JSON.stringify(label),
+          });
 
-      toast({
-        title: "Etiquetas geradas!",
-        description: `${generatedLabels.length} etiqueta(s) criada(s) com sucesso`,
-      });
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Error creating label:', errorData);
+            continue; // Skip this label and continue with next
+          }
+          
+          successCount++;
+        } catch (labelError) {
+          console.error('Error creating individual label:', labelError);
+          continue; // Skip this label and continue with next
+        }
+      }
 
-      // Auto logout and reset
+      if (successCount > 0) {
+        toast({
+          title: "Etiquetas geradas com sucesso!",
+          description: `${successCount} de ${generatedLabels.length} etiqueta(s) foram criadas`,
+        });
+      } else {
+        throw new Error('Nenhuma etiqueta foi criada com sucesso');
+      }
+
+      // Reset all states and go back to pin entry after 2 seconds
       setTimeout(() => {
-        handleLogout();
-      }, 3000);
+        setStep('pin');
+        setPinUser(null);
+        setPin('');
+        setSelectedUnit(null);
+        setSelectedCategory(null);
+        setSelectedProduct(null);
+        setSelectedPortion(null);
+        setSelectedStorage(null);
+        setSelectedQuantity(1);
+        setQuantity(1);
+        setGeneratedLabels([]);
+        setUnits([]);
+        setCategories([]);
+        setProducts([]);
+        setPortions([]);
+        setShelfLife(null);
+      }, 2000);
 
     } catch (error) {
+      console.error('Error creating labels:', error);
       toast({
         title: "Erro ao gerar etiquetas",
-        description: "Tente novamente",
+        description: "Houve um problema ao gerar as etiquetas. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -870,7 +910,7 @@ export default function PublicLabelPage() {
                       <p><strong>Produto:</strong> {selectedProduct?.name}</p>
                     </div>
                     <div>
-                      <p><strong>Porção:</strong> {selectedPortion?.quantity} {selectedPortion?.unit}</p>
+                      <p><strong>Porção:</strong> {selectedPortion?.quantity} {selectedPortion?.unitOfMeasure}</p>
                       <p><strong>Armazenamento:</strong> {
                         selectedStorage === 'frozen' ? 'Congelado' :
                         selectedStorage === 'cooled' ? 'Resfriado' : 'Ambiente'
