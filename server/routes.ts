@@ -2699,9 +2699,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🛍️ [PRODUCTS] Fetching products with filters:', { categoryId });
       
       // Get products, optionally filtered by category
-      const products = categoryId 
-        ? await storage.getProductsByCategory(Number(categoryId))
-        : await storage.getProducts();
+      let products;
+      if (categoryId) {
+        console.log('🛍️ [PRODUCTS] Filtering by category ID:', categoryId);
+        products = await storage.getProductsByCategory(Number(categoryId));
+      } else {
+        console.log('🛍️ [PRODUCTS] Getting all products');
+        products = await storage.getProducts();
+      }
       
       console.log('🛍️ [PRODUCTS] Found', products.length, 'products before shelf life filter');
       
