@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Loader2, Check, LogOut, QrCode } from "lucide-react";
+import { ChevronLeft, Loader2, Check, LogOut, QrCode, Minus, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 type PinUser = {
@@ -76,6 +76,7 @@ export default function PublicLabelPage() {
   const [selectedPortion, setSelectedPortion] = useState<ProductPortion | null>(null);
   const [selectedStorage, setSelectedStorage] = useState<'frozen' | 'cooled' | 'ambient' | null>(null);
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
+  const [quantity, setQuantity] = useState<number>(1);
   
   // Data states
   const [units, setUnits] = useState<Unit[]>([]);
@@ -800,22 +801,53 @@ export default function PublicLabelPage() {
 
           {step === 'quantity' && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Quantidade de Etiquetas</h2>
-              <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
-                {[1, 2, 3, 4, 5, 10, 15, 20, 25, 30].map((qty) => (
-                  <Card
-                    key={qty}
-                    className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => handleQuantitySelect(qty)}
-                  >
-                    <CardContent className="p-6 text-center">
-                      <h3 className="font-bold text-2xl">{qty}</h3>
-                      <p className="text-gray-600 text-sm">
-                        {qty === 1 ? 'etiqueta' : 'etiquetas'}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
+              <h2 className="text-xl font-semibold mb-6 text-center">Quantidade de Etiquetas</h2>
+              <div className="flex items-center justify-center space-x-6">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-16 h-16 text-2xl font-bold"
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  disabled={quantity <= 1}
+                >
+                  -
+                </Button>
+                
+                <div className="text-center">
+                  <input
+                    type="number"
+                    min="1"
+                    max="999"
+                    value={quantity}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 1;
+                      setQuantity(Math.max(1, Math.min(999, value)));
+                    }}
+                    className="w-24 h-16 text-3xl font-bold text-center border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:outline-none"
+                  />
+                  <p className="text-gray-600 text-sm mt-2">
+                    {quantity === 1 ? 'etiqueta' : 'etiquetas'}
+                  </p>
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-16 h-16 text-2xl font-bold"
+                  onClick={() => setQuantity(Math.min(999, quantity + 1))}
+                  disabled={quantity >= 999}
+                >
+                  +
+                </Button>
+              </div>
+              
+              <div className="flex justify-center mt-8">
+                <Button
+                  onClick={() => handleQuantitySelect(quantity)}
+                  className="px-8 py-3 text-lg"
+                >
+                  Continuar
+                </Button>
               </div>
             </div>
           )}
