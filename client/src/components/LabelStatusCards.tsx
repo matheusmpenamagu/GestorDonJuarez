@@ -12,6 +12,8 @@ interface Label {
   expiryDate: string;
   storageMethod: string;
   identifier: string;
+  withdrawalDate?: string | null;
+  withdrawalResponsibleId?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -50,10 +52,11 @@ export default function LabelStatusCards({
     return expiry.getTime() > weekFromNow.getTime();
   };
 
-  // Count labels by category
-  const expiringTodayCount = labels.filter(label => isExpiringToday(label.expiryDate)).length;
-  const expiringTomorrowCount = labels.filter(label => isExpiringTomorrow(label.expiryDate)).length;
-  const validMoreThan7DaysCount = labels.filter(label => isValidMoreThan7Days(label.expiryDate)).length;
+  // Count labels by category (only available labels - not withdrawn)
+  const availableLabels = labels.filter(label => !label.withdrawalDate);
+  const expiringTodayCount = availableLabels.filter(label => isExpiringToday(label.expiryDate)).length;
+  const expiringTomorrowCount = availableLabels.filter(label => isExpiringTomorrow(label.expiryDate)).length;
+  const validMoreThan7DaysCount = availableLabels.filter(label => isValidMoreThan7Days(label.expiryDate)).length;
 
   const handleCardClick = (filter: 'expiring_today' | 'expiring_tomorrow' | 'valid_week') => {
     if (onFilterChange) {
