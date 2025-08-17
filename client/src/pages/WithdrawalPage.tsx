@@ -306,22 +306,20 @@ export default function WithdrawalPage() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200 p-6">
       <div className="max-w-6xl mx-auto">
         
-        {/* Header */}
+        {/* Clean Header - Just Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-orange-600 mb-4" style={{ fontFamily: 'Montserrat' }}>
+          <h1 className="text-5xl font-bold text-orange-600 mb-8" style={{ fontFamily: 'Montserrat' }}>
             Don Juarez
           </h1>
-          <p className="text-2xl text-orange-800 font-medium mb-6">
-            Sistema de Baixa de Etiquetas
-          </p>
-          <Button 
-            onClick={handleLogout}
-            className="h-16 px-8 text-xl font-semibold bg-red-500 hover:bg-red-600 active:bg-red-700 rounded-2xl shadow-lg transform active:scale-[0.98] transition-all duration-200"
-          >
-            <LogOut className="h-6 w-6 mr-3" />
-            Finalizar Sessão
-          </Button>
         </div>
+
+        {/* Floating Logout Button */}
+        <Button 
+          onClick={handleLogout}
+          className="fixed bottom-6 right-6 h-16 px-6 text-lg font-semibold bg-red-500 hover:bg-red-600 active:bg-red-700 rounded-full shadow-2xl transform active:scale-[0.95] transition-all duration-200 z-50"
+        >
+          Finalizar
+        </Button>
 
         {/* Scanner State: Scanning */}
         {scanState === 'scanning' && (
@@ -329,12 +327,9 @@ export default function WithdrawalPage() {
             <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
               <CardContent className="p-8">
                 <div className="text-center mb-6">
-                  <h2 className="text-3xl font-bold text-gray-800 mb-2">
-                    Scanner de QR Code
+                  <h2 className="text-3xl font-bold text-gray-800 mb-6">
+                    Baixa de Etiquetas
                   </h2>
-                  <p className="text-xl text-gray-600">
-                    Posicione o código QR da etiqueta dentro do quadrado
-                  </p>
                 </div>
                 <QRScanner 
                   onQRScanned={handleQRScanned} 

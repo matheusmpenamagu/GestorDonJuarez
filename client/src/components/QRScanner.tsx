@@ -6,12 +6,12 @@ import { Camera, X } from 'lucide-react';
 import jsQR from 'jsqr';
 
 interface QRScannerProps {
-  onScan: (data: string) => void;
+  onQRScanned: (data: string) => void;
   onClose?: () => void;
   isActive?: boolean;
 }
 
-export function QRScanner({ onScan, onClose, isActive = true }: QRScannerProps) {
+export function QRScanner({ onQRScanned, onClose, isActive = true }: QRScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -78,7 +78,7 @@ export function QRScanner({ onScan, onClose, isActive = true }: QRScannerProps) 
 
       if (code) {
         console.log('✅ [QR-SCANNER] QR Code detected:', code.data);
-        onScan(code.data);
+        onQRScanned(code.data);
         return; // Parar scanning após detectar um código
       }
 
