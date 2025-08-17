@@ -2445,14 +2445,42 @@ export class DatabaseStorage implements IStorage {
     await db.delete(labels).where(eq(labels.id, id));
   }
 
-  async getLabelByIdentifier(identifier: string): Promise<Label | null> {
-    const [label] = await db
-      .select()
+  async getLabelByIdentifier(identifier: string): Promise<any | null> {
+    const [labelWithData] = await db
+      .select({
+        id: labels.id,
+        productId: labels.productId,
+        responsibleId: labels.responsibleId,
+        date: labels.date,
+        portionId: labels.portionId,
+        expiryDate: labels.expiryDate,
+        storageMethod: labels.storageMethod,
+        identifier: labels.identifier,
+        withdrawalDate: labels.withdrawalDate,
+        withdrawalResponsibleId: labels.withdrawalResponsibleId,
+        createdAt: labels.createdAt,
+        updatedAt: labels.updatedAt,
+        product: {
+          name: products.name,
+          code: products.code
+        },
+        portion: {
+          quantity: productPortions.quantity,
+          unitOfMeasure: productPortions.unitOfMeasure
+        },
+        responsible: {
+          firstName: employees.firstName,
+          lastName: employees.lastName
+        }
+      })
       .from(labels)
+      .leftJoin(products, eq(labels.productId, products.id))
+      .leftJoin(productPortions, eq(labels.portionId, productPortions.id))
+      .leftJoin(employees, eq(labels.responsibleId, employees.id))
       .where(eq(labels.identifier, identifier))
       .limit(1);
     
-    return label || null;
+    return labelWithData || null;
   }
 
   async updateLabelWithdrawal(id: number, withdrawalData: { withdrawalDate: Date; withdrawalResponsibleId: number }): Promise<Label> {
