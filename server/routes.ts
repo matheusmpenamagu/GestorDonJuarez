@@ -2185,6 +2185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Units management routes
   app.get('/api/units', requireAuth, async (req, res) => {
     try {
+      console.log('🔐 [UNITS] User authenticated:', req.user?.firstName, req.user?.type);
       const units = await storage.getUnits();
       res.json(units);
     } catch (error) {

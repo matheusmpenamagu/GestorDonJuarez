@@ -525,7 +525,7 @@ export const insertUnitSchema = createInsertSchema(units).omit({
   createdAt: true,
   updatedAt: true,
 }).extend({
-  cnpj: z.string().regex(/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/, "CNPJ deve estar no formato 99.999.999/9999-99").optional(),
+  cnpj: z.string().regex(/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/, "CNPJ deve estar no formato XX.XXX.XXX/XXXX-XX").optional(),
 });
 
 export const insertCo2RefillSchema = createInsertSchema(co2Refills).omit({
