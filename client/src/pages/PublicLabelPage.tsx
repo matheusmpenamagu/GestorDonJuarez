@@ -412,9 +412,20 @@ export default function PublicLabelPage() {
   };
 
   const handleQuantitySelect = (quantity: number) => {
+    console.log('🔢 [QUANTITY] === QUANTITY SELECTION ===');
+    console.log('🔢 [QUANTITY] Selected quantity:', quantity);
+    console.log('🔢 [QUANTITY] Current state check:');
+    console.log('🔢 [QUANTITY] - selectedProduct:', selectedProduct);
+    console.log('🔢 [QUANTITY] - selectedPortion:', selectedPortion);
+    console.log('🔢 [QUANTITY] - selectedStorage:', selectedStorage);
+    console.log('🔢 [QUANTITY] - shelfLife:', shelfLife);
+    console.log('🔢 [QUANTITY] - pinUser:', pinUser);
+    
     setSelectedQuantity(quantity);
     setStep('confirmation');
+    console.log('🔢 [QUANTITY] Calling generatePreview()...');
     generatePreview();
+    console.log('🔢 [QUANTITY] === END QUANTITY SELECTION ===');
   };
 
   // Função para converter unidades automaticamente baseado na quantidade
@@ -445,10 +456,23 @@ export default function PublicLabelPage() {
   };
 
   const generatePreview = () => {
-    if (!selectedProduct || !selectedPortion || !selectedStorage || !shelfLife || !pinUser) return;
+    console.log('📋 [PREVIEW] === GENERATING PREVIEW LABELS ===');
+    console.log('📋 [PREVIEW] Checking required data...');
+    console.log('📋 [PREVIEW] - selectedProduct:', selectedProduct);
+    console.log('📋 [PREVIEW] - selectedPortion:', selectedPortion);
+    console.log('📋 [PREVIEW] - selectedStorage:', selectedStorage);
+    console.log('📋 [PREVIEW] - shelfLife:', shelfLife);
+    console.log('📋 [PREVIEW] - pinUser:', pinUser);
+    console.log('📋 [PREVIEW] - selectedQuantity:', selectedQuantity);
+    
+    if (!selectedProduct || !selectedPortion || !selectedStorage || !shelfLife || !pinUser) {
+      console.log('❌ [PREVIEW] Missing required data, aborting preview generation');
+      return;
+    }
 
     const today = new Date();
     const productionDate = today.toISOString().split('T')[0];
+    console.log('📋 [PREVIEW] Production date:', productionDate);
     
     let expiryDays = 0;
     switch (selectedStorage) {
@@ -463,12 +487,15 @@ export default function PublicLabelPage() {
         break;
     }
 
+    console.log('📋 [PREVIEW] Storage method:', selectedStorage, 'Expiry days:', expiryDays);
+
     const expiryDate = new Date(today);
     expiryDate.setDate(expiryDate.getDate() + expiryDays);
+    console.log('📋 [PREVIEW] Expiry date:', expiryDate.toISOString().split('T')[0]);
 
     const labels: Label[] = [];
     for (let i = 0; i < selectedQuantity; i++) {
-      labels.push({
+      const label = {
         productId: selectedProduct.id,
         responsibleId: pinUser.id,
         portionId: selectedPortion.id,
@@ -477,27 +504,47 @@ export default function PublicLabelPage() {
         productionDate,
         expiryDate: expiryDate.toISOString().split('T')[0],
         identifier: `${selectedProduct.code}-${Date.now()}-${i + 1}`,
-      });
+      };
+      labels.push(label);
+      console.log(`📋 [PREVIEW] Generated label ${i + 1}:`, label);
     }
     
+    console.log('📋 [PREVIEW] Total labels generated:', labels.length);
     setGeneratedLabels(labels);
+    console.log('📋 [PREVIEW] Labels set in state, preview generation complete');
+    console.log('📋 [PREVIEW] === END GENERATING PREVIEW LABELS ===');
   };
 
 
 
   const handleConfirmGeneration = async () => {
-    if (generatedLabels.length === 0) return;
+    console.log('🏷️ [GENERATE] === STARTING LABEL GENERATION ===');
+    console.log('🏷️ [GENERATE] Generated labels count:', generatedLabels.length);
+    console.log('🏷️ [GENERATE] First label sample:', generatedLabels[0]);
+    console.log('🏷️ [GENERATE] PIN user:', pinUser);
+    
+    if (generatedLabels.length === 0) {
+      console.log('❌ [GENERATE] No labels to generate, exiting');
+      return;
+    }
 
     setLoading(true);
     try {
       const sessionId = pinUser?.sessionId;
+      console.log('🏷️ [GENERATE] Session ID:', sessionId);
+      
       if (!sessionId) {
         throw new Error('Usuário não autenticado');
       }
 
       // Create labels in database one by one
       let successCount = 0;
-      for (const label of generatedLabels) {
+      console.log('🏷️ [GENERATE] Starting to create labels individually...');
+      
+      for (let i = 0; i < generatedLabels.length; i++) {
+        const label = generatedLabels[i];
+        console.log(`🏷️ [GENERATE] Creating label ${i + 1}/${generatedLabels.length}:`, label);
+        
         try {
           const response = await fetch('/api/labels', {
             method: 'POST',
@@ -508,50 +555,61 @@ export default function PublicLabelPage() {
             body: JSON.stringify(label),
           });
 
+          console.log(`🏷️ [GENERATE] Label ${i + 1} response status:`, response.status);
+          console.log(`🏷️ [GENERATE] Label ${i + 1} response headers:`, Array.from(response.headers.entries()));
+
           if (!response.ok) {
             const errorData = await response.json();
-            console.error('Error creating label:', errorData);
+            console.error(`❌ [GENERATE] Error creating label ${i + 1}:`, errorData);
             continue; // Skip this label and continue with next
           }
           
+          const responseData = await response.json();
+          console.log(`✅ [GENERATE] Label ${i + 1} created successfully:`, responseData);
           successCount++;
         } catch (labelError) {
-          console.error('Error creating individual label:', labelError);
+          console.error(`❌ [GENERATE] Exception creating label ${i + 1}:`, labelError);
           continue; // Skip this label and continue with next
         }
       }
+
+      console.log('🏷️ [GENERATE] Generation complete. Success count:', successCount);
 
       if (successCount > 0) {
         toast({
           title: "Etiquetas geradas com sucesso!",
           description: `${successCount} de ${generatedLabels.length} etiqueta(s) foram criadas`,
         });
+        
+        console.log('🏷️ [GENERATE] Success toast shown, starting reset timer...');
+        
+        // Reset all states and go back to pin entry after 2 seconds
+        setTimeout(() => {
+          console.log('🏷️ [GENERATE] Resetting all states and returning to PIN screen...');
+          setStep('pin');
+          setPinUser(null);
+          setPin('');
+          setSelectedUnit(null);
+          setSelectedCategory(null);
+          setSelectedProduct(null);
+          setSelectedPortion(null);
+          setSelectedStorage(null);
+          setSelectedQuantity(1);
+          setQuantity(1);
+          setGeneratedLabels([]);
+          setUnits([]);
+          setCategories([]);
+          setProducts([]);
+          setPortions([]);
+          setShelfLife(null);
+          console.log('🏷️ [GENERATE] Reset complete!');
+        }, 2000);
       } else {
         throw new Error('Nenhuma etiqueta foi criada com sucesso');
       }
 
-      // Reset all states and go back to pin entry after 2 seconds
-      setTimeout(() => {
-        setStep('pin');
-        setPinUser(null);
-        setPin('');
-        setSelectedUnit(null);
-        setSelectedCategory(null);
-        setSelectedProduct(null);
-        setSelectedPortion(null);
-        setSelectedStorage(null);
-        setSelectedQuantity(1);
-        setQuantity(1);
-        setGeneratedLabels([]);
-        setUnits([]);
-        setCategories([]);
-        setProducts([]);
-        setPortions([]);
-        setShelfLife(null);
-      }, 2000);
-
     } catch (error) {
-      console.error('Error creating labels:', error);
+      console.error('❌ [GENERATE] Fatal error creating labels:', error);
       toast({
         title: "Erro ao gerar etiquetas",
         description: "Houve um problema ao gerar as etiquetas. Tente novamente.",
@@ -559,6 +617,7 @@ export default function PublicLabelPage() {
       });
     } finally {
       setLoading(false);
+      console.log('🏷️ [GENERATE] === END LABEL GENERATION ===');
     }
   };
 
@@ -947,7 +1006,12 @@ export default function PublicLabelPage() {
                 <Button
                   size="lg"
                   className="bg-green-600 hover:bg-green-700 flex-1"
-                  onClick={handleConfirmGeneration}
+                  onClick={() => {
+                    console.log('🖱️ [BUTTON] Generate button clicked!');
+                    console.log('🖱️ [BUTTON] Loading state:', loading);
+                    console.log('🖱️ [BUTTON] Generated labels count:', generatedLabels.length);
+                    handleConfirmGeneration();
+                  }}
                   disabled={loading}
                 >
                   {loading ? (
