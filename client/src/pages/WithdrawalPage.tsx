@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { QRScanner } from '@/components/QRScanner';
-import { CheckCircle, Package, User, Calendar, LogOut, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Package, User, Calendar, LogOut, ArrowLeft, Loader2 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 
 type PinState = 'entry' | 'authenticated';
@@ -44,6 +44,9 @@ export default function WithdrawalPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Debug logging
+  console.log('🔍 [DEBUG] WithdrawalPage render - pinState:', pinState, 'scanState:', scanState, 'sessionId:', sessionId);
+
   // PIN authentication mutation
   const pinLoginMutation = useMutation({
     mutationFn: async (pin: string) => {
@@ -62,13 +65,19 @@ export default function WithdrawalPage() {
     },
     onSuccess: (data) => {
       console.log('📱 [PIN-AUTH] Login successful:', data);
+      console.log('📱 [PIN-AUTH] Setting states - pinState: authenticated, scanState: scanning');
       setSessionId(data.sessionId);
       setPinState('authenticated');
       setScanState('scanning');
       toast({ 
         title: "Autenticado com sucesso!",
-        description: `Bem-vindo, ${data.employee.firstName}!`,
+        description: `Bem-vindo, ${data.firstName}!`,
       });
+      
+      // Debug log current states after setting
+      setTimeout(() => {
+        console.log('📱 [PIN-AUTH] States after update - pinState:', pinState, 'scanState:', scanState);
+      }, 100);
     },
     onError: (error) => {
       console.error('❌ [PIN-AUTH] Login failed:', error);
