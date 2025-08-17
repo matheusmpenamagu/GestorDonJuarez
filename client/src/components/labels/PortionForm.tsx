@@ -54,7 +54,7 @@ interface PortionFormProps {
 
 const portionSchema = z.object({
   productId: z.number({ required_error: "Selecione um produto" }),
-  quantity: z.number().min(1, "Deve ser maior que 0"),
+  quantity: z.number({ required_error: "Digite uma quantidade" }).min(0.01, "Deve ser maior que 0"),
 });
 
 type PortionFormData = z.infer<typeof portionSchema>;
@@ -75,7 +75,7 @@ export default function PortionForm({
     resolver: zodResolver(portionSchema),
     defaultValues: {
       productId: 0,
-      quantity: 1,
+      quantity: undefined,
     },
   });
 
@@ -93,7 +93,7 @@ export default function PortionForm({
     } else {
       form.reset({
         productId: 0,
-        quantity: 1,
+        quantity: undefined,
       });
     }
   }, [portion, form]);
@@ -197,10 +197,14 @@ export default function PortionForm({
                     <FormControl>
                       <Input
                         type="number"
-                        min="1"
+                        min="0.01"
                         step="0.01"
+                        placeholder="Ex: 0.5, 1.25, 2"
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 1)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          field.onChange(value === '' ? undefined : parseFloat(value));
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
