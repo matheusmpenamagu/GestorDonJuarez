@@ -4,32 +4,9 @@ import { Calendar, Tags, Archive } from "lucide-react";
 import ShelfLifesTab from "@/components/labels/ShelfLifesTab";
 import PortionsTab from "@/components/labels/PortionsTab";
 import LabelsTab from "@/components/labels/LabelsTab";
+import LabelStatusCards from "@/components/LabelStatusCards";
 
 export default function LabelsPage() {
-
-  const stats = [
-    {
-      title: "Validades Cadastradas",
-      value: "12",
-      description: "Produtos com prazo definido",
-      icon: Calendar,
-      variant: "default" as const,
-    },
-    {
-      title: "Porcionamentos",
-      value: "8",
-      description: "Configurações ativas",
-      icon: Archive,
-      variant: "default" as const,
-    },
-    {
-      title: "Etiquetas Hoje",
-      value: "24",
-      description: "Geradas hoje",
-      icon: Tags,
-      variant: "default" as const,
-    },
-  ];
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
@@ -47,27 +24,8 @@ export default function LabelsPage() {
 
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {stats.map((stat, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className="h-4 w-4 text-gray-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {stat.value}
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-500">
-                {stat.description}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* Status Cards */}
+      <LabelStatusCards />
 
       {/* Main Content */}
       <Card>
