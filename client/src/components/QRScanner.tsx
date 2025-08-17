@@ -168,60 +168,33 @@ export function QRScanner({ onQRScanned, onClose, isActive = true }: QRScannerPr
   }
 
   return (
-    <div className="w-full">
-      <div className="relative max-w-3xl mx-auto">
+    <div className="fixed inset-0 bg-black">
+      {/* Full Screen Camera */}
+      <div className="w-full h-full relative">
         <video
           ref={videoRef}
-          className="w-full h-auto rounded-3xl border-4 border-orange-300 shadow-2xl"
+          autoPlay
           playsInline
           muted
-          autoPlay
-        />
-        <canvas
-          ref={canvasRef}
-          className="hidden"
+          className="w-full h-full object-cover"
         />
         
-        {/* Scanner overlay */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="flex items-center justify-center h-full">
-            <div className="w-80 h-80 border-6 border-orange-500 rounded-3xl bg-transparent relative animate-pulse shadow-2xl">
-              <div className="absolute -top-2 -left-2 w-16 h-16 border-t-8 border-l-8 border-orange-600 rounded-tl-3xl"></div>
-              <div className="absolute -top-2 -right-2 w-16 h-16 border-t-8 border-r-8 border-orange-600 rounded-tr-3xl"></div>
-              <div className="absolute -bottom-2 -left-2 w-16 h-16 border-b-8 border-l-8 border-orange-600 rounded-bl-3xl"></div>
-              <div className="absolute -bottom-2 -right-2 w-16 h-16 border-b-8 border-r-8 border-orange-600 rounded-br-3xl"></div>
-              
-              {/* Scanning animation line */}
-              <div className="absolute inset-4 overflow-hidden rounded-2xl">
-                <div className="w-full h-1 bg-orange-500 opacity-75 animate-bounce" style={{
-                  animation: 'scanLine 2s linear infinite'
-                }}></div>
-              </div>
-            </div>
+        {/* QR Code Detection Overlay */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-80 h-80 border-4 border-orange-400 rounded-3xl bg-transparent flex items-center justify-center">
+            <div className="w-72 h-72 border-2 border-orange-300 rounded-2xl bg-transparent opacity-70"></div>
+          </div>
+        </div>
+        
+        {/* Scanning Animation */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-80 h-80 flex items-center justify-center">
+            <div className="w-1 h-72 bg-orange-400 animate-pulse opacity-60"></div>
           </div>
         </div>
       </div>
       
-      <div className="text-center mt-8 space-y-4">
-        <p className="text-3xl text-gray-800 font-bold">
-          Escaneie o QR Code da Etiqueta
-        </p>
-        <p className="text-xl text-gray-600 font-medium">
-          Posicione o código dentro do quadrado laranja
-        </p>
-      </div>
-      
-      {onClose && (
-        <div className="mt-8 text-center">
-          <Button 
-            variant="outline" 
-            onClick={onClose} 
-            className="h-16 px-12 text-2xl font-semibold border-4 border-gray-300 hover:border-gray-400 active:border-gray-500 rounded-3xl hover:bg-gray-50 active:bg-gray-100 shadow-lg transform active:scale-[0.98] transition-all duration-200"
-          >
-            Cancelar Scanner
-          </Button>
-        </div>
-      )}
+      <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 }

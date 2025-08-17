@@ -303,41 +303,27 @@ export default function WithdrawalPage() {
 
   // Main scanning interface
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200 p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-black">
+      <div className="w-full h-full">
         
-        {/* Clean Header - Just Logo */}
-        <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-orange-600 mb-8" style={{ fontFamily: 'Montserrat' }}>
-            Don Juarez
-          </h1>
-        </div>
 
-        {/* Floating Logout Button */}
-        <Button 
-          onClick={handleLogout}
-          className="fixed bottom-6 right-6 h-16 px-6 text-lg font-semibold bg-red-500 hover:bg-red-600 active:bg-red-700 rounded-full shadow-2xl transform active:scale-[0.95] transition-all duration-200 z-50"
-        >
-          Finalizar
-        </Button>
 
-        {/* Scanner State: Scanning */}
+        {/* Floating Logout Button - Only when authenticated */}
+        {pinState === 'authenticated' && (
+          <Button 
+            onClick={handleLogout}
+            className="fixed bottom-6 right-6 h-16 px-6 text-lg font-semibold bg-red-500 hover:bg-red-600 active:bg-red-700 rounded-full shadow-2xl transform active:scale-[0.95] transition-all duration-200 z-50"
+          >
+            Finalizar
+          </Button>
+        )}
+
+        {/* Scanner State: Scanning - Ultra Minimal */}
         {scanState === 'scanning' && (
-          <div className="space-y-8">
-            <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-              <CardContent className="p-8">
-                <div className="text-center mb-6">
-                  <h2 className="text-3xl font-bold text-gray-800 mb-6">
-                    Baixa de Etiquetas
-                  </h2>
-                </div>
-                <QRScanner 
-                  onQRScanned={handleQRScanned} 
-                  isActive={true}
-                />
-              </CardContent>
-            </Card>
-          </div>
+          <QRScanner 
+            onQRScanned={handleQRScanned} 
+            isActive={true}
+          />
         )}
 
         {/* Scanner State: Found Label */}
