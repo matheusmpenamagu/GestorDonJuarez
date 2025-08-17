@@ -75,7 +75,7 @@ export default function PortionForm({
     resolver: zodResolver(portionSchema),
     defaultValues: {
       productId: 0,
-      quantity: undefined,
+      quantity: 0,
     },
   });
 
@@ -93,7 +93,7 @@ export default function PortionForm({
     } else {
       form.reset({
         productId: 0,
-        quantity: undefined,
+        quantity: 0,
       });
     }
   }, [portion, form]);
@@ -201,9 +201,10 @@ export default function PortionForm({
                         step="0.01"
                         placeholder="Ex: 0.5, 1.25, 2"
                         {...field}
+                        value={field.value || ''}
                         onChange={(e) => {
                           const value = e.target.value;
-                          field.onChange(value === '' ? undefined : parseFloat(value));
+                          field.onChange(value === '' ? 0 : parseFloat(value));
                         }}
                       />
                     </FormControl>

@@ -574,7 +574,7 @@ export const insertProductPortionSchema = createInsertSchema(productPortions).om
   createdAt: true,
   updatedAt: true,
 }).extend({
-  quantity: z.number().min(1),
+  quantity: z.number().min(0.01, "Quantidade deve ser maior que 0"),
 });
 
 export const insertLabelSchema = createInsertSchema(labels).omit({
