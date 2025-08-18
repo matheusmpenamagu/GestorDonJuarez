@@ -38,7 +38,10 @@ export function QRScanner({ onQRScanned, onClose, isActive = true, resetKey = 0 
         await videoRef.current.play();
         setHasPermission(true);
         console.log('✅ [QR-SCANNER] Camera started successfully, starting scanning...');
-        startScanning();
+        // Wait a bit for video to be ready, then start scanning
+        setTimeout(() => {
+          startScanning();
+        }, 500);
       }
     } catch (err) {
       console.error('❌ [QR-SCANNER] Error accessing camera:', err);
@@ -59,17 +62,25 @@ export function QRScanner({ onQRScanned, onClose, isActive = true, resetKey = 0 
   };
 
   const startScanning = () => {
+    console.log('🔍 [QR-SCANNER] Starting scan loop...', { isActive, hasPermission });
     setIsScanning(true);
-    console.log('🔍 [QR-SCANNER] Starting scan loop...', { isActive, hasPermission, isScanning: true });
     
     const scan = () => {
-      if (!isActive || !videoRef.current || !canvasRef.current || !isScanning) {
+      // Check if scanning should continue
+      const shouldContinue = isActive && videoRef.current && canvasRef.current && isScanning;
+      
+      if (!shouldContinue) {
         console.log('🔍 [QR-SCANNER] Scan conditions not met:', { 
           isActive, 
           hasVideo: !!videoRef.current, 
           hasCanvas: !!canvasRef.current, 
           isScanning 
         });
+        
+        // If conditions not met but we should retry, schedule next frame
+        if (isActive && videoRef.current && canvasRef.current) {
+          animationFrameRef.current = requestAnimationFrame(scan);
+        }
         return;
       }
 
@@ -87,13 +98,15 @@ export function QRScanner({ onQRScanned, onClose, isActive = true, resetKey = 0 
         return;
       }
 
-      // Log video dimensions periodically
+      // Log video dimensions and scanning status periodically
       if (Math.random() < 0.01) { // Log 1% of frames to avoid spam
         console.log('🔍 [QR-SCANNER] Video dimensions:', { 
           videoWidth: video.videoWidth, 
           videoHeight: video.videoHeight,
           canvasWidth: canvas.width,
-          canvasHeight: canvas.height
+          canvasHeight: canvas.height,
+          isScanning: isScanning,
+          imageDataLength: 'checking...'
         });
       }
 
@@ -102,9 +115,20 @@ export function QRScanner({ onQRScanned, onClose, isActive = true, resetKey = 0 
       context.drawImage(video, 0, 0);
 
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Log occasionally for debugging
+      if (Math.random() < 0.005) { // Very rare logging
+        console.log('🔍 [QR-SCANNER] Image data:', { 
+          imageDataLength: imageData.data.length,
+          width: imageData.width,
+          height: imageData.height,
+          hasNonZeroPixels: imageData.data.some(pixel => pixel > 0)
+        });
+      }
+      
       const code = jsQR(imageData.data, imageData.width, imageData.height);
 
-      if (code && isScanning) {
+      if (code) {
         console.log('✅ [QR-SCANNER] QR Code detected:', code.data);
         setIsScanning(false); // Parar temporariamente o scanning
         onQRScanned(code.data);
@@ -121,8 +145,12 @@ export function QRScanner({ onQRScanned, onClose, isActive = true, resetKey = 0 
   useEffect(() => {
     if (isActive && hasPermission && resetKey > 0) {
       console.log('🔄 [QR-SCANNER] Resetting scanner due to resetKey change:', resetKey);
-      setIsScanning(true);
-      startScanning();
+      setTimeout(() => {
+        setIsScanning(true);
+        if (videoRef.current && canvasRef.current) {
+          startScanning();
+        }
+      }, 100); // Small delay to ensure state is updated
     }
   }, [resetKey]);
 
@@ -224,12 +252,32 @@ export function QRScanner({ onQRScanned, onClose, isActive = true, resetKey = 0 
           </div>
         </div>
         
-        {/* Scanning Animation */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-80 h-80 flex items-center justify-center">
-            <div className="w-1 h-72 bg-orange-400 animate-pulse opacity-60"></div>
+        {/* Scanning Status */}
+        <div className="absolute top-8 left-0 right-0 flex flex-col items-center pointer-events-none">
+          <div className="bg-black bg-opacity-60 rounded-2xl px-8 py-4 mb-4">
+            <h2 className="text-white text-3xl font-bold text-center">Escaneie o QR Code</h2>
+            <p className="text-orange-300 text-xl text-center mt-2">
+              {isScanning ? 'Aguardando QR code...' : 'Scanner pausado'}
+            </p>
           </div>
+          {/* Scanning indicator */}
+          {isScanning && (
+            <div className="flex space-x-2">
+              <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
+              <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse delay-200"></div>
+              <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse delay-400"></div>
+            </div>
+          )}
         </div>
+        
+        {/* Scanning Animation */}
+        {isScanning && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-80 h-80 flex items-center justify-center">
+              <div className="w-1 h-72 bg-orange-400 animate-pulse opacity-60"></div>
+            </div>
+          </div>
+        )}
       </div>
       
       <canvas ref={canvasRef} className="hidden" />
