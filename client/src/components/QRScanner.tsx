@@ -17,6 +17,7 @@ export function QRScanner({ onQRScanned, onClose, isActive = true, resetKey = 0 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number>();
+  const isScanningRef = useRef<boolean>(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -63,24 +64,17 @@ export function QRScanner({ onQRScanned, onClose, isActive = true, resetKey = 0 
 
   const startScanning = () => {
     console.log('🔍 [QR-SCANNER] Starting scan loop...', { isActive, hasPermission });
+    isScanningRef.current = true;
     setIsScanning(true);
     
     const scan = () => {
-      // Check if scanning should continue
-      const shouldContinue = isActive && videoRef.current && canvasRef.current && isScanning;
-      
-      if (!shouldContinue) {
+      if (!isActive || !videoRef.current || !canvasRef.current || !isScanningRef.current) {
         console.log('🔍 [QR-SCANNER] Scan conditions not met:', { 
           isActive, 
           hasVideo: !!videoRef.current, 
           hasCanvas: !!canvasRef.current, 
-          isScanning 
+          isScanningRef: isScanningRef.current 
         });
-        
-        // If conditions not met but we should retry, schedule next frame
-        if (isActive && videoRef.current && canvasRef.current) {
-          animationFrameRef.current = requestAnimationFrame(scan);
-        }
         return;
       }
 
@@ -130,7 +124,8 @@ export function QRScanner({ onQRScanned, onClose, isActive = true, resetKey = 0 
 
       if (code) {
         console.log('✅ [QR-SCANNER] QR Code detected:', code.data);
-        setIsScanning(false); // Parar temporariamente o scanning
+        isScanningRef.current = false; // Parar temporariamente o scanning
+        setIsScanning(false);
         onQRScanned(code.data);
         return; // Parar scanning após detectar um código
       }
@@ -145,12 +140,14 @@ export function QRScanner({ onQRScanned, onClose, isActive = true, resetKey = 0 
   useEffect(() => {
     if (isActive && hasPermission && resetKey > 0) {
       console.log('🔄 [QR-SCANNER] Resetting scanner due to resetKey change:', resetKey);
+      // Force reset scanning state
+      isScanningRef.current = false;
+      setIsScanning(false);
       setTimeout(() => {
-        setIsScanning(true);
         if (videoRef.current && canvasRef.current) {
           startScanning();
         }
-      }, 100); // Small delay to ensure state is updated
+      }, 200);
     }
   }, [resetKey]);
 
