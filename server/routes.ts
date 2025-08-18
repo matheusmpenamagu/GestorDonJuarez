@@ -83,7 +83,23 @@ const requireAuth = async (req: any, res: any, next: any) => {
 
         if (sessionData?.employee) {
           console.log('✅ [REQUIRE-AUTH] Found employee in session store via Bearer token');
+          
+          // Check if session is expired
+          const cookieExpiry = sessionData.cookie?.expires;
+          if (cookieExpiry) {
+            const now = new Date();
+            const expiryDate = new Date(cookieExpiry);
+            console.log('🔐 [REQUIRE-AUTH] Session expiry check - Now:', now.toISOString(), 'Expires:', expiryDate.toISOString());
+            
+            if (now > expiryDate) {
+              console.log('❌ [REQUIRE-AUTH] Session expired');
+              return res.status(401).json({ message: 'Session expired' });
+            }
+          }
+          
           req.user = sessionData.employee;
+          console.log('✅ [REQUIRE-AUTH] Set req.user to:', JSON.stringify(req.user, null, 2));
+          console.log('✅ [REQUIRE-AUTH] Calling next() to proceed to endpoint');
           return next();
         }
 
@@ -4776,7 +4792,47 @@ ${message}
       
       // Buscar dados do usuário autenticado
       const user = (req as any).user;
-      const withdrawalResponsibleId = user?.employee?.id || user?.pinEmployee?.id || req.body.withdrawalResponsibleId;
+      console.log('📤 [WITHDRAWAL] User object from req.user:', JSON.stringify(user, null, 2));
+      console.log('📤 [WITHDRAWAL] Full req object keys:', Object.keys(req));
+      console.log('📤 [WITHDRAWAL] Session keys:', Object.keys(req.session || {}));
+      
+      // Try multiple approaches to get the user ID
+      let withdrawalResponsibleId = user?.id || req.body.withdrawalResponsibleId;
+      
+      // Fallback: check session directly 
+      if (!withdrawalResponsibleId && req.session?.employee?.id) {
+        withdrawalResponsibleId = req.session.employee.id;
+        console.log('📤 [WITHDRAWAL] Found ID from session.employee:', withdrawalResponsibleId);
+      }
+      
+      // Fallback: check PIN session
+      if (!withdrawalResponsibleId && req.session?.pinEmployee?.id) {
+        withdrawalResponsibleId = req.session.pinEmployee.id;
+        console.log('📤 [WITHDRAWAL] Found ID from session.pinEmployee:', withdrawalResponsibleId);
+      }
+      
+      // Fallback: direct session store lookup
+      if (!withdrawalResponsibleId) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          const sessionId = authHeader.substring(7);
+          try {
+            const sessionData = await new Promise<any>((resolve, reject) => {
+              req.sessionStore.get(sessionId, (err: any, data: any) => {
+                if (err) reject(err);
+                else resolve(data);
+              });
+            });
+            
+            if (sessionData?.employee?.id) {
+              withdrawalResponsibleId = sessionData.employee.id;
+              console.log('📤 [WITHDRAWAL] Found ID from direct session store lookup:', withdrawalResponsibleId);
+            }
+          } catch (error) {
+            console.error('📤 [WITHDRAWAL] Session store lookup error:', error);
+          }
+        }
+      }
       
       console.log('📤 [WITHDRAWAL] Withdrawal responsible ID:', withdrawalResponsibleId);
       
