@@ -45,6 +45,7 @@ export default function WithdrawalPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [scannedLabel, setScannedLabel] = useState<Label | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [qrResetKey, setQrResetKey] = useState(0);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -161,6 +162,10 @@ export default function WithdrawalPage() {
       setShowConfirmModal(false);
       setScannedLabel(null);
       
+      // Reset QR scanner to continue scanning
+      setQrResetKey(prev => prev + 1);
+      console.log('🔄 [WITHDRAWAL] QR scanner reset triggered');
+      
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['/api/labels'] });
     },
@@ -215,6 +220,9 @@ export default function WithdrawalPage() {
   const handleCancelConfirmation = () => {
     setShowConfirmModal(false);
     setScannedLabel(null);
+    // Reset QR scanner to continue scanning
+    setQrResetKey(prev => prev + 1);
+    console.log('🔄 [WITHDRAWAL] QR scanner reset triggered after cancel');
   };
 
   const handleLogout = () => {
@@ -331,6 +339,7 @@ export default function WithdrawalPage() {
           <QRScanner 
             onQRScanned={handleQRScanned} 
             isActive={true}
+            resetKey={qrResetKey}
           />
         )}
 
