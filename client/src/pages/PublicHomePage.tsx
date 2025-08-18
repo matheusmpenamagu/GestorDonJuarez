@@ -39,8 +39,6 @@ export default function PublicHomePage() {
           <a
             key={index}
             href={button.url}
-            target="_blank"
-            rel="noopener noreferrer"
             className={`
               ${button.color}
               text-white font-bold text-xl py-8 px-6 rounded-lg
