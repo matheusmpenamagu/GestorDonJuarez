@@ -37,8 +37,8 @@ export function QRScanner({ onQRScanned, onClose, isActive = true, resetKey = 0 
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
         setHasPermission(true);
+        console.log('✅ [QR-SCANNER] Camera started successfully, starting scanning...');
         startScanning();
-        console.log('✅ [QR-SCANNER] Camera started successfully');
       }
     } catch (err) {
       console.error('❌ [QR-SCANNER] Error accessing camera:', err);
@@ -60,18 +60,41 @@ export function QRScanner({ onQRScanned, onClose, isActive = true, resetKey = 0 
 
   const startScanning = () => {
     setIsScanning(true);
-    console.log('🔍 [QR-SCANNER] Starting scan loop...');
+    console.log('🔍 [QR-SCANNER] Starting scan loop...', { isActive, hasPermission, isScanning: true });
     
     const scan = () => {
-      if (!isActive || !videoRef.current || !canvasRef.current || !isScanning) return;
+      if (!isActive || !videoRef.current || !canvasRef.current || !isScanning) {
+        console.log('🔍 [QR-SCANNER] Scan conditions not met:', { 
+          isActive, 
+          hasVideo: !!videoRef.current, 
+          hasCanvas: !!canvasRef.current, 
+          isScanning 
+        });
+        return;
+      }
 
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
 
       if (!context || video.readyState !== video.HAVE_ENOUGH_DATA) {
+        console.log('🔍 [QR-SCANNER] Video not ready:', { 
+          hasContext: !!context, 
+          readyState: video.readyState, 
+          HAVE_ENOUGH_DATA: video.HAVE_ENOUGH_DATA 
+        });
         animationFrameRef.current = requestAnimationFrame(scan);
         return;
+      }
+
+      // Log video dimensions periodically
+      if (Math.random() < 0.01) { // Log 1% of frames to avoid spam
+        console.log('🔍 [QR-SCANNER] Video dimensions:', { 
+          videoWidth: video.videoWidth, 
+          videoHeight: video.videoHeight,
+          canvasWidth: canvas.width,
+          canvasHeight: canvas.height
+        });
       }
 
       canvas.width = video.videoWidth;
