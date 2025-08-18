@@ -29,6 +29,7 @@ import CashRegisterManagement from "@/pages/CashRegisterManagement";
 import LabelsPage from "@/pages/LabelsPage";
 import PublicLabelPage from "@/pages/PublicLabelPage";
 import WithdrawalPage from "@/pages/WithdrawalPage";
+import PublicHomePage from "@/pages/PublicHomePage";
 import Privacy from "@/pages/Privacy";
 import TermsOfUse from "@/pages/TermsOfUse";
 import NotFound from "@/pages/not-found";
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/public/etiquetas" component={PublicLabelPage} />
       <Route path="/baixa-etiquetas" component={WithdrawalPage} />
       <Route path="/public/baixa-etiquetas" component={WithdrawalPage} />
+      <Route path="/public/inicio" component={PublicHomePage} />
       <Route path="/privacidade" component={Privacy} />
       <Route path="/termos-de-uso" component={TermsOfUse} />
       
