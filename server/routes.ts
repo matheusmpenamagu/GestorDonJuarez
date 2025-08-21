@@ -4937,7 +4937,14 @@ ${message}
   app.post('/api/fleet/fuel-entries', requireAuth, async (req, res) => {
     try {
       const { insertFuelEntrySchema } = await import("@shared/schema");
-      const fuelEntryData = insertFuelEntrySchema.parse(req.body);
+      
+      // Convert date string to Date object if needed
+      const requestData = { ...req.body };
+      if (requestData.date && typeof requestData.date === 'string') {
+        requestData.date = new Date(requestData.date);
+      }
+      
+      const fuelEntryData = insertFuelEntrySchema.parse(requestData);
       const fuelEntry = await storage.createFuelEntry(fuelEntryData);
       res.status(201).json(fuelEntry);
     } catch (error) {
@@ -4950,7 +4957,14 @@ ${message}
     try {
       const { insertFuelEntrySchema } = await import("@shared/schema");
       const id = parseInt(req.params.id);
-      const fuelEntryData = insertFuelEntrySchema.partial().parse(req.body);
+      
+      // Convert date string to Date object if needed
+      const requestData = { ...req.body };
+      if (requestData.date && typeof requestData.date === 'string') {
+        requestData.date = new Date(requestData.date);
+      }
+      
+      const fuelEntryData = insertFuelEntrySchema.partial().parse(requestData);
       const fuelEntry = await storage.updateFuelEntry(id, fuelEntryData);
       res.json(fuelEntry);
     } catch (error) {
