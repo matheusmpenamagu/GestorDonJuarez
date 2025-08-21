@@ -4923,6 +4923,104 @@ ${message}
     }
   });
 
+  // Endpoint para impressão de etiquetas ZPL
+  app.post('/api/labels/print', requireAuth, async (req, res) => {
+    try {
+      console.log('🖨️ [PRINT] === PROCESSING LABEL PRINT ===');
+      console.log('🖨️ [PRINT] Request body:', JSON.stringify(req.body, null, 2));
+      
+      const { labelId, productName, portion, manipulationDate, expiryDate, responsible, identifier } = req.body;
+      
+      if (!labelId || !productName || !identifier) {
+        return res.status(400).json({ message: "Dados da etiqueta incompletos" });
+      }
+      
+      // Gerar ZPL para etiqueta 60x40mm (aproximadamente 472x283 dots a 203 DPI)
+      const zplCode = `^XA
+^LH0,0
+
+^FO50,30^ADN,36,20^FD${productName}^FS
+
+^FO30,80^GB410,2,2^FS
+
+^FO30,100^ADN,18,10^FDPorcionamento: ${portion}^FS
+^FO30,130^ADN,18,10^FDManipulacao: ${manipulationDate}^FS
+^FO30,160^ADN,18,10^FDValidade: ${expiryDate}^FS
+^FO30,190^ADN,18,10^FDResponsavel: ${responsible}^FS
+^FO30,220^ADN,18,10^FD#${identifier}^FS
+
+^FO30,250^GB410,2,2^FS
+
+^FO30,270^ADN,14,8^FDDon Juarez^FS
+^FO30,290^ADN,12,6^FDCNPJ: 12.345.678/0001-90^FS
+^FO30,310^ADN,12,6^FDEndereco Exemplo, 123^FS
+^FO30,330^ADN,12,6^FDCidade - Estado^FS
+
+^FO350,270^BQN,2,6^FDQA,${identifier}^FS
+
+^XZ`;
+
+      console.log('🖨️ [PRINT] Generated ZPL:', zplCode);
+      
+      // Enviar ZPL para impressora Zebra via TCP
+      const printerIP = '192.168.188.19';
+      const printerPort = 9100; // Porta padrão para impressoras Zebra
+      
+      try {
+        const net = await import('net');
+        
+        const client = new net.Socket();
+        
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            client.destroy();
+            reject(new Error('Timeout na conexão com a impressora'));
+          }, 5000);
+          
+          client.connect(printerPort, printerIP, () => {
+            clearTimeout(timeout);
+            console.log('🖨️ [PRINT] Conectado à impressora Zebra');
+            client.write(zplCode);
+            client.end();
+          });
+          
+          client.on('close', () => {
+            clearTimeout(timeout);
+            console.log('🖨️ [PRINT] Conexão com impressora fechada');
+            resolve();
+          });
+          
+          client.on('error', (err) => {
+            clearTimeout(timeout);
+            console.error('🖨️ [PRINT] Erro na conexão:', err);
+            reject(err);
+          });
+        });
+        
+        console.log('✅ [PRINT] Etiqueta enviada para impressão com sucesso');
+        console.log('🖨️ [PRINT] === END PRINT PROCESSING ===');
+        
+        res.json({ 
+          success: true, 
+          message: 'Etiqueta enviada para impressão',
+          printer: `${printerIP}:${printerPort}`
+        });
+        
+      } catch (printError) {
+        console.error('❌ [PRINT] Erro ao enviar para impressora:', printError);
+        res.status(500).json({ 
+          message: "Erro ao comunicar com a impressora",
+          error: printError instanceof Error ? printError.message : 'Erro desconhecido'
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ [PRINT] Erro geral no processo de impressão:', error);
+      console.log('🖨️ [PRINT] === END PRINT PROCESSING (WITH ERROR) ===');
+      res.status(500).json({ message: "Erro no processo de impressão" });
+    }
+  });
+
   // Fuel Entries routes
   app.get('/api/fleet/fuel-entries', requireAuth, async (req, res) => {
     try {

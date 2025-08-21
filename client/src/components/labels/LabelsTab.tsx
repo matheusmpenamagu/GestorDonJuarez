@@ -18,7 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label as UILabel } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Edit, Trash2, Calendar, QrCode, User, AlertTriangle, Clock, CalendarDays, Download, Check, X, Search, ChevronDown, ChevronUp, ArrowUpDown } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, QrCode, User, AlertTriangle, Clock, CalendarDays, Download, Check, X, Search, ChevronDown, ChevronUp, ArrowUpDown, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import LabelForm from "./LabelForm";
 import LabelStatusCards from "@/components/LabelStatusCards";
@@ -71,6 +71,8 @@ export default function LabelsTab() {
     const now = new Date();
     return format(now, "yyyy-MM-dd'T'HH:mm");
   });
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [labelToPrint, setLabelToPrint] = useState<Label | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -398,6 +400,52 @@ export default function LabelsTab() {
     
     const method = methods[storageMethod as keyof typeof methods];
     return method ? { icon: method.icon, label: method.label } : { icon: '❓', label: 'Desconhecido' };
+  };
+
+  const handlePrint = (label: Label) => {
+    setLabelToPrint(label);
+    setShowPrintModal(true);
+  };
+
+  const handleConfirmPrint = async () => {
+    if (!labelToPrint) return;
+
+    try {
+      const response = await fetch('/api/labels/print', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem("sessionId") || ""}`,
+        },
+        body: JSON.stringify({
+          labelId: labelToPrint.id,
+          productName: getProductName(labelToPrint.productId),
+          portion: getPortion(labelToPrint.portionId),
+          manipulationDate: format(new Date(labelToPrint.date), "dd/MM/yyyy", { locale: ptBR }),
+          expiryDate: format(new Date(labelToPrint.expiryDate), "dd/MM/yyyy", { locale: ptBR }),
+          responsible: getEmployeeName(labelToPrint.responsibleId),
+          identifier: labelToPrint.identifier,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao enviar para impressão');
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Etiqueta enviada para impressão com sucesso!",
+      });
+      
+      setShowPrintModal(false);
+      setLabelToPrint(null);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao enviar etiqueta para impressão",
+        variant: "destructive",
+      });
+    }
   };
 
 
@@ -755,6 +803,13 @@ export default function LabelsTab() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => handlePrint(label)}
+                        >
+                          <Printer className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleEdit(label)}
                         >
                           <Edit className="w-4 h-4" />
@@ -912,6 +967,85 @@ export default function LabelsTab() {
             >
               <Check className="w-4 h-4 mr-2" />
               {bulkWithdrawalMutation.isPending ? "Processando..." : "Confirmar Baixa"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Print Label Modal */}
+      <Dialog open={showPrintModal} onOpenChange={setShowPrintModal}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Imprimir Etiqueta</DialogTitle>
+          </DialogHeader>
+          
+          {labelToPrint && (
+            <div className="space-y-4">
+              {/* Preview da Etiqueta */}
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-white">
+                <div className="space-y-4">
+                  {/* Nome do Produto - Destaque */}
+                  <h2 className="text-xl font-bold text-center text-gray-900">
+                    {getProductName(labelToPrint.productId)}
+                  </h2>
+                  
+                  {/* Linha Horizontal */}
+                  <hr className="border-gray-400" />
+                  
+                  {/* Informações Principais */}
+                  <div className="space-y-2 text-sm">
+                    <div><strong>Porcionamento:</strong> {getPortion(labelToPrint.portionId)}</div>
+                    <div><strong>Manipulação:</strong> {format(new Date(labelToPrint.date), "dd/MM/yyyy", { locale: ptBR })}</div>
+                    <div><strong className="text-red-600">Validade:</strong> <span className="font-bold text-red-600">{format(new Date(labelToPrint.expiryDate), "dd/MM/yyyy", { locale: ptBR })}</span></div>
+                    <div><strong>Responsável:</strong> {getEmployeeName(labelToPrint.responsibleId)}</div>
+                    <div><strong>#{labelToPrint.identifier}</strong></div>
+                  </div>
+                  
+                  {/* Segunda Linha Horizontal */}
+                  <hr className="border-gray-400" />
+                  
+                  {/* Layout em 2 Colunas */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Coluna 1: Informações da Unidade */}
+                    <div className="space-y-1 text-xs">
+                      <div className="font-semibold">Don Juarez</div>
+                      <div>CNPJ: 12.345.678/0001-90</div>
+                      <div>Endereço Exemplo, 123</div>
+                      <div>Cidade - Estado</div>
+                    </div>
+                    
+                    {/* Coluna 2: QR Code */}
+                    <div className="flex justify-center items-center">
+                      <div className="w-20 h-20 border-2 border-gray-300 flex items-center justify-center text-xs text-gray-500">
+                        QR Code
+                        <br />
+                        {labelToPrint.identifier}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="text-sm text-gray-600">
+                <strong>Atenção:</strong> Esta etiqueta será enviada para impressão na impressora Zebra ZD230 (IP: 192.168.188.19)
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowPrintModal(false)}
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => handleConfirmPrint()}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              <Printer className="w-4 h-4 mr-2" />
+              Imprimir
             </Button>
           </DialogFooter>
         </DialogContent>
