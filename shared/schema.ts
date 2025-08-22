@@ -283,6 +283,7 @@ export const labels = pgTable("labels", {
   id: serial("id").primaryKey(),
   productId: integer("product_id").references(() => products.id).notNull(),
   responsibleId: integer("responsible_id").references(() => employees.id).notNull(),
+  unitId: integer("unit_id").references(() => units.id).notNull(), // Unidade da empresa onde a etiqueta foi gerada
   date: timestamp("date").notNull().defaultNow(),
   portionId: integer("portion_id").references(() => productPortions.id).notNull(),
   expiryDate: timestamp("expiry_date").notNull(), // Data de validade
@@ -462,6 +463,10 @@ export const labelsRelations = relations(labels, ({ one }) => ({
     fields: [labels.portionId],
     references: [productPortions.id],
   }),
+  unit: one(units, {
+    fields: [labels.unitId],
+    references: [units.id],
+  }),
 }));
 
 // Insert schemas
@@ -593,6 +598,7 @@ export const insertLabelSchema = createInsertSchema(labels).omit({
   date: z.string().or(z.date()).transform((val) => typeof val === 'string' ? new Date(val) : val),
   expiryDate: z.string().or(z.date()).transform((val) => typeof val === 'string' ? new Date(val) : val),
   storageMethod: z.enum(["congelado", "resfriado", "temperatura_ambiente"]),
+  unitId: z.number().min(1), // Unidade obrigatória
 });
 
 // Fleet Management Insert Schemas

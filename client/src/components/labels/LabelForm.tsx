@@ -69,10 +69,18 @@ interface ProductShelfLife {
   roomTemperatureDays: number;
 }
 
+interface Unit {
+  id: number;
+  name: string;
+  address: string;
+  cnpj?: string;
+}
+
 interface Label {
   id: number;
   productId: number;
   responsibleId: number;
+  unitId: number;
   date: string;
   portionId: number;
   expiryDate: string;
@@ -89,6 +97,7 @@ interface LabelFormProps {
 }
 
 const labelSchema = z.object({
+  unitId: z.number({ required_error: "Selecione uma unidade" }),
   productId: z.number({ required_error: "Selecione um produto" }),
   date: z.string().min(1, "Data é obrigatória"),
   portionId: z.number({ required_error: "Selecione uma porção" }),
@@ -115,6 +124,7 @@ export default function LabelForm({
   const form = useForm<LabelFormData>({
     resolver: zodResolver(labelSchema),
     defaultValues: {
+      unitId: 1, // Don Juarez Grão Pará como padrão
       productId: 0,
       date: format(new Date(), "yyyy-MM-dd"),
       portionId: 0,
@@ -126,6 +136,11 @@ export default function LabelForm({
   // Fetch shelf lifes data
   const { data: shelfLifes = [] } = useQuery<ProductShelfLife[]>({
     queryKey: ["/api/labels/shelf-lifes"],
+  });
+
+  // Fetch units data
+  const { data: units = [] } = useQuery<Unit[]>({
+    queryKey: ["/api/units"],
   });
 
   const selectedProductId = form.watch("productId");
@@ -177,6 +192,7 @@ export default function LabelForm({
   useEffect(() => {
     if (label) {
       form.reset({
+        unitId: label.unitId,
         productId: label.productId,
         date: format(new Date(label.date), "yyyy-MM-dd"),
         portionId: label.portionId,
@@ -186,6 +202,7 @@ export default function LabelForm({
     } else {
       const today = format(new Date(), "yyyy-MM-dd");
       form.reset({
+        unitId: 1, // Don Juarez Grão Pará como padrão
         productId: 0,
         date: today,
         portionId: 0,
@@ -302,6 +319,37 @@ export default function LabelForm({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="unitId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Unidade
+                  </FormLabel>
+                  <Select 
+                    value={field.value.toString()} 
+                    onValueChange={(value) => field.onChange(parseInt(value))}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma unidade" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {units.map((unit) => (
+                        <SelectItem key={unit.id} value={unit.id.toString()}>
+                          {unit.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="productId"

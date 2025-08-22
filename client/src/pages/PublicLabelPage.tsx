@@ -576,6 +576,7 @@ export default function PublicLabelPage() {
       const label = {
         productId: selectedProduct.id,
         responsibleId: pinUser.id,
+        unitId: selectedUnit.id, // Adicionar unidade selecionada
         portionId: selectedPortion.id,
         storageMethod: selectedStorage,
         quantity: 1,
