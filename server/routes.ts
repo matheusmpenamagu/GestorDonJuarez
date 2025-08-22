@@ -2751,8 +2751,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter by unit if specified
       if (unitId) {
         console.log('🏢 [PRODUCTS] Filtering by unit ID:', unitId);
-        const productUnits = await storage.getProductsByUnit(Number(unitId));
-        const unitProductIds = new Set(productUnits.map(pu => pu.productId));
+        const unitProducts = await storage.getProductsByUnit(Number(unitId));
+        const unitProductIds = new Set(unitProducts.map(product => product.id));
         finalProducts = finalProducts.filter(product => unitProductIds.has(product.id));
         console.log('🏢 [PRODUCTS] Found', finalProducts.length, 'products for unit');
       }
