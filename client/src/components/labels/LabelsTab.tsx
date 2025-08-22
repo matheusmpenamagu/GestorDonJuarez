@@ -44,6 +44,17 @@ interface ProductPortion {
   unitOfMeasure: string;
 }
 
+interface Printer {
+  id: number;
+  name: string;
+  serialNumber: string;
+  tenant: string;
+  isDefault: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface Label {
   id: number;
   productId: number;
@@ -73,6 +84,7 @@ export default function LabelsTab() {
   });
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [labelToPrint, setLabelToPrint] = useState<Label | null>(null);
+  const [selectedPrinterId, setSelectedPrinterId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -121,6 +133,31 @@ export default function LabelsTab() {
 
   const { data: labels = [], isLoading } = useQuery<Label[]>({
     queryKey: ["/api/labels"],
+  });
+
+  const { data: printers = [] } = useQuery<Printer[]>({
+    queryKey: ["/api/printers"],
+    queryFn: async () => {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      const sessionId = localStorage.getItem('sessionId');
+      if (sessionId) {
+        headers['Authorization'] = `Bearer ${sessionId}`;
+      }
+      
+      const response = await fetch('/api/printers', {
+        headers,
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch printers');
+      }
+      
+      return response.json();
+    },
   });
 
   const deleteMutation = useMutation({
@@ -404,14 +441,30 @@ export default function LabelsTab() {
 
   const handlePrint = (label: Label) => {
     setLabelToPrint(label);
+    // Selecionar automaticamente a impressora padrão
+    const defaultPrinter = printers.find(p => p.isDefault && p.isActive);
+    if (defaultPrinter) {
+      setSelectedPrinterId(defaultPrinter.id);
+    } else {
+      // Se não houver impressora padrão, selecionar a primeira ativa
+      const firstActivePrinter = printers.find(p => p.isActive);
+      setSelectedPrinterId(firstActivePrinter?.id || null);
+    }
     setShowPrintModal(true);
   };
 
   const handleConfirmPrint = async () => {
-    if (!labelToPrint) return;
+    if (!labelToPrint || !selectedPrinterId) {
+      toast({
+        title: "Erro",
+        description: "Selecione uma impressora antes de continuar",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
-      const response = await fetch('/api/labels/print', {
+      const response = await fetch('/api/labels/print-zebra', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -419,30 +472,35 @@ export default function LabelsTab() {
         },
         body: JSON.stringify({
           labelId: labelToPrint.id,
-          productName: getProductName(labelToPrint.productId),
-          portion: getPortion(labelToPrint.portionId),
-          manipulationDate: format(new Date(labelToPrint.date), "dd/MM/yyyy", { locale: ptBR }),
-          expiryDate: format(new Date(labelToPrint.expiryDate), "dd/MM/yyyy", { locale: ptBR }),
-          responsible: getEmployeeName(labelToPrint.responsibleId),
-          identifier: labelToPrint.identifier,
+          printerId: selectedPrinterId,
+          labelData: {
+            productName: getProductName(labelToPrint.productId),
+            portion: getPortion(labelToPrint.portionId),
+            manipulationDate: format(new Date(labelToPrint.date), "dd/MM/yyyy", { locale: ptBR }),
+            expiryDate: format(new Date(labelToPrint.expiryDate), "dd/MM/yyyy", { locale: ptBR }),
+            responsible: getEmployeeName(labelToPrint.responsibleId),
+            identifier: labelToPrint.identifier,
+          }
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Falha ao enviar para impressão');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Falha ao enviar para impressão');
       }
 
       toast({
         title: "Sucesso",
-        description: "Etiqueta enviada para impressão com sucesso!",
+        description: "Etiqueta enviada para impressão via API Zebra com sucesso!",
       });
       
       setShowPrintModal(false);
       setLabelToPrint(null);
+      setSelectedPrinterId(null);
     } catch (error) {
       toast({
         title: "Erro",
-        description: "Erro ao enviar etiqueta para impressão",
+        description: error instanceof Error ? error.message : "Erro ao enviar etiqueta para impressão",
         variant: "destructive",
       });
     }
@@ -1026,8 +1084,46 @@ export default function LabelsTab() {
                 </div>
               </div>
               
-              <div className="text-sm text-gray-600">
-                <strong>Atenção:</strong> Esta etiqueta será enviada para impressão na impressora Zebra ZD230 (IP: 192.168.188.19)
+              {/* Seleção de Impressora */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-gray-900">Selecionar Impressora:</h3>
+                {printers.filter(p => p.isActive).length === 0 ? (
+                  <div className="text-sm text-red-600">
+                    Nenhuma impressora ativa encontrada. Configure uma impressora na aba "Impressoras".
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2">
+                    {printers.filter(p => p.isActive).map((printer) => (
+                      <button
+                        key={printer.id}
+                        onClick={() => setSelectedPrinterId(printer.id)}
+                        className={`p-3 rounded-lg border-2 text-left transition-all ${
+                          selectedPrinterId === printer.id
+                            ? 'border-orange-500 bg-orange-50 text-orange-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Printer className="w-4 h-4" />
+                            <span className="font-medium">{printer.name}</span>
+                            {printer.isDefault && (
+                              <Badge variant="secondary" className="text-xs">
+                                Padrão
+                              </Badge>
+                            )}
+                          </div>
+                          {selectedPrinterId === printer.id && (
+                            <Check className="w-4 h-4 text-orange-600" />
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Serial: {printer.serialNumber} | {printer.tenant}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

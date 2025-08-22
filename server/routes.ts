@@ -4924,6 +4924,108 @@ ${message}
   });
 
   // Endpoint para impressão de etiquetas ZPL
+  // Labels printing endpoint via Zebra Cloud API
+  app.post('/api/labels/print-zebra', requireAuth, async (req, res) => {
+    try {
+      console.log('🖨️ [ZEBRA-API] === PROCESSING LABEL PRINT VIA ZEBRA API ===');
+      console.log('🖨️ [ZEBRA-API] Request body:', JSON.stringify(req.body, null, 2));
+      
+      const { labelId, printerId, labelData } = req.body;
+      
+      if (!labelId || !printerId || !labelData) {
+        return res.status(400).json({ message: "Dados da etiqueta, impressora ou dados de impressão incompletos" });
+      }
+
+      // Buscar informações da impressora
+      const printer = await storage.getPrinter(printerId);
+      if (!printer || !printer.isActive) {
+        return res.status(400).json({ message: "Impressora não encontrada ou inativa" });
+      }
+
+      // Verificar se a chave da API Zebra está configurada
+      const zebraApiKey = process.env.ZEBRA_APIKEY;
+      if (!zebraApiKey) {
+        return res.status(500).json({ message: "Chave da API Zebra não configurada" });
+      }
+
+      // Gerar ZPL para etiqueta 60x40mm (aproximadamente 472x283 dots a 203 DPI)
+      const zplCode = `^XA
+^LH0,0
+
+^FO50,30^ADN,36,20^FD${labelData.productName}^FS
+
+^FO30,80^GB410,2,2^FS
+
+^FO30,100^ADN,18,10^FDPorcionamento: ${labelData.portion}^FS
+^FO30,130^ADN,18,10^FDManipulacao: ${labelData.manipulationDate}^FS
+^FO30,160^ADN,18,10^FDValidade: ${labelData.expiryDate}^FS
+^FO30,190^ADN,18,10^FDResponsavel: ${labelData.responsible}^FS
+^FO30,220^ADN,18,10^FD#${labelData.identifier}^FS
+
+^FO30,250^GB410,2,2^FS
+
+^FO30,270^ADN,14,8^FDDon Juarez^FS
+^FO30,290^ADN,12,6^FDCNPJ: 12.345.678/0001-90^FS
+^FO30,310^ADN,12,6^FDEndereco Exemplo, 123^FS
+^FO30,330^ADN,12,6^FDCidade - Estado^FS
+
+^FO350,270^BQN,2,6^FDQA,${labelData.identifier}^FS
+
+^XZ`;
+
+      console.log('🖨️ [ZEBRA-API] Generated ZPL:', zplCode);
+
+      // Criar o arquivo ZPL temporário
+      const zplBuffer = Buffer.from(zplCode, 'utf8');
+
+      // Fazer a requisição para a API da Zebra
+      const FormData = (await import('form-data')).default;
+      const formData = new FormData();
+      
+      formData.append('sn', printer.serialNumber);
+      formData.append('zpl_file', zplBuffer, {
+        filename: `label_${labelData.identifier}.zpl`,
+        contentType: 'text/plain'
+      });
+
+      const fetch = (await import('node-fetch')).default;
+      
+      const response = await fetch('https://api.zebra.com/v2/devices/printers/send', {
+        method: 'POST',
+        headers: {
+          'accept': 'text/plain',
+          'apikey': zebraApiKey,
+          'tenant': printer.tenant,
+          ...formData.getHeaders()
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🖨️ [ZEBRA-API] Erro na API da Zebra:', response.status, errorText);
+        throw new Error(`Erro na API da Zebra: ${response.status} - ${errorText}`);
+      }
+
+      const responseText = await response.text();
+      console.log('✅ [ZEBRA-API] Resposta da API Zebra:', responseText);
+
+      res.json({ 
+        success: true, 
+        message: "Etiqueta enviada para impressão via API Zebra",
+        printer: printer.name,
+        response: responseText
+      });
+
+    } catch (error) {
+      console.error('❌ [ZEBRA-API] Erro ao imprimir via API Zebra:', error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Erro interno do servidor ao imprimir etiqueta"
+      });
+    }
+  });
+
+  // Legacy labels printing endpoint (TCP connection)
   app.post('/api/labels/print', requireAuth, async (req, res) => {
     try {
       console.log('🖨️ [PRINT] === PROCESSING LABEL PRINT ===');
