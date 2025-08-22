@@ -480,11 +480,7 @@ export default function LabelsTab() {
       unitId = labelToPrint.unitId;
     }
     
-    console.log('🏢 [UNIT DATA] Searching for unit ID:', unitId);
-    console.log('🏢 [UNIT DATA] Available units:', units);
-    
     const unit = units.find(u => u.id === unitId);
-    console.log('🏢 [UNIT DATA] Found unit:', unit);
     
     if (unit) {
       return {
@@ -1122,9 +1118,9 @@ export default function LabelsTab() {
               {/* Preview da Etiqueta */}
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-white">
                 <div className="space-y-4">
-                  {/* Nome do Produto - Destaque com 2 linhas */}
+                  {/* Nome do Produto - Aumentado 20% (22px -> 26px) */}
                   <div className="text-center">
-                    <h2 className="text-[22px] font-bold leading-tight text-gray-900 min-h-[44px] flex items-center justify-center">
+                    <h2 className="text-[26px] font-bold leading-tight text-gray-900 min-h-[52px] flex items-center justify-center">
                       {getProductName(labelToPrint.productId)}
                     </h2>
                   </div>
@@ -1132,13 +1128,12 @@ export default function LabelsTab() {
                   {/* Linha Horizontal */}
                   <hr className="border-gray-400" />
                   
-                  {/* Informações Principais */}
-                  <div className="space-y-2 text-sm">
+                  {/* Informações Principais - Aumentado 10% (14px -> 15px) */}
+                  <div className="space-y-2 text-[15px]">
                     <div><strong>Porcionamento:</strong> {getPortion(labelToPrint.portionId)}</div>
                     <div><strong>Manipulação:</strong> {format(new Date(labelToPrint.date), "dd/MM/yyyy", { locale: ptBR })}</div>
-                    <div><strong>Validade:</strong> <span className="font-bold text-base text-gray-900">{format(new Date(labelToPrint.expiryDate), "dd/MM/yyyy", { locale: ptBR })}</span></div>
+                    <div><strong>Validade:</strong> <span className="font-bold text-[17px] text-gray-900">{format(new Date(labelToPrint.expiryDate), "dd/MM/yyyy", { locale: ptBR })}</span></div>
                     <div><strong>Responsável:</strong> {getEmployeeName(labelToPrint.responsibleId)}</div>
-                    <div><strong>#{labelToPrint.identifier}</strong></div>
                   </div>
                   
                   {/* Segunda Linha Horizontal */}
@@ -1146,15 +1141,15 @@ export default function LabelsTab() {
                   
                   {/* Layout em 2 Colunas */}
                   <div className="grid grid-cols-2 gap-4">
-                    {/* Coluna 1: Informações da Unidade */}
-                    <div className="space-y-1 text-xs">
+                    {/* Coluna 1: Informações da Unidade - Aumentado 10% (12px -> 13px) */}
+                    <div className="space-y-1 text-[13px]">
                       <div className="font-semibold">{getUnitData(labelToPrint.unitId).name}</div>
                       <div>CNPJ: {getUnitData(labelToPrint.unitId).cnpj}</div>
                       <div className="whitespace-pre-line">{getUnitData(labelToPrint.unitId).address}</div>
                     </div>
                     
-                    {/* Coluna 2: QR Code */}
-                    <div className="flex justify-center items-center">
+                    {/* Coluna 2: QR Code com Identificador embaixo */}
+                    <div className="flex flex-col justify-center items-center space-y-1">
                       {qrCodeDataUrl ? (
                         <img 
                           src={qrCodeDataUrl} 
@@ -1164,10 +1159,10 @@ export default function LabelsTab() {
                       ) : (
                         <div className="w-20 h-20 border-2 border-gray-300 flex items-center justify-center text-xs text-gray-500">
                           QR Code
-                          <br />
-                          {labelToPrint.identifier}
                         </div>
                       )}
+                      {/* Identificador movido para baixo do QR code - mais discreto */}
+                      <div className="text-[10px] text-gray-500 font-mono">#{labelToPrint.identifier}</div>
                     </div>
                   </div>
                 </div>
