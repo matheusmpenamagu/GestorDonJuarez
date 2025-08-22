@@ -3,7 +3,17 @@
 ## Overview
 Gestor Don Juarez is a comprehensive operational management system for Don Juarez, a Brazilian craft brewery. Initially designed for real-time monitoring of beer taps and kegs connected to ESP32 sensors, it's expanding to integrate various administrative operations previously managed via spreadsheets. The system provides a dashboard, consumption monitoring, keg management, and data export, all localized in Brazilian Portuguese with São Paulo timezone support. The vision is to streamline all brewery operations, enhancing efficiency and data-driven decision-making.
 
-## Recent Updates (2025-08-18)
+## Recent Updates (2025-08-22)
+- **UNIT ASSOCIATION TRACKING IMPLEMENTED**: Added unit_id field to labels table with foreign key reference to units table for complete multi-unit operations support
+- **LABEL FORM ENHANCED**: Updated LabelForm component to include unit selection as first field in manager interface with default to Grão Pará unit
+- **PUBLIC LABEL GENERATION UPDATED**: Modified PublicLabelPage to automatically save selected unit to database during label creation
+- **SCHEMA VALIDATION ENHANCED**: Updated insertLabelSchema to require unitId for all new label creation operations
+- **DATABASE MIGRATION COMPLETED**: Successfully added unit_id column to labels table using SQL ALTER TABLE command
+- **LABEL PREVIEW IMPROVED**: Enhanced modal visualization with correct unit data display (CNPJ, address), real QR code generation, and optimized 60x60mm format
+- **ZEBRA CLOUD API INTEGRATION**: Migrated from TCP port 9100 to Zebra Cloud API with multipart/form-data requests for reliable printing
+- **COMPLETE UNIT TRACEABILITY**: All generated labels now track which unit created them, enabling proper multi-unit inventory management
+
+## Previous Updates (2025-08-18)
 - **QR SCANNER RACE CONDITION RESOLVED**: Fixed critical state management issue using isScanningRef instead of useState to eliminate timing conflicts between consecutive scans
 - **WITHDRAWAL SYSTEM FULLY OPERATIONAL**: Complete QR-based inventory withdrawal tracking system implemented and tested with 7 successful withdrawals processed
 - **PUBLIC HOME PAGE CREATED**: New /public/inicio route with Don Juarez logo and 4 navigation buttons to Vuca systems and label operations
@@ -76,12 +86,12 @@ The system employs a client-server architecture with a React 18+ TypeScript fron
 - `attached_assets/`: Documentation and requirements
 
 ### Key Features and Design Patterns
-- **Database Schema**: Includes Users, Points of Sale, Beer Styles, Devices (ESP32), Taps, Pour Events, Keg Change Events, Sessions, Labels with withdrawal tracking.
+- **Database Schema**: Includes Users, Points of Sale, Beer Styles, Devices (ESP32), Taps, Pour Events, Keg Change Events, Sessions, Labels with withdrawal tracking and unit association.
 - **API Endpoints**: Authentication, webhook endpoints for hardware (pour, keg-change, heartbeat), management (CRUD for taps, POS, beer styles), reporting (historical data, CSV export), dashboard APIs, and label withdrawal tracking.
 - **Real-time Features**: WebSocket server for live data streaming, automatic dashboard updates, real-time tap status monitoring with low-volume alerts, live consumption statistics, and QR code scanning for inventory management.
 - **Data Flow**: Hardware (ESP32 + flow sensors) sends webhook data, system processes volume, broadcasts updates via WebSockets, and stores events. User authentication via employee credentials, dashboard displays real-time data, users can export historical data, and QR-based withdrawal tracking. Keg changes reset volume and update status.
 - **UI/UX Decisions**: Orange theme, Montserrat font, simplified menu structure, visual timeline for history, EBC color integration for beer styles, compact dashboard layout, responsive design for various devices, tablet-optimized QR scanning interface.
-- **Business Logic**: Rules for night shifts (5 AM cutoff), comprehensive employee and role management, CO2 efficiency calculation, robust data import/export mechanisms including intelligent CSV processing for products and historical data, and inventory withdrawal tracking with responsible employee logging.
+- **Business Logic**: Rules for night shifts (5 AM cutoff), comprehensive employee and role management, CO2 efficiency calculation, robust data import/export mechanisms including intelligent CSV processing for products and historical data, inventory withdrawal tracking with responsible employee logging, and complete unit association tracking for multi-location operations.
 - **Public Interfaces**: Dedicated public routes for label generation (/public/etiquetas), withdrawal tracking (/public/baixa-etiquetas), and navigation hub (/public/inicio) with PIN-based authentication for production operations.
 
 ## External Dependencies
