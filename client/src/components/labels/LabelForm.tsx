@@ -149,7 +149,7 @@ export default function LabelForm({
   const selectedDate = form.watch("date");
 
   // Fetch products filtered by selected unit
-  const { data: filteredProducts = [] } = useQuery<Product[]>({
+  const { data: filteredProducts = [], isLoading: isLoadingProducts } = useQuery<Product[]>({
     queryKey: ["/api/products", selectedUnitId],
     queryFn: () => {
       const params = new URLSearchParams({
@@ -163,7 +163,7 @@ export default function LabelForm({
       return fetch(`/api/products?${params}`)
         .then((res) => res.json());
     },
-    enabled: !!selectedUnitId, // Only fetch when unit is selected
+    enabled: !!selectedUnitId || isEditing, // Always fetch when editing or when unit is selected
   });
 
   const availablePortions = portions.filter(p => p.productId === selectedProductId);
@@ -232,7 +232,7 @@ export default function LabelForm({
     }
   }, [label, form]);
 
-  // Reset product when unit changes
+  // Reset product when unit changes (only for new labels)
   useEffect(() => {
     if (selectedUnitId && !isEditing) {
       form.setValue("productId", 0);
@@ -385,23 +385,25 @@ export default function LabelForm({
                 <FormItem>
                   <FormLabel>Produto</FormLabel>
                   <Select 
-                    value={field.value.toString()} 
+                    value={field.value ? field.value.toString() : ""} 
                     onValueChange={(value) => field.onChange(parseInt(value))}
-                    disabled={!selectedUnitId || filteredProducts.length === 0}
+                    disabled={!selectedUnitId || isLoadingProducts || (filteredProducts && filteredProducts.length === 0)}
                   >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder={
                           !selectedUnitId 
                             ? "Selecione uma unidade primeiro" 
-                            : filteredProducts.length === 0 
+                            : isLoadingProducts
+                              ? "Carregando produtos..."
+                            : filteredProducts && filteredProducts.length === 0 
                               ? "Nenhum produto disponível para esta unidade"
                               : "Selecione um produto"
                         } />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {filteredProducts.map((product) => (
+                      {filteredProducts && filteredProducts.map((product) => (
                         <SelectItem key={product.id} value={product.id.toString()}>
                           {product.name}
                         </SelectItem>
@@ -420,7 +422,7 @@ export default function LabelForm({
                 <FormItem>
                   <FormLabel>Porção</FormLabel>
                   <Select 
-                    value={field.value.toString()} 
+                    value={field.value ? field.value.toString() : ""} 
                     onValueChange={(value) => field.onChange(parseInt(value))}
                     disabled={!selectedProductId || availablePortions.length === 0}
                   >

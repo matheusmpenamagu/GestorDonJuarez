@@ -60,6 +60,7 @@ interface Label {
   id: number;
   productId: number;
   responsibleId: number;
+  unitId: number;
   date: string;
   portionId: number;
   expiryDate: string;
@@ -93,7 +94,7 @@ export default function LabelsTab() {
   // State para tabela dinâmica avançada
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{
-    key: keyof Label | 'productName' | 'responsibleName' | 'portionName';
+    key: keyof Label | 'productName' | 'responsibleName' | 'portionName' | 'unitName';
     direction: 'asc' | 'desc';
   } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -384,7 +385,7 @@ export default function LabelsTab() {
       case 'portionName':
         return getPortion(label.portionId);
       default:
-        return label[key as keyof Label];
+        return label[key as keyof Label] ?? '';
     }
   };
 
