@@ -24,8 +24,6 @@ interface Printer {
   tenant: string;
   isDefault: boolean;
   isActive: boolean;
-  ipAddress?: string;
-  port?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,8 +34,6 @@ interface PrinterFormData {
   tenant: string;
   isDefault: boolean;
   isActive: boolean;
-  ipAddress: string;
-  port: number;
 }
 
 export default function PrintersTab() {
@@ -49,8 +45,6 @@ export default function PrintersTab() {
     tenant: '',
     isDefault: false,
     isActive: true,
-    ipAddress: '',
-    port: 9100,
   });
   
   const { toast } = useToast();
@@ -204,8 +198,6 @@ export default function PrintersTab() {
       tenant: '',
       isDefault: false,
       isActive: true,
-      ipAddress: '',
-      port: 9100,
     });
   };
 
@@ -217,8 +209,6 @@ export default function PrintersTab() {
       tenant: printer.tenant,
       isDefault: printer.isDefault,
       isActive: printer.isActive,
-      ipAddress: printer.ipAddress || '',
-      port: printer.port || 9100,
     });
     setShowForm(true);
   };
@@ -273,7 +263,6 @@ export default function PrintersTab() {
                 <TableHead>Nome</TableHead>
                 <TableHead>Serial Number</TableHead>
                 <TableHead>Tenant</TableHead>
-                <TableHead>IP / Porta</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Padrão</TableHead>
                 <TableHead>Ações</TableHead>
@@ -282,7 +271,7 @@ export default function PrintersTab() {
             <TableBody>
               {printers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                     Nenhuma impressora cadastrada
                   </TableCell>
                 </TableRow>
@@ -297,15 +286,6 @@ export default function PrintersTab() {
                     </TableCell>
                     <TableCell>{printer.serialNumber}</TableCell>
                     <TableCell>{printer.tenant}</TableCell>
-                    <TableCell>
-                      {printer.ipAddress ? (
-                        <span className="text-sm text-gray-600">
-                          {printer.ipAddress}:{printer.port || 9100}
-                        </span>
-                      ) : (
-                        <span className="text-sm text-gray-400">Não configurado</span>
-                      )}
-                    </TableCell>
                     <TableCell>
                       <Badge 
                         variant={printer.isActive ? "default" : "secondary"}
@@ -401,28 +381,7 @@ export default function PrintersTab() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <UILabel htmlFor="ipAddress">IP Address</UILabel>
-                <Input
-                  id="ipAddress"
-                  value={formData.ipAddress}
-                  onChange={(e) => setFormData(prev => ({ ...prev, ipAddress: e.target.value }))}
-                  placeholder="192.168.1.100"
-                />
-              </div>
 
-              <div className="space-y-2">
-                <UILabel htmlFor="port">Porta</UILabel>
-                <Input
-                  id="port"
-                  type="number"
-                  value={formData.port || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, port: parseInt(e.target.value) || 9100 }))}
-                  placeholder="9100"
-                />
-              </div>
-            </div>
 
             <div className="space-y-3">
               <div className="flex items-center space-x-2">

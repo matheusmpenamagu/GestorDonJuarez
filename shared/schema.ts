@@ -868,8 +868,6 @@ export const printers = pgTable("printers", {
   tenant: varchar("tenant", { length: 255 }).notNull(),
   isDefault: boolean("is_default").default(false),
   isActive: boolean("is_active").default(true),
-  ipAddress: varchar("ip_address", { length: 50 }),
-  port: integer("port").default(9100),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 });
