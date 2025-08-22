@@ -144,8 +144,28 @@ export default function LabelForm({
   });
 
   const selectedProductId = form.watch("productId");
+  const selectedUnitId = form.watch("unitId");
   const selectedStorageMethod = form.watch("storageMethod");
   const selectedDate = form.watch("date");
+
+  // Fetch products filtered by selected unit
+  const { data: filteredProducts = [] } = useQuery<Product[]>({
+    queryKey: ["/api/products", selectedUnitId],
+    queryFn: () => {
+      const params = new URLSearchParams({
+        includeShelfLifeFilter: "true"
+      });
+      
+      if (selectedUnitId) {
+        params.append("unitId", selectedUnitId.toString());
+      }
+      
+      return fetch(`/api/products?${params}`)
+        .then((res) => res.json());
+    },
+    enabled: !!selectedUnitId, // Only fetch when unit is selected
+  });
+
   const availablePortions = portions.filter(p => p.productId === selectedProductId);
   
   // Get shelf life for selected product
@@ -211,6 +231,14 @@ export default function LabelForm({
       });
     }
   }, [label, form]);
+
+  // Reset product when unit changes
+  useEffect(() => {
+    if (selectedUnitId && !isEditing) {
+      form.setValue("productId", 0);
+      form.setValue("portionId", 0);
+    }
+  }, [selectedUnitId, isEditing, form]);
 
   // Reset portion when product changes
   useEffect(() => {
@@ -359,14 +387,21 @@ export default function LabelForm({
                   <Select 
                     value={field.value.toString()} 
                     onValueChange={(value) => field.onChange(parseInt(value))}
+                    disabled={!selectedUnitId || filteredProducts.length === 0}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione um produto" />
+                        <SelectValue placeholder={
+                          !selectedUnitId 
+                            ? "Selecione uma unidade primeiro" 
+                            : filteredProducts.length === 0 
+                              ? "Nenhum produto disponível para esta unidade"
+                              : "Selecione um produto"
+                        } />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {products.map((product) => (
+                      {filteredProducts.map((product) => (
                         <SelectItem key={product.id} value={product.id.toString()}>
                           {product.name}
                         </SelectItem>

@@ -2711,8 +2711,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Products routes
   app.get('/api/products', requireAuth, async (req, res) => {
     try {
-      const { categoryId, includeShelfLifeFilter } = req.query;
-      console.log('🛍️ [PRODUCTS] Fetching products with filters:', { categoryId, includeShelfLifeFilter });
+      const { categoryId, includeShelfLifeFilter, unitId } = req.query;
+      console.log('🛍️ [PRODUCTS] Fetching products with filters:', { categoryId, includeShelfLifeFilter, unitId });
       
       // Get products, optionally filtered by category
       let products;
@@ -2746,6 +2746,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Fall back to all products if shelf life filtering fails
           finalProducts = products;
         }
+      }
+
+      // Filter by unit if specified
+      if (unitId) {
+        console.log('🏢 [PRODUCTS] Filtering by unit ID:', unitId);
+        const productUnits = await storage.getProductsByUnit(Number(unitId));
+        const unitProductIds = new Set(productUnits.map(pu => pu.productId));
+        finalProducts = finalProducts.filter(product => unitProductIds.has(product.id));
+        console.log('🏢 [PRODUCTS] Found', finalProducts.length, 'products for unit');
       }
       
       // For each product, get its associated units
@@ -4715,7 +4724,7 @@ ${message}
         ...req.body,
         identifier,
         storageMethod: translatedStorageMethod,
-        date: req.body.productionDate, // Usar productionDate como date
+        date: req.body.date || req.body.productionDate, // Usar date ou productionDate como fallback
       };
       
       console.log('🏷️ [SERVER] Data to validate:', JSON.stringify(dataToValidate, null, 2));
