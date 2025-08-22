@@ -4948,7 +4948,7 @@ ${message}
         return res.status(500).json({ message: "Chave da API Zebra não configurada" });
       }
 
-      // Gerar ZPL para etiqueta 60x40mm (aproximadamente 472x283 dots a 203 DPI)
+      // Gerar ZPL para etiqueta 60x60mm (aproximadamente 472x472 dots a 203 DPI)
       const zplCode = `^XA
 ^LH0,0
 
@@ -4969,7 +4969,7 @@ ${message}
 ^FO30,310^ADN,12,6^FDEndereco Exemplo, 123^FS
 ^FO30,330^ADN,12,6^FDCidade - Estado^FS
 
-^FO350,270^BQN,2,6^FDQA,${labelData.identifier}^FS
+^FO350,270^BQN,2,8^FDQA,${labelData.identifier}^FS
 
 ^XZ`;
 
@@ -5037,7 +5037,7 @@ ${message}
         return res.status(400).json({ message: "Dados da etiqueta incompletos" });
       }
       
-      // Gerar ZPL para etiqueta 60x40mm (aproximadamente 472x283 dots a 203 DPI)
+      // Gerar ZPL para etiqueta 60x60mm (aproximadamente 472x472 dots a 203 DPI)
       const zplCode = `^XA
 ^LH0,0
 
@@ -5058,7 +5058,7 @@ ${message}
 ^FO30,310^ADN,12,6^FDEndereco Exemplo, 123^FS
 ^FO30,330^ADN,12,6^FDCidade - Estado^FS
 
-^FO350,270^BQN,2,6^FDQA,${identifier}^FS
+^FO350,270^BQN,2,8^FDQA,${identifier}^FS
 
 ^XZ`;
 
