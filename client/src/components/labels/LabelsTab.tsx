@@ -480,7 +480,12 @@ export default function LabelsTab() {
       unitId = labelToPrint.unitId;
     }
     
+    console.log('🏢 [UNIT DATA] Searching for unit ID:', unitId);
+    console.log('🏢 [UNIT DATA] Available units:', units);
+    
     const unit = units.find(u => u.id === unitId);
+    console.log('🏢 [UNIT DATA] Found unit:', unit);
+    
     if (unit) {
       return {
         name: unit.name || "Unidade",
