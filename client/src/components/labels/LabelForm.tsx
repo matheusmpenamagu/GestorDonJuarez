@@ -163,7 +163,7 @@ export default function LabelForm({
       return fetch(`/api/products?${params}`)
         .then((res) => res.json());
     },
-    enabled: !!selectedUnitId || isEditing, // Always fetch when editing or when unit is selected
+    enabled: !!selectedUnitId, // Only fetch when unit is selected
   });
 
   const availablePortions = portions.filter(p => p.productId === selectedProductId);
@@ -357,12 +357,15 @@ export default function LabelForm({
                     Unidade
                   </FormLabel>
                   <Select 
-                    value={field.value.toString()} 
+                    value={field.value ? field.value.toString() : ""} 
                     onValueChange={(value) => field.onChange(parseInt(value))}
+                    disabled={isEditing}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma unidade" />
+                        <SelectValue placeholder={
+                          isEditing ? "Unidade (não editável)" : "Selecione uma unidade"
+                        } />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -387,23 +390,25 @@ export default function LabelForm({
                   <Select 
                     value={field.value ? field.value.toString() : ""} 
                     onValueChange={(value) => field.onChange(parseInt(value))}
-                    disabled={!selectedUnitId || isLoadingProducts || (filteredProducts && filteredProducts.length === 0)}
+                    disabled={!isEditing && (!selectedUnitId || isLoadingProducts || (filteredProducts && filteredProducts.length === 0))}
                   >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder={
-                          !selectedUnitId 
-                            ? "Selecione uma unidade primeiro" 
-                            : isLoadingProducts
-                              ? "Carregando produtos..."
-                            : filteredProducts && filteredProducts.length === 0 
-                              ? "Nenhum produto disponível para esta unidade"
-                              : "Selecione um produto"
+                          isEditing
+                            ? "Selecione um produto"
+                            : !selectedUnitId 
+                              ? "Selecione uma unidade primeiro" 
+                              : isLoadingProducts
+                                ? "Carregando produtos..."
+                                : filteredProducts && filteredProducts.length === 0 
+                                  ? "Nenhum produto disponível para esta unidade"
+                                  : "Selecione um produto"
                         } />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {filteredProducts && filteredProducts.map((product) => (
+                      {(isEditing ? products : filteredProducts || []).map((product) => (
                         <SelectItem key={product.id} value={product.id.toString()}>
                           {product.name}
                         </SelectItem>
