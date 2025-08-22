@@ -97,7 +97,7 @@ interface LabelFormProps {
 }
 
 const labelSchema = z.object({
-  unitId: z.number({ required_error: "Selecione uma unidade" }),
+  unitId: z.number({ required_error: "Selecione uma unidade" }).optional().refine(val => val !== undefined, "Selecione uma unidade"),
   productId: z.number({ required_error: "Selecione um produto" }),
   date: z.string().min(1, "Data é obrigatória"),
   portionId: z.number({ required_error: "Selecione uma porção" }),
@@ -123,8 +123,15 @@ export default function LabelForm({
 
   const form = useForm<LabelFormData>({
     resolver: zodResolver(labelSchema),
-    defaultValues: {
-      unitId: 1, // Don Juarez Grão Pará como padrão
+    defaultValues: label ? {
+      unitId: label.unitId,
+      productId: label.productId,
+      date: label.date ? format(new Date(label.date), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"),
+      portionId: label.portionId,
+      expiryDate: label.expiryDate ? format(new Date(label.expiryDate), "yyyy-MM-dd") : "",
+      storageMethod: label.storageMethod as "congelado" | "resfriado" | "temperatura_ambiente",
+    } : {
+      unitId: undefined, // No default unit - user must select
       productId: 0,
       date: format(new Date(), "yyyy-MM-dd"),
       portionId: 0,
