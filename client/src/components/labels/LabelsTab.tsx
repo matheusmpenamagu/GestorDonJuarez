@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label as UILabel } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Plus, Edit, Trash2, Calendar, QrCode, User, AlertTriangle, Clock, CalendarDays, Download, Check, X, Search, ChevronDown, ChevronUp, ArrowUpDown, Printer } from "lucide-react";
+import QRCode from "qrcode";
 import { useToast } from "@/hooks/use-toast";
 import LabelForm from "./LabelForm";
 import LabelStatusCards from "@/components/LabelStatusCards";
@@ -85,6 +86,7 @@ export default function LabelsTab() {
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [labelToPrint, setLabelToPrint] = useState<Label | null>(null);
   const [selectedPrinterId, setSelectedPrinterId] = useState<number | null>(null);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -154,6 +156,39 @@ export default function LabelsTab() {
       
       if (!response.ok) {
         throw new Error('Failed to fetch printers');
+      }
+      
+      return response.json();
+    },
+  });
+
+  interface Unit {
+    id: number;
+    name: string;
+    address: string;
+    logoUrl?: string;
+    cnpj?: string;
+  }
+
+  const { data: units = [] } = useQuery<Unit[]>({
+    queryKey: ["/api/units"],
+    queryFn: async () => {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      const sessionId = localStorage.getItem('sessionId');
+      if (sessionId) {
+        headers['Authorization'] = `Bearer ${sessionId}`;
+      }
+      
+      const response = await fetch('/api/units', {
+        headers,
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch units');
       }
       
       return response.json();
@@ -439,8 +474,35 @@ export default function LabelsTab() {
     return method ? { icon: method.icon, label: method.label } : { icon: '❓', label: 'Desconhecido' };
   };
 
-  const handlePrint = (label: Label) => {
+  const getUnitData = (unitId?: number) => {
+    // Por enquanto, retorna Grão Pará como padrão para todas as etiquetas
+    // TODO: Implementar seleção de unidade no formulário de etiquetas
+    return {
+      name: "Grão Pará",
+      cnpj: "12.345.678/0001-90",
+      address: "Rua Exemplo, 123 - Centro\nCidade - Estado - CEP 12345-678"
+    };
+  };
+
+  const handlePrint = async (label: Label) => {
     setLabelToPrint(label);
+    
+    // Generate QR Code
+    try {
+      const qrDataUrl = await QRCode.toDataURL(label.identifier, {
+        width: 80,
+        margin: 1,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      setQrCodeDataUrl(qrDataUrl);
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      setQrCodeDataUrl("");
+    }
+    
     // Selecionar automaticamente a impressora padrão
     const defaultPrinter = printers.find(p => p.isDefault && p.isActive);
     if (defaultPrinter) {
@@ -1042,10 +1104,12 @@ export default function LabelsTab() {
               {/* Preview da Etiqueta */}
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-white">
                 <div className="space-y-4">
-                  {/* Nome do Produto - Destaque */}
-                  <h2 className="text-xl font-bold text-center text-gray-900">
-                    {getProductName(labelToPrint.productId)}
-                  </h2>
+                  {/* Nome do Produto - Destaque com 2 linhas */}
+                  <div className="text-center">
+                    <h2 className="text-[22px] font-bold leading-tight text-gray-900 min-h-[44px] flex items-center justify-center">
+                      {getProductName(labelToPrint.productId)}
+                    </h2>
+                  </div>
                   
                   {/* Linha Horizontal */}
                   <hr className="border-gray-400" />
@@ -1054,7 +1118,7 @@ export default function LabelsTab() {
                   <div className="space-y-2 text-sm">
                     <div><strong>Porcionamento:</strong> {getPortion(labelToPrint.portionId)}</div>
                     <div><strong>Manipulação:</strong> {format(new Date(labelToPrint.date), "dd/MM/yyyy", { locale: ptBR })}</div>
-                    <div><strong className="text-red-600">Validade:</strong> <span className="font-bold text-red-600">{format(new Date(labelToPrint.expiryDate), "dd/MM/yyyy", { locale: ptBR })}</span></div>
+                    <div><strong>Validade:</strong> <span className="font-bold text-base text-gray-900">{format(new Date(labelToPrint.expiryDate), "dd/MM/yyyy", { locale: ptBR })}</span></div>
                     <div><strong>Responsável:</strong> {getEmployeeName(labelToPrint.responsibleId)}</div>
                     <div><strong>#{labelToPrint.identifier}</strong></div>
                   </div>
@@ -1066,19 +1130,26 @@ export default function LabelsTab() {
                   <div className="grid grid-cols-2 gap-4">
                     {/* Coluna 1: Informações da Unidade */}
                     <div className="space-y-1 text-xs">
-                      <div className="font-semibold">Don Juarez</div>
-                      <div>CNPJ: 12.345.678/0001-90</div>
-                      <div>Endereço Exemplo, 123</div>
-                      <div>Cidade - Estado</div>
+                      <div className="font-semibold">{getUnitData().name}</div>
+                      <div>CNPJ: {getUnitData().cnpj}</div>
+                      <div className="whitespace-pre-line">{getUnitData().address}</div>
                     </div>
                     
                     {/* Coluna 2: QR Code */}
                     <div className="flex justify-center items-center">
-                      <div className="w-20 h-20 border-2 border-gray-300 flex items-center justify-center text-xs text-gray-500">
-                        QR Code
-                        <br />
-                        {labelToPrint.identifier}
-                      </div>
+                      {qrCodeDataUrl ? (
+                        <img 
+                          src={qrCodeDataUrl} 
+                          alt={`QR Code: ${labelToPrint.identifier}`}
+                          className="w-20 h-20"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 border-2 border-gray-300 flex items-center justify-center text-xs text-gray-500">
+                          QR Code
+                          <br />
+                          {labelToPrint.identifier}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
