@@ -476,12 +476,24 @@ export default function LabelsTab() {
   };
 
   const getUnitData = (unitId?: number) => {
-    // Por enquanto, retorna Grão Pará como padrão para todas as etiquetas
-    // TODO: Implementar seleção de unidade no formulário de etiquetas
+    if (!unitId && labelToPrint) {
+      unitId = labelToPrint.unitId;
+    }
+    
+    const unit = units.find(u => u.id === unitId);
+    if (unit) {
+      return {
+        name: unit.name || "Unidade",
+        cnpj: unit.cnpj || "XX.XXX.XXX/XXXX-XX",
+        address: unit.address || "Endereço não informado"
+      };
+    }
+    
+    // Fallback para compatibilidade
     return {
-      name: "Grão Pará",
-      cnpj: "12.345.678/0001-90",
-      address: "Rua Exemplo, 123 - Centro\nCidade - Estado - CEP 12345-678"
+      name: "Unidade não encontrada",
+      cnpj: "XX.XXX.XXX/XXXX-XX",
+      address: "Endereço não informado"
     };
   };
 
@@ -1131,9 +1143,9 @@ export default function LabelsTab() {
                   <div className="grid grid-cols-2 gap-4">
                     {/* Coluna 1: Informações da Unidade */}
                     <div className="space-y-1 text-xs">
-                      <div className="font-semibold">{getUnitData().name}</div>
-                      <div>CNPJ: {getUnitData().cnpj}</div>
-                      <div className="whitespace-pre-line">{getUnitData().address}</div>
+                      <div className="font-semibold">{getUnitData(labelToPrint.unitId).name}</div>
+                      <div>CNPJ: {getUnitData(labelToPrint.unitId).cnpj}</div>
+                      <div className="whitespace-pre-line">{getUnitData(labelToPrint.unitId).address}</div>
                     </div>
                     
                     {/* Coluna 2: QR Code */}
