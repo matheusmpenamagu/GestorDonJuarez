@@ -151,7 +151,7 @@ export default function LabelForm({
   // Fetch products filtered by selected unit
   const { data: filteredProducts = [], isLoading: isLoadingProducts } = useQuery<Product[]>({
     queryKey: ["/api/products", selectedUnitId],
-    queryFn: () => {
+    queryFn: async () => {
       const params = new URLSearchParams({
         includeShelfLifeFilter: "true"
       });
@@ -160,8 +160,24 @@ export default function LabelForm({
         params.append("unitId", selectedUnitId.toString());
       }
       
-      return fetch(`/api/products?${params}`)
-        .then((res) => res.json());
+      // Use the same authentication as other queries
+      const storedSessionId = localStorage.getItem('sessionId');
+      const headers: Record<string, string> = {};
+      
+      if (storedSessionId) {
+        headers['Authorization'] = `Bearer ${storedSessionId}`;
+      }
+      
+      const res = await fetch(`/api/products?${params}`, {
+        credentials: "include",
+        headers,
+      });
+      
+      if (!res.ok) {
+        throw new Error(`${res.status}: ${res.statusText}`);
+      }
+      
+      return res.json();
     },
     enabled: !!selectedUnitId, // Only fetch when unit is selected
   });
