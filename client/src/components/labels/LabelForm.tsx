@@ -390,7 +390,7 @@ export default function LabelForm({
                   <Select 
                     value={field.value ? field.value.toString() : ""} 
                     onValueChange={(value) => field.onChange(parseInt(value))}
-                    disabled={!isEditing && (!selectedUnitId || isLoadingProducts || (filteredProducts && filteredProducts.length === 0))}
+                    disabled={!isEditing && (!selectedUnitId || isLoadingProducts || (Array.isArray(filteredProducts) && filteredProducts.length === 0))}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -401,18 +401,22 @@ export default function LabelForm({
                               ? "Selecione uma unidade primeiro" 
                               : isLoadingProducts
                                 ? "Carregando produtos..."
-                                : (filteredProducts && filteredProducts.length === 0)
+                                : (Array.isArray(filteredProducts) && filteredProducts.length === 0)
                                   ? "Nenhum produto disponível para esta unidade"
                                   : "Selecione um produto"
                         } />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {((isEditing ? products : filteredProducts) || []).map((product) => (
-                        <SelectItem key={product.id} value={product.id.toString()}>
-                          {product.name}
-                        </SelectItem>
-                      ))}
+                      {(() => {
+                        const productsToShow = isEditing ? products : filteredProducts;
+                        const safeProducts = Array.isArray(productsToShow) ? productsToShow : [];
+                        return safeProducts.map((product) => (
+                          <SelectItem key={product.id} value={product.id.toString()}>
+                            {product.name}
+                          </SelectItem>
+                        ));
+                      })()}
                     </SelectContent>
                   </Select>
                   <FormMessage />
