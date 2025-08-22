@@ -166,14 +166,14 @@ export default function LabelForm({
     enabled: !!selectedUnitId, // Only fetch when unit is selected
   });
 
-  const availablePortions = portions.filter(p => p.productId === selectedProductId);
+  const availablePortions = (portions || []).filter(p => p.productId === selectedProductId);
   
   // Get shelf life for selected product
-  const selectedProductShelfLife = shelfLifes.find(sl => sl.productId === selectedProductId);
+  const selectedProductShelfLife = (shelfLifes || []).find(sl => sl.productId === selectedProductId);
 
   // Function to calculate expiry date based on storage method
   const calculateExpiryDate = (productId: number, storageMethod: string, baseDate: string) => {
-    const shelfLife = shelfLifes.find((sl: ProductShelfLife) => sl.productId === productId);
+    const shelfLife = (shelfLifes || []).find((sl: ProductShelfLife) => sl.productId === productId);
     if (!shelfLife || !baseDate) return "";
 
     const daysToAdd = {
@@ -390,7 +390,7 @@ export default function LabelForm({
                   <Select 
                     value={field.value ? field.value.toString() : ""} 
                     onValueChange={(value) => field.onChange(parseInt(value))}
-                    disabled={!isEditing && (!selectedUnitId || isLoadingProducts || (filteredProducts && filteredProducts.length === 0))}
+                    disabled={!isEditing && (!selectedUnitId || isLoadingProducts || (!filteredProducts || filteredProducts.length === 0))}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -401,14 +401,14 @@ export default function LabelForm({
                               ? "Selecione uma unidade primeiro" 
                               : isLoadingProducts
                                 ? "Carregando produtos..."
-                                : filteredProducts && filteredProducts.length === 0 
+                                : (!filteredProducts || filteredProducts.length === 0)
                                   ? "Nenhum produto disponível para esta unidade"
                                   : "Selecione um produto"
                         } />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {(isEditing ? products : filteredProducts || []).map((product) => (
+                      {(isEditing ? (products || []) : (filteredProducts || [])).map((product) => (
                         <SelectItem key={product.id} value={product.id.toString()}>
                           {product.name}
                         </SelectItem>
@@ -429,21 +429,21 @@ export default function LabelForm({
                   <Select 
                     value={field.value ? field.value.toString() : ""} 
                     onValueChange={(value) => field.onChange(parseInt(value))}
-                    disabled={!selectedProductId || availablePortions.length === 0}
+                    disabled={!selectedProductId || (availablePortions || []).length === 0}
                   >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder={
                           !selectedProductId 
                             ? "Selecione um produto primeiro" 
-                            : availablePortions.length === 0 
+                            : (availablePortions || []).length === 0 
                               ? "Nenhuma porção disponível"
                               : "Selecione uma porção"
                         } />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {availablePortions.map((portion) => (
+                      {(availablePortions || []).map((portion) => (
                         <SelectItem key={portion.id} value={portion.id.toString()}>
                           {getPortionDisplay(portion)}
                         </SelectItem>
