@@ -25,6 +25,7 @@ import {
   productShelfLifes,
   productPortions,
   labels,
+  printers,
   type User,
   type UpsertUser,
   type PointOfSale,
@@ -84,6 +85,8 @@ import {
   type InsertLabel,
   type FuelEntry,
   type InsertFuelEntry,
+  type Printer,
+  type InsertPrinter,
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, desc, and, or, gte, lte, lt, sql, sum } from "drizzle-orm";
@@ -304,6 +307,15 @@ export interface IStorage {
   getLabelByIdentifier(identifier: string): Promise<Label | null>;
   updateLabelWithdrawal(id: number, withdrawalData: { withdrawalDate: Date; withdrawalResponsibleId: number }): Promise<Label>;
   generateLabelIdentifier(): Promise<string>;
+  
+  // Printers operations
+  getPrinters(): Promise<Printer[]>;
+  getPrinter(id: number): Promise<Printer | undefined>;
+  createPrinter(printer: InsertPrinter): Promise<Printer>;
+  updatePrinter(id: number, printer: Partial<InsertPrinter>): Promise<Printer>;
+  deletePrinter(id: number): Promise<void>;
+  getDefaultPrinter(): Promise<Printer | undefined>;
+  setDefaultPrinter(id: number): Promise<Printer>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2520,6 +2532,84 @@ export class DatabaseStorage implements IStorage {
     } while (true);
     
     return result;
+  }
+
+  // Printers operations
+  async getPrinters(): Promise<Printer[]> {
+    const printerList = await db
+      .select()
+      .from(printers)
+      .orderBy(desc(printers.isDefault), desc(printers.isActive), printers.name);
+    return printerList;
+  }
+
+  async getPrinter(id: number): Promise<Printer | undefined> {
+    const [printer] = await db
+      .select()
+      .from(printers)
+      .where(eq(printers.id, id));
+    return printer;
+  }
+
+  async createPrinter(printerData: InsertPrinter): Promise<Printer> {
+    // If this printer is being set as default, unset all other defaults
+    if (printerData.isDefault) {
+      await db
+        .update(printers)
+        .set({ isDefault: false })
+        .where(eq(printers.isDefault, true));
+    }
+
+    const [printer] = await db
+      .insert(printers)
+      .values(printerData)
+      .returning();
+    return printer;
+  }
+
+  async updatePrinter(id: number, printerData: Partial<InsertPrinter>): Promise<Printer> {
+    // If this printer is being set as default, unset all other defaults
+    if (printerData.isDefault) {
+      await db
+        .update(printers)
+        .set({ isDefault: false })
+        .where(eq(printers.isDefault, true));
+    }
+
+    const [printer] = await db
+      .update(printers)
+      .set({ ...printerData, updatedAt: new Date() })
+      .where(eq(printers.id, id))
+      .returning();
+    return printer;
+  }
+
+  async deletePrinter(id: number): Promise<void> {
+    await db.delete(printers).where(eq(printers.id, id));
+  }
+
+  async getDefaultPrinter(): Promise<Printer | undefined> {
+    const [printer] = await db
+      .select()
+      .from(printers)
+      .where(and(eq(printers.isDefault, true), eq(printers.isActive, true)));
+    return printer;
+  }
+
+  async setDefaultPrinter(id: number): Promise<Printer> {
+    // First, unset all current defaults
+    await db
+      .update(printers)
+      .set({ isDefault: false })
+      .where(eq(printers.isDefault, true));
+
+    // Then set the new default
+    const [printer] = await db
+      .update(printers)
+      .set({ isDefault: true, updatedAt: new Date() })
+      .where(eq(printers.id, id))
+      .returning();
+    return printer;
   }
 }
 

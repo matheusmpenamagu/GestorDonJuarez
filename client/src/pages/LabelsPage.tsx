@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Tags, Archive } from "lucide-react";
+import { Calendar, Tags, Archive, Printer } from "lucide-react";
 import ShelfLifesTab from "@/components/labels/ShelfLifesTab";
 import PortionsTab from "@/components/labels/PortionsTab";
 import LabelsTab from "@/components/labels/LabelsTab";
+import PrintersTab from "@/components/labels/PrintersTab";
 import LabelStatusCards from "@/components/LabelStatusCards";
 
 export default function LabelsPage() {
@@ -31,7 +32,7 @@ export default function LabelsPage() {
       <Card>
         <CardContent className="p-6">
           <Tabs defaultValue="etiquetas" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="etiquetas" className="flex items-center gap-2">
                 <Tags className="w-4 h-4" />
                 Etiquetas
@@ -43,6 +44,10 @@ export default function LabelsPage() {
               <TabsTrigger value="porcionamentos" className="flex items-center gap-2">
                 <Archive className="w-4 h-4" />
                 Porcionamentos
+              </TabsTrigger>
+              <TabsTrigger value="impressoras" className="flex items-center gap-2">
+                <Printer className="w-4 h-4" />
+                Impressoras
               </TabsTrigger>
             </TabsList>
 
@@ -56,6 +61,10 @@ export default function LabelsPage() {
 
             <TabsContent value="porcionamentos" className="mt-6">
               <PortionsTab />
+            </TabsContent>
+
+            <TabsContent value="impressoras" className="mt-6">
+              <PrintersTab />
             </TabsContent>
           </Tabs>
         </CardContent>

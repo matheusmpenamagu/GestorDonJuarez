@@ -5021,6 +5021,64 @@ ${message}
     }
   });
 
+  // Printers API endpoints
+  app.get('/api/printers', requireAuth, async (req, res) => {
+    try {
+      const printers = await storage.getPrinters();
+      res.json(printers);
+    } catch (error) {
+      console.error("Error fetching printers:", error);
+      res.status(500).json({ message: "Error fetching printers" });
+    }
+  });
+
+  app.post('/api/printers', requireAuth, async (req, res) => {
+    try {
+      const { insertPrinterSchema } = await import("@shared/schema");
+      const printerData = insertPrinterSchema.parse(req.body);
+      const printer = await storage.createPrinter(printerData);
+      res.status(201).json(printer);
+    } catch (error) {
+      console.error("Error creating printer:", error);
+      res.status(500).json({ message: "Error creating printer" });
+    }
+  });
+
+  app.put('/api/printers/:id', requireAuth, async (req, res) => {
+    try {
+      const { insertPrinterSchema } = await import("@shared/schema");
+      const id = parseInt(req.params.id);
+      const printerData = insertPrinterSchema.partial().parse(req.body);
+      const printer = await storage.updatePrinter(id, printerData);
+      res.json(printer);
+    } catch (error) {
+      console.error("Error updating printer:", error);
+      res.status(500).json({ message: "Error updating printer" });
+    }
+  });
+
+  app.delete('/api/printers/:id', requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deletePrinter(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting printer:", error);
+      res.status(500).json({ message: "Error deleting printer" });
+    }
+  });
+
+  app.post('/api/printers/:id/set-default', requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const printer = await storage.setDefaultPrinter(id);
+      res.json(printer);
+    } catch (error) {
+      console.error("Error setting default printer:", error);
+      res.status(500).json({ message: "Error setting default printer" });
+    }
+  });
+
   // Fuel Entries routes
   app.get('/api/fleet/fuel-entries', requireAuth, async (req, res) => {
     try {

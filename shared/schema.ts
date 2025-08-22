@@ -859,3 +859,35 @@ export const insertSettingSchema = createInsertSchema(settings).omit({
   key: z.string().min(1, "Chave é obrigatória"),
   value: z.string().min(1, "Valor é obrigatório"),
 });
+
+// Printers table for Zebra label printers
+export const printers = pgTable("printers", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  serialNumber: varchar("serial_number", { length: 255 }).notNull(),
+  tenant: varchar("tenant", { length: 255 }).notNull(),
+  isDefault: boolean("is_default").default(false),
+  isActive: boolean("is_active").default(true),
+  ipAddress: varchar("ip_address", { length: 50 }),
+  port: integer("port").default(9100),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
+});
+
+// Types for Printers
+export type Printer = typeof printers.$inferSelect;
+export type InsertPrinter = typeof printers.$inferInsert;
+
+export const insertPrinterSchema = createInsertSchema(printers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  name: z.string().min(1, "Nome é obrigatório"),
+  serialNumber: z.string().min(1, "Serial Number é obrigatório"),
+  tenant: z.string().min(1, "Tenant é obrigatório"),
+  isDefault: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+  ipAddress: z.string().optional(),
+  port: z.number().min(1).max(65535).optional(),
+});
