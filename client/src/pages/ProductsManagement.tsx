@@ -27,6 +27,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import type { Product, ProductCategory, Unit } from "@shared/schema";
 
 type SortField = 'code' | 'name' | 'stockCategory' | 'unitOfMeasure' | 'currentValue' | 'currentStock';
@@ -38,6 +46,8 @@ type ProductWithUnits = Product & {
     unitName: string;
   }>;
   currentStock?: number;
+  stockCountDate?: string;
+  stockCountId?: number;
 };
 
 function ProductsManagementContent() {
@@ -62,7 +72,12 @@ function ProductsManagementContent() {
   });
 
   // Buscar estoque atual para os produtos
-  const { data: currentStocks = [] } = useQuery<Array<{ productId: number; quantity: number }>>({
+  const { data: currentStocks = [] } = useQuery<Array<{ 
+    productId: number; 
+    quantity: number; 
+    countDate: string;
+    stockCountId: number;
+  }>>({
     queryKey: ["/api/products/current-stock"],
   });
 
@@ -88,10 +103,15 @@ function ProductsManagementContent() {
   };
 
   // Adicionar estoque atual aos produtos
-  const productsWithStock = products.map(product => ({
-    ...product,
-    currentStock: currentStocks.find(stock => stock.productId === product.id)?.quantity || 0
-  }));
+  const productsWithStock = products.map(product => {
+    const stockData = currentStocks.find(stock => stock.productId === product.id);
+    return {
+      ...product,
+      currentStock: stockData?.quantity || 0,
+      stockCountDate: stockData?.countDate,
+      stockCountId: stockData?.stockCountId
+    };
+  });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -267,6 +287,15 @@ function ProductsManagementContent() {
   const formatQuantity = (quantity: number | undefined) => {
     if (quantity === undefined || quantity === null) return '-';
     return quantity.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+  };
+
+  const formatStockDate = (dateString: string | undefined) => {
+    if (!dateString) return '';
+    try {
+      return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
+    } catch {
+      return '';
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -448,9 +477,25 @@ function ProductsManagementContent() {
                     </span>
                   </TableCell>
                   <TableCell className="font-mono">
-                    <span className={`font-medium ${(product.currentStock || 0) > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-                      {formatQuantity(product.currentStock)}
-                    </span>
+                    {product.stockCountDate ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className={`font-medium cursor-help ${(product.currentStock || 0) > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                              {formatQuantity(product.currentStock)}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Última contagem: {formatStockDate(product.stockCountDate)}</p>
+                            <p className="text-xs text-gray-500">Contagem #{product.stockCountId}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <span className="font-medium text-gray-400">
+                        {formatQuantity(product.currentStock)}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>{product.unitOfMeasure}</TableCell>
                   <TableCell className="font-mono">{formatCurrency(product.currentValue)}</TableCell>

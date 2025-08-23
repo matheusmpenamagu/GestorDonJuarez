@@ -2786,10 +2786,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get current stock for all products (from latest finalized stock counts)
+  // Get current stock for all products (from latest finalized stock count per product)
   app.get('/api/products/current-stock', requireAuth, async (req, res) => {
     try {
-      console.log('📦 [CURRENT-STOCK] Fetching current stock for all products');
+      console.log('📦 [CURRENT-STOCK] Fetching current stock for all products (latest count per product)');
       
       // Get all finalized stock counts
       const stockCounts = await storage.getStockCounts();
@@ -2801,23 +2801,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json([]);
       }
       
-      // Get the latest stock count by date
-      const latestStockCount = finalizedCounts.sort((a, b) => 
+      // Sort stock counts by date (newest first)
+      const sortedCounts = finalizedCounts.sort((a, b) => 
         new Date(b.date).getTime() - new Date(a.date).getTime()
-      )[0];
+      );
       
-      console.log(`📦 [CURRENT-STOCK] Latest finalized stock count: ${latestStockCount.id} from ${latestStockCount.date}`);
+      console.log(`📦 [CURRENT-STOCK] Processing ${sortedCounts.length} finalized counts to find latest per product`);
       
-      // Get items from the latest stock count
-      const stockCountItems = await storage.getStockCountItems(latestStockCount.id);
-      console.log(`📦 [CURRENT-STOCK] Found ${stockCountItems.length} items in latest stock count`);
+      // Map to store the latest count for each product
+      const productLatestStock = new Map();
       
-      // Map products to their current stock quantities
-      const currentStocks = stockCountItems.map(item => ({
-        productId: item.productId,
-        quantity: parseFloat(item.countedQuantity) || 0
-      }));
+      // Process counts from newest to oldest
+      for (const stockCount of sortedCounts) {
+        const items = await storage.getStockCountItems(stockCount.id);
+        console.log(`📦 [CURRENT-STOCK] Processing ${items.length} items from count ${stockCount.id} (${stockCount.date})`);
+        
+        for (const item of items) {
+          // Only add if we haven't seen this product yet (since we're going from newest to oldest)
+          if (!productLatestStock.has(item.productId)) {
+            productLatestStock.set(item.productId, {
+              productId: item.productId,
+              quantity: parseFloat(item.countedQuantity) || 0,
+              countDate: stockCount.date,
+              stockCountId: stockCount.id
+            });
+          }
+        }
+      }
       
+      const currentStocks = Array.from(productLatestStock.values());
       console.log(`📦 [CURRENT-STOCK] Returning current stock for ${currentStocks.length} products`);
       res.json(currentStocks);
     } catch (error) {
