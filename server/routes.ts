@@ -2841,10 +2841,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/products/:id', requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      console.log(`🛍️ [PRODUCT-BY-ID] Fetching product ID: ${id}`);
       const product = await storage.getProduct(id);
       if (!product) {
+        console.log(`❌ [PRODUCT-BY-ID] Product not found for ID: ${id}`);
         return res.status(404).json({ message: "Produto não encontrado" });
       }
+      console.log(`✅ [PRODUCT-BY-ID] Found product: ${product.name} (ID: ${product.id})`);
       res.json(product);
     } catch (error) {
       console.error("Error fetching product:", error);

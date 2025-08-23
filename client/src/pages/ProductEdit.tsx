@@ -34,7 +34,7 @@ export default function ProductEdit() {
   const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
 
   const { data: product, isLoading: productLoading } = useQuery<Product>({
-    queryKey: ["/api/products", productId],
+    queryKey: [`/api/products/${productId}`],
   });
 
   const { data: categories = [] } = useQuery<ProductCategory[]>({
