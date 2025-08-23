@@ -500,7 +500,7 @@ function ProductsManagementContent() {
                   </TableCell>
                   <TableCell className="font-mono text-sm">
                     <span className="text-gray-600">
-                      {formatQuantity(product.minStock)}/{formatQuantity(product.maxStock)}
+                      {formatQuantity(product.minStock || undefined)}/{formatQuantity(product.maxStock || undefined)}
                     </span>
                   </TableCell>
                   <TableCell>{product.unitOfMeasure}</TableCell>
