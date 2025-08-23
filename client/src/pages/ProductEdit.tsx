@@ -29,6 +29,8 @@ export default function ProductEdit() {
     stockCategory: "",
     unitOfMeasure: "",
     currentValue: "",
+    minStock: "",
+    maxStock: "",
   });
 
   const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
@@ -54,6 +56,8 @@ export default function ProductEdit() {
         stockCategory: product.stockCategory.toString(),
         unitOfMeasure: product.unitOfMeasure || "",
         currentValue: product.currentValue ? product.currentValue.toString() : "",
+        minStock: product.minStock ? product.minStock.toString() : "",
+        maxStock: product.maxStock ? product.maxStock.toString() : "",
       });
       
       // Load the units this product is associated with
@@ -113,6 +117,8 @@ export default function ProductEdit() {
       stockCategory: parseInt(formData.stockCategory),
       unitOfMeasure: formData.unitOfMeasure,
       currentValue: parseFloat(formData.currentValue),
+      minStock: formData.minStock ? parseFloat(formData.minStock) : null,
+      maxStock: formData.maxStock ? parseFloat(formData.maxStock) : null,
       units: selectedUnits.map(id => parseInt(id))
     };
 
@@ -224,6 +230,31 @@ export default function ProductEdit() {
                 required
                 className="md:w-1/2"
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="minStock">Estoque Mínimo</Label>
+                <Input
+                  id="minStock"
+                  type="number"
+                  step="0.001"
+                  value={formData.minStock}
+                  onChange={(e) => setFormData({ ...formData, minStock: e.target.value })}
+                  placeholder="Ex: 10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="maxStock">Estoque Máximo</Label>
+                <Input
+                  id="maxStock"
+                  type="number"
+                  step="0.001"
+                  value={formData.maxStock}
+                  onChange={(e) => setFormData({ ...formData, maxStock: e.target.value })}
+                  placeholder="Ex: 100"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">

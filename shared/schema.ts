@@ -190,6 +190,8 @@ export const products = pgTable("products", {
   stockCategory: varchar("stock_category", { length: 100 }).notNull(),
   unitOfMeasure: varchar("unit_of_measure", { length: 20 }).notNull(),
   currentValue: decimal("current_value", { precision: 10, scale: 2 }).notNull(),
+  minStock: decimal("min_stock", { precision: 10, scale: 3 }),
+  maxStock: decimal("max_stock", { precision: 10, scale: 3 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

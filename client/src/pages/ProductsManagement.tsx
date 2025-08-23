@@ -438,6 +438,7 @@ function ProductsManagementContent() {
                   Estoque Atual {getSortIcon('currentStock')}
                 </Button>
               </TableHead>
+              <TableHead>Min/Máx</TableHead>
               <TableHead>
                 <Button
                   variant="ghost"
@@ -462,7 +463,7 @@ function ProductsManagementContent() {
           <TableBody>
             {sortedProducts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                   {searchTerm ? "Nenhum produto encontrado com o termo pesquisado." : "Nenhum produto cadastrado."}
                 </TableCell>
               </TableRow>
@@ -496,6 +497,11 @@ function ProductsManagementContent() {
                         {formatQuantity(product.currentStock)}
                       </span>
                     )}
+                  </TableCell>
+                  <TableCell className="font-mono text-sm">
+                    <span className="text-gray-600">
+                      {formatQuantity(product.minStock)}/{formatQuantity(product.maxStock)}
+                    </span>
                   </TableCell>
                   <TableCell>{product.unitOfMeasure}</TableCell>
                   <TableCell className="font-mono">{formatCurrency(product.currentValue)}</TableCell>
