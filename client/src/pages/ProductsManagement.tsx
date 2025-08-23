@@ -1,24 +1,11 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, Plus, Pencil, Trash2, Upload, Package, Tag, ChevronDown, ChevronUp } from "lucide-react";
+import { useLocation } from "wouter";
+import { Search, Plus, Pencil, Trash2, Upload, Package, Tag, ChevronDown, ChevronUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -40,9 +27,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Product, InsertProduct, ProductCategory, InsertProductCategory, Unit } from "@shared/schema";
+import type { Product, ProductCategory, Unit } from "@shared/schema";
 
-type SortField = 'code' | 'name' | 'stockCategory' | 'unitOfMeasure' | 'currentValue';
+type SortField = 'code' | 'name' | 'stockCategory' | 'unitOfMeasure' | 'currentValue' | 'currentStock';
 type SortDirection = 'asc' | 'desc';
 
 type ProductWithUnits = Product & {
@@ -50,27 +37,16 @@ type ProductWithUnits = Product & {
     unitId: number;
     unitName: string;
   }>;
+  currentStock?: number;
 };
 
 function ProductsManagementContent() {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const [formData, setFormData] = useState({
-    code: "",
-    name: "",
-    stockCategory: "",
-    unitOfMeasure: "",
-    currentValue: "",
-  });
-
-  const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
 
   // CSV Upload state
   const [uploadResult, setUploadResult] = useState<{
@@ -83,6 +59,11 @@ function ProductsManagementContent() {
 
   const { data: products = [], isLoading: productsLoading } = useQuery<ProductWithUnits[]>({
     queryKey: ["/api/products"],
+  });
+
+  // Buscar estoque atual para os produtos
+  const { data: currentStocks = [] } = useQuery<Array<{ productId: number; quantity: number }>>({
+    queryKey: ["/api/products/current-stock"],
   });
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<ProductCategory[]>({
@@ -106,115 +87,11 @@ function ProductsManagementContent() {
     return unit ? unit.name : 'Unidade não encontrada';
   };
 
-  const createMutation = useMutation({
-    mutationFn: async (data: InsertProduct) => {
-      return await apiRequest("POST", "/api/products", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      setIsCreateDialogOpen(false);
-      setFormData({
-        code: "",
-        name: "",
-        stockCategory: "",
-        unitOfMeasure: "",
-        currentValue: "",
-      });
-      setSelectedUnits([]);
-      toast({
-        title: "Produto criado",
-        description: "Produto criado com sucesso!",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao criar produto",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const multiUnitCreateMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/products/multi-unit", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      setIsCreateDialogOpen(false);
-      setFormData({
-        code: "",
-        name: "",
-        stockCategory: "",
-        unitOfMeasure: "",
-        currentValue: "",
-      });
-      setSelectedUnits([]);
-      toast({
-        title: "Produto criado",
-        description: "Produto criado e associado às unidades selecionadas!",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao criar produto",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const multiUnitUpdateMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return await apiRequest("PUT", "/api/products/multi-unit", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      setIsEditDialogOpen(false);
-      setEditingProduct(null);
-      setFormData({
-        code: "",
-        name: "",
-        stockCategory: "",
-        unitOfMeasure: "",
-        currentValue: "",
-      });
-      setSelectedUnits([]);
-      toast({
-        title: "Produto atualizado",
-        description: "Produto atualizado e associações de unidades atualizadas!",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao atualizar produto",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async (data: { id: number; product: Partial<InsertProduct> }) => {
-      return await apiRequest("PUT", `/api/products/${data.id}`, data.product);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      setIsEditDialogOpen(false);
-      setEditingProduct(null);
-      toast({
-        title: "Produto atualizado",
-        description: "Produto atualizado com sucesso!",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao atualizar produto",
-        variant: "destructive",
-      });
-    },
-  });
+  // Adicionar estoque atual aos produtos
+  const productsWithStock = products.map(product => ({
+    ...product,
+    currentStock: currentStocks.find(stock => stock.productId === product.id)?.quantity || 0
+  }));
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -325,68 +202,8 @@ function ProductsManagementContent() {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (selectedUnits.length === 0) {
-      toast({
-        title: "Erro",
-        description: "Selecione pelo menos uma unidade",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const productData = {
-      code: formData.code,
-      name: formData.name,
-      stockCategory: parseInt(formData.stockCategory),
-      unitOfMeasure: formData.unitOfMeasure,
-      currentValue: parseFloat(formData.currentValue),
-      units: selectedUnits.map(id => parseInt(id))
-    };
-
-    if (editingProduct) {
-      // Use multi-unit update for editing
-      const editData = {
-        ...productData,
-        productId: editingProduct.id
-      };
-      multiUnitUpdateMutation.mutate(editData);
-    } else {
-      // Use new multi-unit creation
-      multiUnitCreateMutation.mutate(productData);
-    }
-  };
-
-  const handleEdit = async (product: Product) => {
-    setEditingProduct(product);
-    setFormData({
-      code: product.code,
-      name: product.name,
-      stockCategory: product.stockCategory.toString(),
-      unitOfMeasure: product.unitOfMeasure,
-      currentValue: product.currentValue.toString(),
-    });
-    
-    // Load the units this product is associated with
-    try {
-      const response = await fetch(`/api/product-units?productId=${product.id}`);
-      if (response.ok) {
-        const productUnits = await response.json();
-        const associatedUnitIds = productUnits.map((pu: any) => pu.unitId.toString());
-        setSelectedUnits(associatedUnitIds);
-      } else {
-        // No units associated yet
-        setSelectedUnits([]);
-      }
-    } catch (error) {
-      console.error("Error loading product units:", error);
-      // No units associated yet
-      setSelectedUnits([]);
-    }
-    
-    setIsEditDialogOpen(true);
+  const handleEdit = (product: Product) => {
+    setLocation(`/estoque/produtos/editar/${product.id}`);
   };
 
   const handleSort = (field: SortField) => {
@@ -399,13 +216,13 @@ function ProductsManagementContent() {
   };
 
   const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return null;
+    if (sortField !== field) return <ArrowUpDown className="h-3 w-3 opacity-50" />;
     return sortDirection === 'asc' ? 
       <ChevronUp className="h-3 w-3" /> : 
       <ChevronDown className="h-3 w-3" />;
   };
 
-  const filteredProducts = products.filter(product =>
+  const filteredProducts = productsWithStock.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
     getCategoryName(product.stockCategory).toLowerCase().includes(searchTerm.toLowerCase())
@@ -419,17 +236,17 @@ function ProductsManagementContent() {
         aValue = getCategoryName(a.stockCategory).toLowerCase();
         bValue = getCategoryName(b.stockCategory).toLowerCase();
         break;
-      case 'unit':
-        aValue = getUnitName(a.unit).toLowerCase();
-        bValue = getUnitName(b.unit).toLowerCase();
-        break;
       case 'currentValue':
-        aValue = parseFloat(a.currentValue);
-        bValue = parseFloat(b.currentValue);
+        aValue = parseFloat(a.currentValue.toString());
+        bValue = parseFloat(b.currentValue.toString());
+        break;
+      case 'currentStock':
+        aValue = a.currentStock || 0;
+        bValue = b.currentStock || 0;
         break;
       default:
-        aValue = a[sortField]?.toLowerCase() || '';
-        bValue = b[sortField]?.toLowerCase() || '';
+        aValue = a[sortField]?.toString().toLowerCase() || '';
+        bValue = b[sortField]?.toString().toLowerCase() || '';
     }
     
     if (sortDirection === 'asc') {
@@ -445,6 +262,11 @@ function ProductsManagementContent() {
       style: 'currency',
       currency: 'BRL'
     }).format(numValue || 0);
+  };
+
+  const formatQuantity = (quantity: number | undefined) => {
+    if (quantity === undefined || quantity === null) return '-';
+    return quantity.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -517,123 +339,13 @@ function ProductsManagementContent() {
             <Upload className="h-4 w-4 mr-2" />
             {isUploading ? "Enviando..." : "Upload Planilha"}
           </Button>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-orange-600 hover:bg-orange-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Produto
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Criar Produto</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="code">Código</Label>
-                  <Input
-                    id="code"
-                    value={formData.code}
-                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome do Produto</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="stockCategory">Categoria</Label>
-                  <Select
-                    value={formData.stockCategory}
-                    onValueChange={(value) => setFormData({ ...formData, stockCategory: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id.toString()}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="units">Unidades</Label>
-                  <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2">
-                    {units.map((unit) => (
-                      <div key={unit.id} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id={`unit-${unit.id}`}
-                          checked={selectedUnits.includes(unit.id.toString())}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedUnits([...selectedUnits, unit.id.toString()]);
-                            } else {
-                              setSelectedUnits(selectedUnits.filter(id => id !== unit.id.toString()));
-                            }
-                          }}
-                          className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                        />
-                        <Label htmlFor={`unit-${unit.id}`} className="text-sm font-normal cursor-pointer">
-                          {unit.name}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                  {selectedUnits.length === 0 && (
-                    <p className="text-sm text-gray-500">Selecione pelo menos uma unidade</p>
-                  )}
-                  {selectedUnits.length > 0 && (
-                    <p className="text-sm text-green-600">
-                      {selectedUnits.length} unidade{selectedUnits.length > 1 ? 's' : ''} selecionada{selectedUnits.length > 1 ? 's' : ''}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="unitOfMeasure">Unidade de Medida</Label>
-                  <Input
-                    id="unitOfMeasure"
-                    value={formData.unitOfMeasure}
-                    onChange={(e) => setFormData({ ...formData, unitOfMeasure: e.target.value })}
-                    placeholder="Ex: kg, lt, un"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="currentValue">Valor Atual (R$)</Label>
-                  <Input
-                    id="currentValue"
-                    type="number"
-                    step="0.01"
-                    value={formData.currentValue}
-                    onChange={(e) => setFormData({ ...formData, currentValue: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    className="bg-orange-600 hover:bg-orange-700"
-                    disabled={createMutation.isPending}
-                  >
-                    {createMutation.isPending ? "Criando..." : "Criar Produto"}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            className="bg-orange-600 hover:bg-orange-700"
+            onClick={() => setLocation("/estoque/produtos/adicionar")}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Produto
+          </Button>
         </div>
         <div className="flex items-center space-x-2">
           <Search className="h-4 w-4 text-gray-400" />
@@ -692,9 +404,9 @@ function ProductsManagementContent() {
                 <Button
                   variant="ghost"
                   className="h-auto p-0 font-semibold hover:bg-transparent"
-                  onClick={() => handleSort('unit')}
+                  onClick={() => handleSort('currentStock')}
                 >
-                  Unidade {getSortIcon('unit')}
+                  Estoque Atual {getSortIcon('currentStock')}
                 </Button>
               </TableHead>
               <TableHead>
@@ -722,70 +434,61 @@ function ProductsManagementContent() {
             {sortedProducts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                  {searchTerm ? "Nenhum produto encontrado com os critérios de busca." : "Nenhum produto cadastrado."}
+                  {searchTerm ? "Nenhum produto encontrado com o termo pesquisado." : "Nenhum produto cadastrado."}
                 </TableCell>
               </TableRow>
             ) : (
-              sortedProducts.map((product: ProductWithUnits) => (
-                <TableRow key={product.id}>
-                  <TableCell className="font-mono">{product.code}</TableCell>
+              sortedProducts.map((product) => (
+                <TableRow key={product.id} className="hover:bg-gray-50">
+                  <TableCell className="font-mono text-sm">{product.code}</TableCell>
                   <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell>{getCategoryName(product.stockCategory)}</TableCell>
                   <TableCell>
-                    {product.associatedUnits && product.associatedUnits.length > 0 ? (
-                      <div className="space-y-1">
-                        {product.associatedUnits.map((assocUnit: any, index: number) => (
-                          <span 
-                            key={assocUnit.unitId} 
-                            className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full mr-1"
-                          >
-                            {assocUnit.unitName}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">
-                        {getUnitName(product.unit)}
-                      </span>
-                    )}
+                    <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">
+                      {getCategoryName(product.stockCategory)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="font-mono">
+                    <span className={`font-medium ${(product.currentStock || 0) > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                      {formatQuantity(product.currentStock)}
+                    </span>
                   </TableCell>
                   <TableCell>{product.unitOfMeasure}</TableCell>
-                  <TableCell className="font-medium text-green-600">
-                    {formatCurrency(product.currentValue)}
-                  </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(product)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Tem certeza que deseja excluir o produto "{product.name}"?
-                            Esta ação não pode ser desfeita.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteMutation.mutate(product.id)}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                  <TableCell className="font-mono">{formatCurrency(product.currentValue)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(product)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:text-red-700">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja excluir o produto "{product.name}"? Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteMutation.mutate(product.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -793,147 +496,32 @@ function ProductsManagementContent() {
           </TableBody>
         </Table>
       </div>
-
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Editar Produto</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-code">Código</Label>
-              <Input
-                id="edit-code"
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Nome do Produto</Label>
-              <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-stockCategory">Categoria</Label>
-              <Select
-                value={formData.stockCategory}
-                onValueChange={(value) => setFormData({ ...formData, stockCategory: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id.toString()}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-units">Unidades</Label>
-              <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2">
-                {units.map((unit) => (
-                  <div key={unit.id} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id={`edit-unit-${unit.id}`}
-                      checked={selectedUnits.includes(unit.id.toString())}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedUnits([...selectedUnits, unit.id.toString()]);
-                        } else {
-                          setSelectedUnits(selectedUnits.filter(id => id !== unit.id.toString()));
-                        }
-                      }}
-                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                    />
-                    <Label htmlFor={`edit-unit-${unit.id}`} className="text-sm font-normal cursor-pointer">
-                      {unit.name}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-              {selectedUnits.length === 0 && (
-                <p className="text-sm text-gray-500">Selecione pelo menos uma unidade</p>
-              )}
-              {selectedUnits.length > 0 && (
-                <p className="text-sm text-green-600">
-                  {selectedUnits.length} unidade{selectedUnits.length > 1 ? 's' : ''} selecionada{selectedUnits.length > 1 ? 's' : ''}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-unitOfMeasure">Unidade de Medida</Label>
-              <Input
-                id="edit-unitOfMeasure"
-                value={formData.unitOfMeasure}
-                onChange={(e) => setFormData({ ...formData, unitOfMeasure: e.target.value })}
-                placeholder="Ex: kg, lt, un"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-currentValue">Valor Atual (R$)</Label>
-              <Input
-                id="edit-currentValue"
-                type="number"
-                step="0.01"
-                value={formData.currentValue}
-                onChange={(e) => setFormData({ ...formData, currentValue: e.target.value })}
-                required
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button 
-                type="submit" 
-                className="bg-orange-600 hover:bg-orange-700"
-                disabled={updateMutation.isPending}
-              >
-                {updateMutation.isPending ? "Atualizando..." : "Atualizar"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
 
-function CategoriesManagementContent() {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+function CategoriesTab() {
   const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
-
-  const [categoryFormData, setCategoryFormData] = useState({
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
     name: "",
     description: "",
   });
 
   const queryClient = useQueryClient();
 
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery<ProductCategory[]>({
+  const { data: categories = [], isLoading } = useQuery<ProductCategory[]>({
     queryKey: ["/api/product-categories"],
   });
 
-  const createCategoryMutation = useMutation({
-    mutationFn: async (data: InsertProductCategory) => {
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
       return await apiRequest("POST", "/api/product-categories", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/product-categories"] });
-      setIsCreateDialogOpen(false);
-      setCategoryFormData({ name: "", description: "" });
+      setShowForm(false);
+      setFormData({ name: "", description: "" });
       toast({
         title: "Categoria criada",
         description: "Categoria criada com sucesso!",
@@ -948,13 +536,13 @@ function CategoriesManagementContent() {
     },
   });
 
-  const updateCategoryMutation = useMutation({
-    mutationFn: async (data: { id: number; category: Partial<InsertProductCategory> }) => {
+  const updateMutation = useMutation({
+    mutationFn: async (data: { id: number; category: any }) => {
       return await apiRequest("PUT", `/api/product-categories/${data.id}`, data.category);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/product-categories"] });
-      setIsEditDialogOpen(false);
+      setShowForm(false);
       setEditingCategory(null);
       toast({
         title: "Categoria atualizada",
@@ -970,7 +558,7 @@ function CategoriesManagementContent() {
     },
   });
 
-  const deleteCategoryMutation = useMutation({
+  const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       return await apiRequest("DELETE", `/api/product-categories/${id}`);
     },
@@ -990,34 +578,38 @@ function CategoriesManagementContent() {
     },
   });
 
-  const handleCategorySubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (editingCategory) {
-      updateCategoryMutation.mutate({ 
-        id: editingCategory.id, 
-        category: categoryFormData 
+      updateMutation.mutate({
+        id: editingCategory.id,
+        category: formData
       });
     } else {
-      createCategoryMutation.mutate(categoryFormData);
+      createMutation.mutate(formData);
     }
   };
 
-  const handleEditCategory = (category: ProductCategory) => {
+  const handleEdit = (category: ProductCategory) => {
     setEditingCategory(category);
-    setCategoryFormData({
+    setFormData({
       name: category.name,
       description: category.description || "",
     });
-    setIsEditDialogOpen(true);
+    setShowForm(true);
   };
 
-  if (categoriesLoading) {
+  const resetForm = () => {
+    setShowForm(false);
+    setEditingCategory(null);
+    setFormData({ name: "", description: "" });
+  };
+
+  if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Carregando...</div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">Carregando...</div>
       </div>
     );
   }
@@ -1027,53 +619,56 @@ function CategoriesManagementContent() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Tag className="h-6 w-6 text-orange-600" />
-          <h1 className="text-2xl font-bold">Categorias de Produtos</h1>
+          <h2 className="text-xl font-semibold">Categorias de Produtos</h2>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-orange-600 hover:bg-orange-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Categoria
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Criar Categoria</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleCategorySubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="category-name">Nome</Label>
-                <Input
-                  id="category-name"
-                  value={categoryFormData.name}
-                  onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category-description">Descrição</Label>
-                <Input
-                  id="category-description"
-                  value={categoryFormData.description}
-                  onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="bg-orange-600 hover:bg-orange-700"
-                  disabled={createCategoryMutation.isPending}
-                >
-                  {createCategoryMutation.isPending ? "Criando..." : "Criar"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button
+          onClick={() => setShowForm(true)}
+          className="bg-orange-600 hover:bg-orange-700"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Nova Categoria
+        </Button>
       </div>
+
+      {showForm && (
+        <div className="bg-white p-6 rounded-lg border">
+          <h3 className="text-lg font-medium mb-4">
+            {editingCategory ? "Editar Categoria" : "Nova Categoria"}
+          </h3>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome da Categoria</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Descrição (opcional)</Label>
+              <Input
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button type="button" variant="outline" onClick={resetForm}>
+                Cancelar
+              </Button>
+              <Button 
+                type="submit" 
+                className="bg-orange-600 hover:bg-orange-700"
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                {(createMutation.isPending || updateMutation.isPending) ? "Salvando..." : 
+                 (editingCategory ? "Salvar Alterações" : "Criar Categoria")}
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg border">
         <Table>
@@ -1096,39 +691,41 @@ function CategoriesManagementContent() {
                 <TableRow key={category.id}>
                   <TableCell className="font-medium">{category.name}</TableCell>
                   <TableCell>{category.description || "-"}</TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditCategory(category)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Tem certeza que deseja excluir a categoria "{category.name}"?
-                            Esta ação não pode ser desfeita.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteCategoryMutation.mutate(category.id)}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(category)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:text-red-700">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja excluir a categoria "{category.name}"? Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteMutation.mutate(category.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -1136,71 +733,25 @@ function CategoriesManagementContent() {
           </TableBody>
         </Table>
       </div>
-
-      {/* Edit Category Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Editar Categoria</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCategorySubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-category-name">Nome</Label>
-              <Input
-                id="edit-category-name"
-                value={categoryFormData.name}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-category-description">Descrição</Label>
-              <Input
-                id="edit-category-description"
-                value={categoryFormData.description}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button 
-                type="submit" 
-                className="bg-orange-600 hover:bg-orange-700"
-                disabled={updateCategoryMutation.isPending}
-              >
-                {updateCategoryMutation.isPending ? "Atualizando..." : "Atualizar"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
 
 export default function ProductsManagement() {
   return (
-    <div className="space-y-6">
-      <Tabs defaultValue="products" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="products" className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            Produtos
-          </TabsTrigger>
-          <TabsTrigger value="categories" className="flex items-center gap-2">
-            <Tag className="h-4 w-4" />
-            Categorias
-          </TabsTrigger>
+    <div className="container mx-auto p-6">
+      <Tabs defaultValue="products" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="products">Produtos</TabsTrigger>
+          <TabsTrigger value="categories">Categorias</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="products" className="space-y-6">
+        
+        <TabsContent value="products">
           <ProductsManagementContent />
         </TabsContent>
-
-        <TabsContent value="categories" className="space-y-6">
-          <CategoriesManagementContent />
+        
+        <TabsContent value="categories">
+          <CategoriesTab />
         </TabsContent>
       </Tabs>
     </div>

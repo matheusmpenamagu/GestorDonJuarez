@@ -2786,6 +2786,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get current stock for all products (from latest finalized stock counts)
+  app.get('/api/products/current-stock', requireAuth, async (req, res) => {
+    try {
+      console.log('📦 [CURRENT-STOCK] Fetching current stock for all products');
+      
+      // Get all finalized stock counts
+      const stockCounts = await storage.getStockCounts();
+      const finalizedCounts = stockCounts.filter(sc => sc.status === 'contagem_finalizada');
+      console.log(`📦 [CURRENT-STOCK] Found ${finalizedCounts.length} finalized stock counts`);
+      
+      if (finalizedCounts.length === 0) {
+        console.log('📦 [CURRENT-STOCK] No finalized stock counts found, returning empty array');
+        return res.json([]);
+      }
+      
+      // Get the latest stock count by date
+      const latestStockCount = finalizedCounts.sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      )[0];
+      
+      console.log(`📦 [CURRENT-STOCK] Latest finalized stock count: ${latestStockCount.id} from ${latestStockCount.date}`);
+      
+      // Get items from the latest stock count
+      const stockCountItems = await storage.getStockCountItems(latestStockCount.id);
+      console.log(`📦 [CURRENT-STOCK] Found ${stockCountItems.length} items in latest stock count`);
+      
+      // Map products to their current stock quantities
+      const currentStocks = stockCountItems.map(item => ({
+        productId: item.productId,
+        quantity: parseFloat(item.countedQuantity) || 0
+      }));
+      
+      console.log(`📦 [CURRENT-STOCK] Returning current stock for ${currentStocks.length} products`);
+      res.json(currentStocks);
+    } catch (error) {
+      console.error("Error fetching current stock:", error);
+      res.status(500).json({ message: "Error fetching current stock" });
+    }
+  });
+
   app.get('/api/products/:id', requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);

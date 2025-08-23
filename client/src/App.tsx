@@ -20,6 +20,8 @@ import FreelancersManagement from "@/pages/FreelancersManagement";
 import UnitsManagement from "@/pages/UnitsManagement";
 import Co2Management from "@/pages/Co2Management";
 import ProductsManagement from "@/pages/ProductsManagement";
+import ProductAdd from "@/pages/ProductAdd";
+import ProductEdit from "@/pages/ProductEdit";
 import StockCountsManagement from "@/pages/StockCountsManagement";
 import StockCountDetail from "@/pages/StockCountDetail";
 import PublicStockCount from "@/pages/PublicStockCount";
@@ -132,6 +134,16 @@ function Router() {
           <Route path="/estoque/produtos">
             <Layout>
               <ProductsManagement />
+            </Layout>
+          </Route>
+          <Route path="/estoque/produtos/adicionar">
+            <Layout>
+              <ProductAdd />
+            </Layout>
+          </Route>
+          <Route path="/estoque/produtos/editar/:id">
+            <Layout>
+              <ProductEdit />
             </Layout>
           </Route>
           <Route path="/estoque/contagens">
