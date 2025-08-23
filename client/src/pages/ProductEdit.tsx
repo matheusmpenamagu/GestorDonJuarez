@@ -35,11 +35,6 @@ export default function ProductEdit() {
 
   const { data: product, isLoading: productLoading } = useQuery<Product>({
     queryKey: ["/api/products", productId],
-    queryFn: async () => {
-      const response = await fetch(`/api/products/${productId}`);
-      if (!response.ok) throw new Error("Produto não encontrado");
-      return response.json();
-    },
   });
 
   const { data: categories = [] } = useQuery<ProductCategory[]>({
@@ -68,14 +63,10 @@ export default function ProductEdit() {
 
   const loadProductUnits = async () => {
     try {
-      const response = await fetch(`/api/product-units?productId=${productId}`);
-      if (response.ok) {
-        const productUnits = await response.json();
-        const associatedUnitIds = productUnits.map((pu: any) => pu.unitId.toString());
-        setSelectedUnits(associatedUnitIds);
-      } else {
-        setSelectedUnits([]);
-      }
+      const response = await apiRequest("GET", `/api/product-units?productId=${productId}`);
+      const productUnits = await response.json();
+      const associatedUnitIds = productUnits.map((pu: any) => pu.unitId.toString());
+      setSelectedUnits(associatedUnitIds);
     } catch (error) {
       console.error("Error loading product units:", error);
       setSelectedUnits([]);
