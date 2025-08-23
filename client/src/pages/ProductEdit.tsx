@@ -47,13 +47,13 @@ export default function ProductEdit() {
 
   // Load product data when available
   useEffect(() => {
-    if (product) {
+    if (product && product.stockCategory !== undefined) {
       setFormData({
-        code: product.code,
-        name: product.name,
+        code: product.code || "",
+        name: product.name || "",
         stockCategory: product.stockCategory.toString(),
-        unitOfMeasure: product.unitOfMeasure,
-        currentValue: product.currentValue.toString(),
+        unitOfMeasure: product.unitOfMeasure || "",
+        currentValue: product.currentValue ? product.currentValue.toString() : "",
       });
       
       // Load the units this product is associated with
@@ -129,7 +129,7 @@ export default function ProductEdit() {
     );
   }
 
-  if (!product) {
+  if (!product || !product.id) {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
