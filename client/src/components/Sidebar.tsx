@@ -52,12 +52,6 @@ const menuItems = [
     items: [
       { href: "/estoque/produtos", icon: Package, label: "Produtos" },
       { href: "/estoque/contagens", icon: FileText, label: "Contagens" },
-    ],
-  },
-  {
-    title: "Compras",
-    icon: ShoppingCart,
-    items: [
       { href: "/compras/sugestao", icon: ShoppingCart, label: "Sugestão de compra" },
     ],
   },
@@ -92,7 +86,6 @@ export function Sidebar() {
     "Chopes": false,
     "Pessoas": false,
     "Estoque": false,
-    "Compras": false,
     "Produção": false,
     "Empresa": false,
     "Financeiro": false
