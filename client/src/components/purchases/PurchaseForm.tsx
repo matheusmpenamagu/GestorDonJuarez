@@ -366,9 +366,12 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
                           <div>
                             <label className="text-sm font-medium">Último Preço</label>
                             <div className="p-2 bg-gray-50 rounded text-sm text-muted-foreground">
-                              {selectedProduct?.lastPurchasePrice 
-                                ? formatCurrency(parseFloat(selectedProduct.lastPurchasePrice))
-                                : "Sem histórico"}
+                              {(() => {
+                                console.log("DEBUG - selectedProduct:", selectedProduct?.name, selectedProduct?.lastPurchasePrice);
+                                return selectedProduct?.lastPurchasePrice 
+                                  ? formatCurrency(parseFloat(selectedProduct.lastPurchasePrice))
+                                  : "Sem histórico";
+                              })()}
                             </div>
                           </div>
 
