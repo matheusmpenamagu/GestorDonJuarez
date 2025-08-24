@@ -2840,6 +2840,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         await storage.createPurchaseItems(validatedItems);
         
+        // Update current_value of each product with the new purchase price
+        for (const item of validatedItems) {
+          await storage.updateProductCurrentValue(item.productId, parseFloat(item.unitPrice));
+        }
+        
         // Calculate and update total amount
         const totalAmount = validatedItems.reduce((sum, item) => 
           sum + parseFloat(item.totalPrice), 0
@@ -2946,24 +2951,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         (product.stockCategory === '5' || product.stockCategory === '6')
       );
 
-      // Get last purchase price for each product
-      const productsWithLastPrice = await Promise.all(
-        eligibleProducts.map(async (product) => {
-          try {
-            const lastPrice = await storage.getLastPurchasePrice(product.id);
-            return {
-              ...product,
-              lastPurchasePrice: lastPrice?.toString() || null
-            };
-          } catch (error) {
-            console.log(`Could not get last price for product ${product.id}:`, error);
-            return {
-              ...product,
-              lastPurchasePrice: null
-            };
-          }
-        })
-      );
+      // Use currentValue as lastPurchasePrice
+      const productsWithLastPrice = eligibleProducts.map(product => ({
+        ...product,
+        lastPurchasePrice: product.currentValue || null
+      }));
 
       res.json(productsWithLastPrice);
     } catch (error) {
