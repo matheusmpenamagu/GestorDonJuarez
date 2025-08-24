@@ -23,6 +23,7 @@ import ProductsManagement from "@/pages/ProductsManagement";
 import ProductAdd from "@/pages/ProductAdd";
 import ProductEdit from "@/pages/ProductEdit";
 import ComprasPage from "@/pages/ComprasPage";
+import NovaCompraPage from "@/pages/NovaCompraPage";
 import StockCountsManagement from "@/pages/StockCountsManagement";
 import StockCountDetail from "@/pages/StockCountDetail";
 import PublicStockCount from "@/pages/PublicStockCount";
@@ -157,6 +158,11 @@ function Router() {
           <Route path="/estoque/compras">
             <Layout>
               <ComprasPage />
+            </Layout>
+          </Route>
+          <Route path="/estoque/compras/nova">
+            <Layout>
+              <NovaCompraPage />
             </Layout>
           </Route>
           <Route path="/estoque/contagens">

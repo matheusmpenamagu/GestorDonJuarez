@@ -99,7 +99,8 @@ import {
   type InsertPrinter,
 } from "@shared/schema";
 import { db, pool } from "./db";
-import { eq, desc, and, or, gte, lte, lt, sql, sum, alias } from "drizzle-orm";
+import { eq, desc, and, or, gte, lte, lt, sql, sum } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 // Interface for storage operations
 export interface IStorage {

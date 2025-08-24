@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { ShoppingCart, TrendingUp, TrendingDown, Package, AlertTriangle, CheckCircle, Plus, History } from 'lucide-react';
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PurchaseForm } from "@/components/purchases/PurchaseForm";
 import { PurchaseHistory } from "@/components/purchases/PurchaseHistory";
 
 interface Product {
@@ -304,7 +304,7 @@ function SugestaoComprasTab() {
 }
 
 export default function ComprasPage() {
-  const [showPurchaseForm, setShowPurchaseForm] = useState(false);
+  const [, setLocation] = useLocation();
 
   return (
     <div className="p-6">
@@ -318,7 +318,7 @@ export default function ComprasPage() {
             Sistema de gestão de compras e análise de estoque
           </p>
         </div>
-        <Button onClick={() => setShowPurchaseForm(true)} className="bg-orange-500 hover:bg-orange-600">
+        <Button onClick={() => setLocation('/estoque/compras/nova')} className="bg-orange-500 hover:bg-orange-600">
           <Plus className="w-4 h-4 mr-2" />
           Nova Compra
         </Button>
@@ -345,11 +345,6 @@ export default function ComprasPage() {
         </TabsContent>
       </Tabs>
 
-      {showPurchaseForm && (
-        <PurchaseForm 
-          onClose={() => setShowPurchaseForm(false)}
-        />
-      )}
     </div>
   );
 }
