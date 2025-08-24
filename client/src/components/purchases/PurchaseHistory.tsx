@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -20,6 +20,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -48,6 +51,8 @@ import {
   AlertCircle
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface PurchaseWithRelations {
   id: number;
@@ -125,12 +130,91 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function PurchaseDetailsDialog({ purchase }: { purchase: PurchaseWithRelations }) {
+  const [receivingNotes, setReceivingNotes] = useState("");
+  const [itemsToReceive, setItemsToReceive] = useState<Record<number, { checked: boolean; quantity: string }>>({});
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const receivePurchaseMutation = useMutation({
+    mutationFn: async (data: { receivingNotes: string; items: Array<{ id: number; receivedQuantity: string }> }) => {
+      // First mark individual items as received
+      for (const item of data.items) {
+        await apiRequest("PUT", `/api/purchase-items/${item.id}/receive`, {
+          receivedQuantity: item.receivedQuantity
+        });
+      }
+      
+      // Then mark the purchase as received
+      const response = await apiRequest("POST", `/api/purchases/${purchase.id}/receive`, {
+        receivingNotes: data.receivingNotes
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Entrada no estoque realizada com sucesso!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+      setReceivingNotes("");
+      setItemsToReceive({});
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.error || error?.message || "Erro desconhecido";
+      toast({
+        title: "Erro ao dar entrada no estoque",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleItemCheck = (itemId: number, checked: boolean) => {
+    setItemsToReceive(prev => ({
+      ...prev,
+      [itemId]: {
+        checked,
+        quantity: checked ? (prev[itemId]?.quantity || "") : ""
+      }
+    }));
+  };
+
+  const handleQuantityChange = (itemId: number, quantity: string) => {
+    setItemsToReceive(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        quantity
+      }
+    }));
+  };
+
+  const handleReceiveItems = () => {
+    const validItems = Object.entries(itemsToReceive)
+      .filter(([_, data]) => data.checked && parseFloat(data.quantity) > 0)
+      .map(([itemId, data]) => ({
+        id: parseInt(itemId),
+        receivedQuantity: data.quantity
+      }));
+
+    if (validItems.length === 0) {
+      toast({
+        title: "Selecione pelo menos um item",
+        description: "Marque os itens recebidos e informe as quantidades",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    receivePurchaseMutation.mutate({
+      receivingNotes,
+      items: validItems
+    });
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <Eye className="w-4 h-4 mr-1" />
-          Ver Detalhes
+          <Package className="w-4 h-4 mr-1" />
+          Recebimento
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -234,7 +318,7 @@ function PurchaseDetailsDialog({ purchase }: { purchase: PurchaseWithRelations }
             <CardContent>
               <div className="space-y-3">
                 {purchase.items.map((item) => (
-                  <div key={item.id} className="border rounded-lg p-3 space-y-2">
+                  <div key={item.id} className="border rounded-lg p-3 space-y-3">
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="font-medium">{item.product.name}</div>
@@ -275,6 +359,42 @@ function PurchaseDetailsDialog({ purchase }: { purchase: PurchaseWithRelations }
                       )}
                     </div>
 
+                    {/* Seção de recebimento (apenas se a compra ainda não foi recebida) */}
+                    {purchase.status !== "received" && (
+                      <div className="border-t pt-3 bg-gray-50 -mx-3 px-3 pb-3">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`item-${item.id}`}
+                              checked={itemsToReceive[item.id]?.checked || false}
+                              onCheckedChange={(checked) => 
+                                handleItemCheck(item.id, checked as boolean)
+                              }
+                            />
+                            <Label htmlFor={`item-${item.id}`} className="text-sm font-medium">
+                              Item recebido
+                            </Label>
+                          </div>
+                          {itemsToReceive[item.id]?.checked && (
+                            <div className="flex items-center gap-2">
+                              <Label className="text-sm">Qtd. recebida:</Label>
+                              <Input
+                                type="number"
+                                step="0.001"
+                                placeholder="0.000"
+                                value={itemsToReceive[item.id]?.quantity || ""}
+                                onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                                className="w-24"
+                              />
+                              <span className="text-sm text-muted-foreground">
+                                {item.product.unitOfMeasure}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {item.notes && (
                       <div className="text-sm">
                         <div className="text-muted-foreground">Observações:</div>
@@ -293,11 +413,43 @@ function PurchaseDetailsDialog({ purchase }: { purchase: PurchaseWithRelations }
           {purchase.notes && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Observações</CardTitle>
+                <CardTitle className="text-sm">Observações da Compra</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-muted-foreground bg-muted p-3 rounded">
                   {purchase.notes}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Seção de recebimento (apenas se a compra ainda não foi recebida) */}
+          {purchase.status !== "received" && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Observações do Recebimento</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="receiving-notes" className="text-sm font-medium">
+                    Observações (opcional)
+                  </Label>
+                  <Textarea
+                    id="receiving-notes"
+                    placeholder="Digite observações sobre o recebimento dos itens..."
+                    value={receivingNotes}
+                    onChange={(e) => setReceivingNotes(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={handleReceiveItems}
+                    disabled={receivePurchaseMutation.isPending}
+                    className="bg-orange-500 hover:bg-orange-600"
+                  >
+                    {receivePurchaseMutation.isPending ? "Processando..." : "Dar entrada no estoque"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
