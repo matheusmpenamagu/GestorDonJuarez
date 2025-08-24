@@ -5,7 +5,7 @@ import { setupWebSocket, broadcastUpdate } from "./websocket";
 import { storage } from "./storage";
 // Removed Replit authentication - using employee auth only
 import { authenticateEmployee } from "./localAuth";
-import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, insertPointOfSaleSchema, insertBeerStyleSchema, insertDeviceSchema, insertUnitSchema, insertCo2RefillSchema, insertProductCategorySchema, insertProductSchema, insertSupplierSchema } from "@shared/schema";
+import { insertPourEventSchema, insertKegChangeEventSchema, insertTapSchema, insertPointOfSaleSchema, insertBeerStyleSchema, insertDeviceSchema, insertUnitSchema, insertCo2RefillSchema, insertProductCategorySchema, insertProductSchema, insertSupplierSchema, insertPurchaseSchema, insertPurchaseItemSchema } from "@shared/schema";
 import { z } from "zod";
 import { format } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
@@ -2784,6 +2784,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting supplier:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ================================
+  // PURCHASES MANAGEMENT
+  // ================================
+
+  // GET /api/purchases - List all purchases with relations
+  app.get("/api/purchases", requireAuth, async (req, res) => {
+    try {
+      const purchases = await storage.getPurchases();
+      res.json(purchases);
+    } catch (error) {
+      console.error("Error fetching purchases:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/purchases/:id - Get purchase by ID with relations
+  app.get("/api/purchases/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const purchase = await storage.getPurchaseById(id);
+      if (!purchase) {
+        return res.status(404).json({ error: "Purchase not found" });
+      }
+      res.json(purchase);
+    } catch (error) {
+      console.error("Error fetching purchase:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/purchases - Create new purchase with items
+  app.post("/api/purchases", requireAuth, async (req, res) => {
+    try {
+      const { items, ...purchaseData } = req.body;
+      
+      // Validate purchase data
+      const validatedPurchase = insertPurchaseSchema.parse(purchaseData);
+      
+      // Create the purchase
+      const purchase = await storage.createPurchase(validatedPurchase);
+      
+      // Create purchase items if provided
+      if (items && Array.isArray(items) && items.length > 0) {
+        const validatedItems = items.map(item => 
+          insertPurchaseItemSchema.parse({
+            ...item,
+            purchaseId: purchase.id
+          })
+        );
+        
+        await storage.createPurchaseItems(validatedItems);
+        
+        // Calculate and update total amount
+        const totalAmount = validatedItems.reduce((sum, item) => 
+          sum + parseFloat(item.totalPrice), 0
+        );
+        
+        await storage.updatePurchase(purchase.id, {
+          ...validatedPurchase,
+          totalAmount: totalAmount.toString()
+        });
+      }
+      
+      // Get the complete purchase with relations
+      const completePurchase = await storage.getPurchaseById(purchase.id);
+      res.status(201).json(completePurchase);
+    } catch (error) {
+      console.error("Error creating purchase:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // PUT /api/purchases/:id - Update purchase
+  app.put("/api/purchases/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertPurchaseSchema.parse(req.body);
+      const purchase = await storage.updatePurchase(id, validatedData);
+      if (!purchase) {
+        return res.status(404).json({ error: "Purchase not found" });
+      }
+      res.json(purchase);
+    } catch (error) {
+      console.error("Error updating purchase:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // DELETE /api/purchases/:id - Delete purchase (soft delete)
+  app.delete("/api/purchases/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deletePurchase(id);
+      if (!success) {
+        return res.status(404).json({ error: "Purchase not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting purchase:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/purchases/:id/receive - Mark purchase as received
+  app.post("/api/purchases/:id/receive", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { receivingNotes } = req.body;
+      const receivedById = req.user.id;
+      
+      const purchase = await storage.receivePurchase(id, receivedById, receivingNotes);
+      if (!purchase) {
+        return res.status(404).json({ error: "Purchase not found" });
+      }
+      res.json(purchase);
+    } catch (error) {
+      console.error("Error receiving purchase:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // PUT /api/purchase-items/:id/receive - Mark individual item as received
+  app.put("/api/purchase-items/:id/receive", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { receivedQuantity } = req.body;
+      
+      if (!receivedQuantity) {
+        return res.status(400).json({ error: "receivedQuantity is required" });
+      }
+      
+      const item = await storage.markItemReceived(id, receivedQuantity);
+      if (!item) {
+        return res.status(404).json({ error: "Purchase item not found" });
+      }
+      res.json(item);
+    } catch (error) {
+      console.error("Error marking item as received:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/products/purchase-eligible - Get products eligible for purchase (Materia prima and Revenda)
+  app.get("/api/products/purchase-eligible", requireAuth, async (req, res) => {
+    try {
+      const products = await storage.getProducts();
+      const eligibleProducts = products.filter(product => 
+        product.stockCategory && 
+        (product.stockCategory.toLowerCase().includes('materia') || 
+         product.stockCategory.toLowerCase().includes('revenda'))
+      );
+      res.json(eligibleProducts);
+    } catch (error) {
+      console.error("Error fetching purchase-eligible products:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

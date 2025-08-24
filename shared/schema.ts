@@ -712,6 +712,106 @@ export type InsertLabel = z.infer<typeof insertLabelSchema>;
 export type Supplier = typeof suppliers.$inferSelect;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 
+// ================================
+// PURCHASES MANAGEMENT
+// ================================
+
+export const purchases = pgTable("purchases", {
+  id: serial("id").primaryKey(),
+  purchaseDate: timestamp("purchase_date").notNull(),
+  responsibleId: integer("responsible_id").notNull().references(() => employees.id),
+  supplierId: integer("supplier_id").notNull().references(() => suppliers.id),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, received, cancelled
+  
+  // Campos de recebimento
+  receivedAt: timestamp("received_at"),
+  receivedById: integer("received_by_id").references(() => employees.id),
+  receivingNotes: text("receiving_notes"),
+  
+  notes: text("notes"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const purchaseItems = pgTable("purchase_items", {
+  id: serial("id").primaryKey(),
+  purchaseId: integer("purchase_id").notNull().references(() => purchases.id, { onDelete: "cascade" }),
+  productId: integer("product_id").notNull().references(() => products.id),
+  quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
+  received: boolean("received").default(false),
+  receivedQuantity: decimal("received_quantity", { precision: 10, scale: 3 }).default("0.000"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Relations for purchases
+export const purchasesRelations = relations(purchases, ({ one, many }) => ({
+  responsible: one(employees, {
+    fields: [purchases.responsibleId],
+    references: [employees.id],
+    relationName: "purchaseResponsible"
+  }),
+  supplier: one(suppliers, {
+    fields: [purchases.supplierId],
+    references: [suppliers.id],
+  }),
+  receivedBy: one(employees, {
+    fields: [purchases.receivedById],
+    references: [employees.id],
+    relationName: "purchaseReceivedBy"
+  }),
+  items: many(purchaseItems),
+}));
+
+export const purchaseItemsRelations = relations(purchaseItems, ({ one }) => ({
+  purchase: one(purchases, {
+    fields: [purchaseItems.purchaseId],
+    references: [purchases.id],
+  }),
+  product: one(products, {
+    fields: [purchaseItems.productId],
+    references: [products.id],
+  }),
+}));
+
+// Purchase Schemas
+export const insertPurchaseSchema = createInsertSchema(purchases).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  purchaseDate: z.string().or(z.date()).transform((val) => typeof val === 'string' ? new Date(val) : val),
+  totalAmount: z.string().or(z.number()).transform((val) => typeof val === 'string' ? val : val.toString()),
+});
+
+export const insertPurchaseItemSchema = createInsertSchema(purchaseItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  quantity: z.string().or(z.number()).transform((val) => typeof val === 'string' ? val : val.toString()),
+  unitPrice: z.string().or(z.number()).transform((val) => typeof val === 'string' ? val : val.toString()),
+  totalPrice: z.string().or(z.number()).transform((val) => typeof val === 'string' ? val : val.toString()),
+  receivedQuantity: z.string().or(z.number()).transform((val) => typeof val === 'string' ? val : val.toString()).optional(),
+});
+
+export type Purchase = typeof purchases.$inferSelect;
+export type InsertPurchase = z.infer<typeof insertPurchaseSchema>;
+export type PurchaseItem = typeof purchaseItems.$inferSelect;
+export type InsertPurchaseItem = z.infer<typeof insertPurchaseItemSchema>;
+
+export type PurchaseWithRelations = Purchase & {
+  responsible: Employee;
+  supplier: Supplier;
+  receivedBy?: Employee;
+  items: (PurchaseItem & { product: Product })[];
+};
+
 // Extended types for API responses
 export type Co2RefillWithRelations = Co2Refill & {
   unit?: Unit;

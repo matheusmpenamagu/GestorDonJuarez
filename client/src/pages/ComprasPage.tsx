@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { ShoppingCart, TrendingUp, TrendingDown, Package, AlertTriangle, CheckCircle } from 'lucide-react';
+import { ShoppingCart, TrendingUp, TrendingDown, Package, AlertTriangle, CheckCircle, Plus, History } from 'lucide-react';
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PurchaseForm } from "@/components/purchases/PurchaseForm";
+import { PurchaseHistory } from "@/components/purchases/PurchaseHistory";
 
 interface Product {
   id: number;
@@ -302,30 +304,52 @@ function SugestaoComprasTab() {
 }
 
 export default function ComprasPage() {
+  const [showPurchaseForm, setShowPurchaseForm] = useState(false);
+
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          <ShoppingCart className="inline-block mr-3 h-8 w-8 text-orange-600" />
-          Compras
-        </h1>
-        <p className="text-gray-600">
-          Sistema de gestão de compras e análise de estoque
-        </p>
+      <div className="mb-6 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <ShoppingCart className="inline-block mr-3 h-8 w-8 text-orange-600" />
+            Compras
+          </h1>
+          <p className="text-gray-600">
+            Sistema de gestão de compras e análise de estoque
+          </p>
+        </div>
+        <Button onClick={() => setShowPurchaseForm(true)} className="bg-orange-500 hover:bg-orange-600">
+          <Plus className="w-4 h-4 mr-2" />
+          Nova Compra
+        </Button>
       </div>
 
       <Tabs defaultValue="sugestao" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 max-w-md">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
           <TabsTrigger value="sugestao" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             Sugestão de compras
+          </TabsTrigger>
+          <TabsTrigger value="historico" className="flex items-center gap-2">
+            <History className="h-4 w-4" />
+            Histórico
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="sugestao" className="mt-6">
           <SugestaoComprasTab />
         </TabsContent>
+        
+        <TabsContent value="historico" className="mt-6">
+          <PurchaseHistory />
+        </TabsContent>
       </Tabs>
+
+      {showPurchaseForm && (
+        <PurchaseForm 
+          onClose={() => setShowPurchaseForm(false)}
+        />
+      )}
     </div>
   );
 }

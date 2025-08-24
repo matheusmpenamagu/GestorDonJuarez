@@ -27,6 +27,8 @@ import {
   labels,
   printers,
   suppliers,
+  purchases,
+  purchaseItems,
   type User,
   type UpsertUser,
   type PointOfSale,
@@ -86,6 +88,11 @@ import {
   type InsertLabel,
   type Supplier,
   type InsertSupplier,
+  type Purchase,
+  type InsertPurchase,
+  type PurchaseItem,
+  type InsertPurchaseItem,
+  type PurchaseWithRelations,
   type FuelEntry,
   type InsertFuelEntry,
   type Printer,
@@ -326,6 +333,24 @@ export interface IStorage {
   createSupplier(supplier: InsertSupplier): Promise<Supplier>;
   updateSupplier(id: number, supplier: InsertSupplier): Promise<Supplier | undefined>;
   deleteSupplier(id: number): Promise<boolean>;
+
+  // Purchases operations
+  getPurchases(): Promise<PurchaseWithRelations[]>;
+  getPurchaseById(id: number): Promise<PurchaseWithRelations | undefined>;
+  createPurchase(purchase: InsertPurchase): Promise<Purchase>;
+  updatePurchase(id: number, purchase: InsertPurchase): Promise<Purchase | undefined>;
+  deletePurchase(id: number): Promise<boolean>;
+  
+  // Purchase Items operations
+  getPurchaseItems(purchaseId: number): Promise<PurchaseItem[]>;
+  createPurchaseItem(item: InsertPurchaseItem): Promise<PurchaseItem>;
+  updatePurchaseItem(id: number, item: InsertPurchaseItem): Promise<PurchaseItem | undefined>;
+  deletePurchaseItem(id: number): Promise<boolean>;
+  createPurchaseItems(items: InsertPurchaseItem[]): Promise<PurchaseItem[]>;
+  
+  // Purchase management
+  receivePurchase(id: number, receivedById: number, receivingNotes?: string): Promise<Purchase | undefined>;
+  markItemReceived(itemId: number, receivedQuantity: string): Promise<PurchaseItem | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2674,6 +2699,191 @@ export class DatabaseStorage implements IStorage {
       .where(eq(suppliers.id, id));
     
     return result.rowCount > 0;
+  }
+
+  // Purchases operations
+  async getPurchases(): Promise<PurchaseWithRelations[]> {
+    const result = await db
+      .select()
+      .from(purchases)
+      .leftJoin(employees, eq(purchases.responsibleId, employees.id))
+      .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
+      .leftJoin(employees, eq(purchases.receivedById, employees.id))
+      .where(eq(purchases.isActive, true))
+      .orderBy(desc(purchases.purchaseDate));
+
+    // Get items for each purchase
+    const purchasesWithItems = await Promise.all(
+      result.map(async (row) => {
+        const items = await db
+          .select()
+          .from(purchaseItems)
+          .leftJoin(products, eq(purchaseItems.productId, products.id))
+          .where(eq(purchaseItems.purchaseId, row.purchases.id));
+
+        return {
+          ...row.purchases,
+          responsible: row.employees,
+          supplier: row.suppliers,
+          receivedBy: row.employees_1 || undefined,
+          items: items.map(item => ({
+            ...item.purchase_items,
+            product: item.products
+          }))
+        } as PurchaseWithRelations;
+      })
+    );
+
+    return purchasesWithItems;
+  }
+
+  async getPurchaseById(id: number): Promise<PurchaseWithRelations | undefined> {
+    const [purchase] = await db
+      .select()
+      .from(purchases)
+      .leftJoin(employees, eq(purchases.responsibleId, employees.id))
+      .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
+      .leftJoin(employees, eq(purchases.receivedById, employees.id))
+      .where(and(eq(purchases.id, id), eq(purchases.isActive, true)));
+
+    if (!purchase) return undefined;
+
+    const items = await db
+      .select()
+      .from(purchaseItems)
+      .leftJoin(products, eq(purchaseItems.productId, products.id))
+      .where(eq(purchaseItems.purchaseId, id));
+
+    return {
+      ...purchase.purchases,
+      responsible: purchase.employees,
+      supplier: purchase.suppliers,
+      receivedBy: purchase.employees_1 || undefined,
+      items: items.map(item => ({
+        ...item.purchase_items,
+        product: item.products
+      }))
+    } as PurchaseWithRelations;
+  }
+
+  async createPurchase(purchaseData: InsertPurchase): Promise<Purchase> {
+    const [purchase] = await db
+      .insert(purchases)
+      .values({
+        ...purchaseData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return purchase;
+  }
+
+  async updatePurchase(id: number, purchaseData: InsertPurchase): Promise<Purchase | undefined> {
+    const [purchase] = await db
+      .update(purchases)
+      .set({
+        ...purchaseData,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(purchases.id, id), eq(purchases.isActive, true)))
+      .returning();
+    return purchase;
+  }
+
+  async deletePurchase(id: number): Promise<boolean> {
+    // Soft delete - mark as inactive
+    const result = await db
+      .update(purchases)
+      .set({
+        isActive: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(purchases.id, id));
+    
+    return result.rowCount > 0;
+  }
+
+  // Purchase Items operations
+  async getPurchaseItems(purchaseId: number): Promise<PurchaseItem[]> {
+    return await db
+      .select()
+      .from(purchaseItems)
+      .where(eq(purchaseItems.purchaseId, purchaseId))
+      .orderBy(purchaseItems.id);
+  }
+
+  async createPurchaseItem(itemData: InsertPurchaseItem): Promise<PurchaseItem> {
+    const [item] = await db
+      .insert(purchaseItems)
+      .values({
+        ...itemData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return item;
+  }
+
+  async updatePurchaseItem(id: number, itemData: InsertPurchaseItem): Promise<PurchaseItem | undefined> {
+    const [item] = await db
+      .update(purchaseItems)
+      .set({
+        ...itemData,
+        updatedAt: new Date(),
+      })
+      .where(eq(purchaseItems.id, id))
+      .returning();
+    return item;
+  }
+
+  async deletePurchaseItem(id: number): Promise<boolean> {
+    const result = await db
+      .delete(purchaseItems)
+      .where(eq(purchaseItems.id, id));
+    
+    return result.rowCount > 0;
+  }
+
+  async createPurchaseItems(items: InsertPurchaseItem[]): Promise<PurchaseItem[]> {
+    const itemsWithTimestamps = items.map(item => ({
+      ...item,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }));
+
+    return await db
+      .insert(purchaseItems)
+      .values(itemsWithTimestamps)
+      .returning();
+  }
+
+  // Purchase management
+  async receivePurchase(id: number, receivedById: number, receivingNotes?: string): Promise<Purchase | undefined> {
+    const [purchase] = await db
+      .update(purchases)
+      .set({
+        status: "received",
+        receivedAt: new Date(),
+        receivedById,
+        receivingNotes,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(purchases.id, id), eq(purchases.isActive, true)))
+      .returning();
+    return purchase;
+  }
+
+  async markItemReceived(itemId: number, receivedQuantity: string): Promise<PurchaseItem | undefined> {
+    const [item] = await db
+      .update(purchaseItems)
+      .set({
+        received: true,
+        receivedQuantity,
+        updatedAt: new Date(),
+      })
+      .where(eq(purchaseItems.id, itemId))
+      .returning();
+    return item;
   }
 }
 
