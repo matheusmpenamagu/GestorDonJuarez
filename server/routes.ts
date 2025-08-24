@@ -2943,7 +2943,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter by category IDs: 5 = Revenda, 6 = Matéria prima
       const eligibleProducts = products.filter(product => 
         product.stockCategory && 
-        (product.stockCategory === 5 || product.stockCategory === 6)
+        (product.stockCategory === '5' || product.stockCategory === '6')
       );
       res.json(eligibleProducts);
     } catch (error) {
