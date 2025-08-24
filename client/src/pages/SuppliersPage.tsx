@@ -67,10 +67,14 @@ function SupplierForm({ supplier, onClose }: { supplier?: Supplier; onClose: () 
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       onClose();
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("Erro detalhado ao criar fornecedor:", error);
+      const message = error?.response?.data?.error || error?.message || "Erro desconhecido";
+      const details = error?.response?.data?.details || [];
+      
       toast({
         title: "Erro ao criar fornecedor",
-        description: error.message,
+        description: details.length > 0 ? `${message}: ${details[0]?.message}` : message,
         variant: "destructive",
       });
     },
@@ -86,10 +90,14 @@ function SupplierForm({ supplier, onClose }: { supplier?: Supplier; onClose: () 
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       onClose();
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("Erro detalhado ao atualizar fornecedor:", error);
+      const message = error?.response?.data?.error || error?.message || "Erro desconhecido";
+      const details = error?.response?.data?.details || [];
+      
       toast({
         title: "Erro ao atualizar fornecedor",
-        description: error.message,
+        description: details.length > 0 ? `${message}: ${details[0]?.message}` : message,
         variant: "destructive",
       });
     },
