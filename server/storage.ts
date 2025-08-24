@@ -351,6 +351,7 @@ export interface IStorage {
   // Purchase management
   receivePurchase(id: number, receivedById: number, receivingNotes?: string): Promise<Purchase | undefined>;
   markItemReceived(itemId: number, receivedQuantity: string): Promise<PurchaseItem | undefined>;
+  getLastPurchasePrice(productId: number): Promise<number | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2884,6 +2885,24 @@ export class DatabaseStorage implements IStorage {
       .where(eq(purchaseItems.id, itemId))
       .returning();
     return item;
+  }
+
+  // Get last purchase price for a product
+  async getLastPurchasePrice(productId: number): Promise<number | null> {
+    const [lastItem] = await db
+      .select({
+        unitPrice: purchaseItems.unitPrice,
+      })
+      .from(purchaseItems)
+      .innerJoin(purchases, eq(purchaseItems.purchaseId, purchases.id))
+      .where(and(
+        eq(purchaseItems.productId, productId),
+        eq(purchases.isActive, true)
+      ))
+      .orderBy(desc(purchases.purchaseDate), desc(purchaseItems.id))
+      .limit(1);
+
+    return lastItem ? parseFloat(lastItem.unitPrice) : null;
   }
 }
 

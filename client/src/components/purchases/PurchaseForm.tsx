@@ -33,7 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Trash2, Package } from "lucide-react";
+import { Plus, Trash2, Package, TrendingUp, TrendingDown } from "lucide-react";
 
 interface PurchaseFormProps {
   onClose: () => void;
@@ -46,6 +46,7 @@ interface Product {
   stockCategory: string;
   unitOfMeasure: string;
   currentValue: string;
+  lastPurchasePrice?: string;
 }
 
 interface Employee {
@@ -164,6 +165,24 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
     }
     
     setItems(newItems);
+  };
+
+  const getSelectedProduct = (productId: number) => {
+    return products?.find(p => p.id === productId);
+  };
+
+  const getPriceComparisonIcon = (currentPrice: string, lastPrice?: string) => {
+    if (!lastPrice || !currentPrice || parseFloat(currentPrice) === 0) return null;
+    
+    const current = parseFloat(currentPrice);
+    const last = parseFloat(lastPrice);
+    
+    if (current < last) {
+      return <TrendingDown className="w-4 h-4 text-green-600" title="Preço menor que a última compra" />;
+    } else if (current > last) {
+      return <TrendingUp className="w-4 h-4 text-orange-600" title="Preço maior que a última compra" />;
+    }
+    return null;
   };
 
   const getTotalAmount = () => {
@@ -305,73 +324,88 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
                   </p>
                 ) : (
                   <div className="space-y-4">
-                    {items.map((item, index) => (
-                      <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg">
-                        <div className="md:col-span-2">
-                          <label className="text-sm font-medium">Produto</label>
-                          <Select 
-                            onValueChange={(value) => updateItem(index, "productId", value)}
-                            value={item.productId.toString()}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione o produto" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {products?.map((product) => (
-                                <SelectItem key={product.id} value={product.id.toString()}>
-                                  <div className="flex flex-col">
-                                    <span>{product.name}</span>
-                                    <span className="text-xs text-muted-foreground">
-                                      {product.code} - {product.stockCategory}
-                                    </span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                    {items.map((item, index) => {
+                      const selectedProduct = getSelectedProduct(item.productId);
+                      return (
+                        <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border rounded-lg">
+                          <div className="md:col-span-2">
+                            <label className="text-sm font-medium">Produto</label>
+                            <Select 
+                              onValueChange={(value) => updateItem(index, "productId", value)}
+                              value={item.productId.toString()}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o produto" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {products?.map((product) => (
+                                  <SelectItem key={product.id} value={product.id.toString()}>
+                                    {product.code} - {product.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                        <div>
-                          <label className="text-sm font-medium">Quantidade</label>
-                          <Input
-                            type="number"
-                            step="0.001"
-                            placeholder="0.000"
-                            value={item.quantity}
-                            onChange={(e) => updateItem(index, "quantity", e.target.value)}
-                          />
-                        </div>
+                          <div>
+                            <label className="text-sm font-medium">Quantidade</label>
+                            <Input
+                              type="number"
+                              step="0.001"
+                              placeholder="0.000"
+                              value={item.quantity}
+                              onChange={(e) => updateItem(index, "quantity", e.target.value)}
+                            />
+                            {selectedProduct && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Unidade: {selectedProduct.unitOfMeasure}
+                              </div>
+                            )}
+                          </div>
 
-                        <div>
-                          <label className="text-sm font-medium">Valor Unit.</label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            value={item.unitPrice}
-                            onChange={(e) => updateItem(index, "unitPrice", e.target.value)}
-                          />
-                        </div>
-
-                        <div className="flex items-end gap-2">
-                          <div className="flex-1">
-                            <label className="text-sm font-medium">Total</label>
-                            <div className="p-2 bg-muted rounded text-sm">
-                              {formatCurrency(parseFloat(item.totalPrice || "0"))}
+                          <div>
+                            <label className="text-sm font-medium">Último Preço</label>
+                            <div className="p-2 bg-gray-50 rounded text-sm text-muted-foreground">
+                              {selectedProduct?.lastPurchasePrice 
+                                ? formatCurrency(parseFloat(selectedProduct.lastPurchasePrice))
+                                : "Sem histórico"}
                             </div>
                           </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeItem(index)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+
+                          <div>
+                            <label className="text-sm font-medium">Valor Unit.</label>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={item.unitPrice}
+                                onChange={(e) => updateItem(index, "unitPrice", e.target.value)}
+                              />
+                              {getPriceComparisonIcon(item.unitPrice, selectedProduct?.lastPurchasePrice)}
+                            </div>
+                          </div>
+
+                          <div className="flex items-end gap-2">
+                            <div className="flex-1">
+                              <label className="text-sm font-medium">Total</label>
+                              <div className="p-2 bg-muted rounded text-sm">
+                                {formatCurrency(parseFloat(item.totalPrice || "0"))}
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeItem(index)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
 
                     {items.length > 0 && (
                       <div className="flex justify-end">

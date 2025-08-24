@@ -2945,7 +2945,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         product.stockCategory && 
         (product.stockCategory === '5' || product.stockCategory === '6')
       );
-      res.json(eligibleProducts);
+
+      // Get last purchase price for each product
+      const productsWithLastPrice = await Promise.all(
+        eligibleProducts.map(async (product) => {
+          try {
+            const lastPrice = await storage.getLastPurchasePrice(product.id);
+            return {
+              ...product,
+              lastPurchasePrice: lastPrice?.toString() || null
+            };
+          } catch (error) {
+            console.log(`Could not get last price for product ${product.id}:`, error);
+            return {
+              ...product,
+              lastPurchasePrice: null
+            };
+          }
+        })
+      );
+
+      res.json(productsWithLastPrice);
     } catch (error) {
       console.error("Error fetching purchase-eligible products:", error);
       res.status(500).json({ error: "Internal server error" });
