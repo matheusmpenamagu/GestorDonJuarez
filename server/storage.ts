@@ -2705,12 +2705,13 @@ export class DatabaseStorage implements IStorage {
 
   // Purchases operations
   async getPurchases(): Promise<PurchaseWithRelations[]> {
+    const receivedByEmployees = alias(employees, 'receivedByEmployees');
     const result = await db
       .select()
       .from(purchases)
       .leftJoin(employees, eq(purchases.responsibleId, employees.id))
       .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
-      .leftJoin(employees, eq(purchases.receivedById, employees.id))
+      .leftJoin(receivedByEmployees, eq(purchases.receivedById, receivedByEmployees.id))
       .where(eq(purchases.isActive, true))
       .orderBy(desc(purchases.purchaseDate));
 
@@ -2727,7 +2728,7 @@ export class DatabaseStorage implements IStorage {
           ...row.purchases,
           responsible: row.employees,
           supplier: row.suppliers,
-          receivedBy: row.employees_1 || undefined,
+          receivedBy: row.receivedByEmployees || undefined,
           items: items.map(item => ({
             ...item.purchase_items,
             product: item.products
