@@ -44,6 +44,7 @@ const menuItems = [
       { href: "/pessoas/colaboradores", icon: Users, label: "Colaboradores" },
       { href: "/pessoas/cargos", icon: UserCog, label: "Cargos" },
       { href: "/pessoas/freelancers", icon: Clock, label: "Freelancers" },
+      { href: "/pessoas/fornecedores", icon: Store, label: "Fornecedores" },
     ],
   },
   {

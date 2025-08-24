@@ -603,6 +603,30 @@ export const insertLabelSchema = createInsertSchema(labels).omit({
   unitId: z.number().min(1), // Unidade obrigatória
 });
 
+// Suppliers table
+export const suppliers = pgTable("suppliers", {
+  id: serial("id").primaryKey(),
+  companyName: varchar("company_name", { length: 255 }).notNull(), // Razão Social
+  tradeName: varchar("trade_name", { length: 255 }).notNull(), // Nome
+  cnpj: varchar("cnpj", { length: 18 }).notNull(), // 99.999.999/9999-99
+  deliveryDays: text("delivery_days").array().notNull().default([]), // Array de dias da semana
+  paymentMethod: varchar("payment_method", { length: 50 }).notNull(), // Forma de pagamento
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Suppliers Insert Schema
+export const insertSupplierSchema = createInsertSchema(suppliers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  cnpj: z.string().regex(/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/, "CNPJ deve ter o formato 99.999.999/9999-99"),
+  deliveryDays: z.array(z.enum(["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"])).min(1, "Selecione pelo menos um dia de entrega"),
+  paymentMethod: z.enum(["faturado_semanal", "faturado_mensal", "pagamento_na_hora", "pagamento_antecipado"]),
+});
+
 // Fleet Management Insert Schemas
 export const insertFuelSchema = createInsertSchema(fuels).omit({
   id: true,
@@ -683,6 +707,10 @@ export type ProductPortion = typeof productPortions.$inferSelect;
 export type InsertProductPortion = z.infer<typeof insertProductPortionSchema>;
 export type Label = typeof labels.$inferSelect;
 export type InsertLabel = z.infer<typeof insertLabelSchema>;
+
+// Supplier Types
+export type Supplier = typeof suppliers.$inferSelect;
+export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 
 // Extended types for API responses
 export type Co2RefillWithRelations = Co2Refill & {

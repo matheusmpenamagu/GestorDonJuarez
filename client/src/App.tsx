@@ -33,6 +33,7 @@ import LabelsPage from "@/pages/LabelsPage";
 import PublicLabelPage from "@/pages/PublicLabelPage";
 import WithdrawalPage from "@/pages/WithdrawalPage";
 import PublicHomePage from "@/pages/PublicHomePage";
+import SuppliersPage from "@/pages/SuppliersPage";
 import Privacy from "@/pages/Privacy";
 import TermsOfUse from "@/pages/TermsOfUse";
 import NotFound from "@/pages/not-found";
@@ -128,6 +129,11 @@ function Router() {
           <Route path="/pessoas/freelancers">
             <Layout>
               <FreelancersManagement />
+            </Layout>
+          </Route>
+          <Route path="/pessoas/fornecedores">
+            <Layout>
+              <SuppliersPage />
             </Layout>
           </Route>
 

@@ -26,6 +26,7 @@ import {
   productPortions,
   labels,
   printers,
+  suppliers,
   type User,
   type UpsertUser,
   type PointOfSale,
@@ -83,6 +84,8 @@ import {
   type InsertProductPortion,
   type Label,
   type InsertLabel,
+  type Supplier,
+  type InsertSupplier,
   type FuelEntry,
   type InsertFuelEntry,
   type Printer,
@@ -316,6 +319,13 @@ export interface IStorage {
   deletePrinter(id: number): Promise<void>;
   getDefaultPrinter(): Promise<Printer | undefined>;
   setDefaultPrinter(id: number): Promise<Printer>;
+
+  // Suppliers operations
+  getSuppliers(): Promise<Supplier[]>;
+  getSupplierById(id: number): Promise<Supplier | undefined>;
+  createSupplier(supplier: InsertSupplier): Promise<Supplier>;
+  updateSupplier(id: number, supplier: InsertSupplier): Promise<Supplier | undefined>;
+  deleteSupplier(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2610,6 +2620,60 @@ export class DatabaseStorage implements IStorage {
       .where(eq(printers.id, id))
       .returning();
     return printer;
+  }
+
+  // Suppliers operations
+  async getSuppliers(): Promise<Supplier[]> {
+    return await db
+      .select()
+      .from(suppliers)
+      .where(eq(suppliers.isActive, true))
+      .orderBy(suppliers.tradeName);
+  }
+
+  async getSupplierById(id: number): Promise<Supplier | undefined> {
+    const [supplier] = await db
+      .select()
+      .from(suppliers)
+      .where(and(eq(suppliers.id, id), eq(suppliers.isActive, true)));
+    return supplier;
+  }
+
+  async createSupplier(supplierData: InsertSupplier): Promise<Supplier> {
+    const [supplier] = await db
+      .insert(suppliers)
+      .values({
+        ...supplierData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return supplier;
+  }
+
+  async updateSupplier(id: number, supplierData: InsertSupplier): Promise<Supplier | undefined> {
+    const [supplier] = await db
+      .update(suppliers)
+      .set({
+        ...supplierData,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(suppliers.id, id), eq(suppliers.isActive, true)))
+      .returning();
+    return supplier;
+  }
+
+  async deleteSupplier(id: number): Promise<boolean> {
+    // Soft delete - mark as inactive instead of removing from database
+    const result = await db
+      .update(suppliers)
+      .set({
+        isActive: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(suppliers.id, id));
+    
+    return result.rowCount > 0;
   }
 }
 
