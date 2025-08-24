@@ -10,9 +10,9 @@ interface Product {
   code: string;
   name: string;
   styleId: number | null;
-  min_stock: number | null;
-  max_stock: number | null;
-  unit: string;
+  minStock: number | null;
+  maxStock: number | null;
+  unitOfMeasure: string;
 }
 
 interface StockData {
@@ -43,8 +43,8 @@ function SugestaoComprasTab() {
   
   const productsWithStock = products?.map(product => {
     const currentQty = stockMap.get(product.id) || 0;
-    const minStock = Number(product.min_stock) || 0;
-    const maxStock = Number(product.max_stock) || 0;
+    const minStock = Number(product.minStock) || 0;
+    const maxStock = Number(product.maxStock) || 0;
     const averageStock = minStock && maxStock ? (minStock + maxStock) / 2 : 0;
     const suggestionQty = averageStock > 0 ? Math.max(0, averageStock - currentQty) : 0;
     
@@ -210,11 +210,11 @@ function SugestaoComprasTab() {
                     <tr key={product.id} className="border-b hover:bg-gray-50">
                       <td className="py-2 font-mono text-sm">{product.code}</td>
                       <td className="py-2 font-medium">{product.name}</td>
-                      <td className="py-2 text-right">{formatNumber(product.currentStock)} {product.unit}</td>
-                      <td className="py-2 text-right">{formatNumber(product.minStock)} {product.unit}</td>
-                      <td className="py-2 text-right">{formatNumber(product.maxStock)} {product.unit}</td>
+                      <td className="py-2 text-right">{formatNumber(product.currentStock)} {product.unitOfMeasure}</td>
+                      <td className="py-2 text-right">{formatNumber(product.minStock)} {product.unitOfMeasure}</td>
+                      <td className="py-2 text-right">{formatNumber(product.maxStock)} {product.unitOfMeasure}</td>
                       <td className="py-2 text-right font-semibold">
-                        {product.suggestionQty > 0 ? `${formatNumber(product.suggestionQty)} ${product.unit}` : '-'}
+                        {product.suggestionQty > 0 ? `${formatNumber(product.suggestionQty)} ${product.unitOfMeasure}` : '-'}
                       </td>
                       <td className="py-2 text-center">
                         {product.inNeed && (
