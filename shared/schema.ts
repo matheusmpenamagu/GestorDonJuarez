@@ -784,9 +784,9 @@ export const insertPurchaseSchema = createInsertSchema(purchases).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  totalAmount: true, // Calculado automaticamente no backend
 }).extend({
   purchaseDate: z.string().or(z.date()).transform((val) => typeof val === 'string' ? new Date(val) : val),
-  totalAmount: z.string().or(z.number()).transform((val) => typeof val === 'string' ? val : val.toString()),
 });
 
 export const insertPurchaseItemSchema = createInsertSchema(purchaseItems).omit({
