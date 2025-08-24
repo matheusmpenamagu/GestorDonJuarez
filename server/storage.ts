@@ -99,7 +99,7 @@ import {
   type InsertPrinter,
 } from "@shared/schema";
 import { db, pool } from "./db";
-import { eq, desc, and, or, gte, lte, lt, sql, sum } from "drizzle-orm";
+import { eq, desc, and, or, gte, lte, lt, sql, sum, alias } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -2739,12 +2739,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPurchaseById(id: number): Promise<PurchaseWithRelations | undefined> {
+    const receivedByEmployees = alias(employees, 'receivedByEmployees');
     const [purchase] = await db
       .select()
       .from(purchases)
       .leftJoin(employees, eq(purchases.responsibleId, employees.id))
       .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
-      .leftJoin(employees, eq(purchases.receivedById, employees.id))
+      .leftJoin(receivedByEmployees, eq(purchases.receivedById, receivedByEmployees.id))
       .where(and(eq(purchases.id, id), eq(purchases.isActive, true)));
 
     if (!purchase) return undefined;
@@ -2759,7 +2760,7 @@ export class DatabaseStorage implements IStorage {
       ...purchase.purchases,
       responsible: purchase.employees,
       supplier: purchase.suppliers,
-      receivedBy: purchase.employees_1 || undefined,
+      receivedBy: purchase.receivedByEmployees || undefined,
       items: items.map(item => ({
         ...item.purchase_items,
         product: item.products
