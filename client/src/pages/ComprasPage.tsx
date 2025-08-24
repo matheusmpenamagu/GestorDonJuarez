@@ -13,6 +13,7 @@ interface Product {
   minStock: number | null;
   maxStock: number | null;
   unitOfMeasure: string;
+  currentValue: string;
 }
 
 interface StockData {
@@ -76,6 +77,14 @@ function SugestaoComprasTab() {
 
   const formatNumber = (num: number): string => {
     return Number.isInteger(num) ? num.toString() : num.toFixed(3);
+  };
+
+  const formatCurrency = (value: string | number): string => {
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(numValue || 0);
   };
 
   return (
@@ -172,7 +181,7 @@ function SugestaoComprasTab() {
         </Button>
       </div>
 
-      {/* Tabela de Produtos */}
+      {/* Tabela Avançada de Produtos */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -185,9 +194,9 @@ function SugestaoComprasTab() {
             )}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {filteredProducts.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-muted-foreground p-6">
               <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>Nenhum produto encontrado com os filtros aplicados.</p>
             </div>
@@ -195,42 +204,70 @@ function SugestaoComprasTab() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2">Código</th>
-                    <th className="text-left py-2">Produto</th>
-                    <th className="text-right py-2">Atual</th>
-                    <th className="text-right py-2">Mín</th>
-                    <th className="text-right py-2">Máx</th>
-                    <th className="text-right py-2">Sugestão</th>
-                    <th className="text-center py-2">Status</th>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-600">Código</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-600">Nome</th>
+                    <th className="text-right py-3 px-4 font-semibold text-gray-600">Estoque Atual</th>
+                    <th className="text-center py-3 px-4 font-semibold text-gray-600">Min/Max</th>
+                    <th className="text-right py-3 px-4 font-semibold text-gray-600">Sugestão de Compra</th>
+                    <th className="text-center py-3 px-4 font-semibold text-gray-600">Un. Medida</th>
+                    <th className="text-right py-3 px-4 font-semibold text-gray-600">Valor Atual</th>
+                    <th className="text-center py-3 px-4 font-semibold text-gray-600">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredProducts.map((product) => (
-                    <tr key={product.id} className="border-b hover:bg-gray-50">
-                      <td className="py-2 font-mono text-sm">{product.code}</td>
-                      <td className="py-2 font-medium">{product.name}</td>
-                      <td className="py-2 text-right">{formatNumber(product.currentStock)} {product.unitOfMeasure}</td>
-                      <td className="py-2 text-right">{formatNumber(product.minStock)} {product.unitOfMeasure}</td>
-                      <td className="py-2 text-right">{formatNumber(product.maxStock)} {product.unitOfMeasure}</td>
-                      <td className="py-2 text-right font-semibold">
-                        {product.suggestionQty > 0 ? `${formatNumber(product.suggestionQty)} ${product.unitOfMeasure}` : '-'}
+                    <tr key={product.id} className="border-b hover:bg-gray-50 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="font-mono text-sm text-gray-800 font-medium">
+                          {product.code}
+                        </div>
                       </td>
-                      <td className="py-2 text-center">
+                      <td className="py-3 px-4">
+                        <div className="font-medium text-gray-900">
+                          {product.name}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="font-mono text-sm">
+                          <span className="font-semibold">{formatNumber(product.currentStock)}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <div className="font-mono text-xs text-gray-600 bg-gray-100 rounded px-2 py-1 inline-block">
+                          {formatNumber(product.minStock)} / {formatNumber(product.maxStock)}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="font-mono font-semibold text-orange-600">
+                          {product.suggestionQty > 0 ? formatNumber(product.suggestionQty) : '-'}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <div className="text-sm font-medium text-gray-600 bg-blue-50 rounded px-2 py-1 inline-block">
+                          {product.unitOfMeasure}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="font-mono text-sm font-semibold text-green-600">
+                          {formatCurrency(product.currentValue)}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-center">
                         {product.inNeed && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-red-100 text-red-800 font-medium">
                             <TrendingDown className="h-3 w-3" />
                             Necessidade
                           </span>
                         )}
                         {product.inSurplus && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 font-medium">
                             <TrendingUp className="h-3 w-3" />
                             Superávit
                           </span>
                         )}
                         {!product.inNeed && !product.inSurplus && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 font-medium">
                             <CheckCircle className="h-3 w-3" />
                             Adequado
                           </span>
@@ -244,6 +281,22 @@ function SugestaoComprasTab() {
           )}
         </CardContent>
       </Card>
+      
+      {/* Resumo da tabela */}
+      {filteredProducts.length > 0 && (
+        <div className="flex justify-between items-center text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-3">
+          <span>
+            Exibindo {filteredProducts.length} de {productsWithStock.filter(p => p.hasMinMax).length} produtos configurados
+          </span>
+          <span>
+            Total para compra: {formatCurrency(
+              filteredProducts
+                .filter(p => p.suggestionQty > 0)
+                .reduce((sum, p) => sum + (p.suggestionQty * parseFloat(p.currentValue)), 0)
+            )}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
