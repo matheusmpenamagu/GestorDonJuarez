@@ -22,6 +22,7 @@ import Co2Management from "@/pages/Co2Management";
 import ProductsManagement from "@/pages/ProductsManagement";
 import ProductAdd from "@/pages/ProductAdd";
 import ProductEdit from "@/pages/ProductEdit";
+import PurchaseSuggestion from "@/pages/PurchaseSuggestion";
 import StockCountsManagement from "@/pages/StockCountsManagement";
 import StockCountDetail from "@/pages/StockCountDetail";
 import PublicStockCount from "@/pages/PublicStockCount";
@@ -144,6 +145,13 @@ function Router() {
           <Route path="/estoque/produtos/editar/:id">
             <Layout>
               <ProductEdit />
+            </Layout>
+          </Route>
+
+          {/* Compras */}
+          <Route path="/compras/sugestao">
+            <Layout>
+              <PurchaseSuggestion />
             </Layout>
           </Route>
           <Route path="/estoque/contagens">
