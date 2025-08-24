@@ -513,3 +513,5 @@ export function PurchaseHistory() {
     </div>
   );
 }
+
+export { PurchaseHistory };

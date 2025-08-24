@@ -4,13 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Form,
   FormControl,
   FormField,
@@ -36,7 +29,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Plus, Trash2, Package, TrendingUp, TrendingDown } from "lucide-react";
 
 interface PurchaseFormProps {
-  onClose: () => void;
+  onSuccess?: () => void;
 }
 
 interface Product {
@@ -83,7 +76,7 @@ function formatNumber(value: string): string {
   return Number.isInteger(num) ? num.toString() : num.toFixed(3);
 }
 
-export function PurchaseForm({ onClose }: PurchaseFormProps) {
+export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
   const [items, setItems] = useState<PurchaseItem[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -128,7 +121,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
     onSuccess: () => {
       toast({ title: "Compra registrada com sucesso!" });
       queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
-      onClose();
+      onSuccess?.();
     },
     onError: (error: any) => {
       const message = error?.response?.data?.error || error?.message || "Erro desconhecido";
@@ -229,19 +222,8 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
   ) || [];
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Package className="w-5 h-5 text-orange-500" />
-            Nova Compra
-          </DialogTitle>
-          <DialogDescription>
-            Registre uma nova compra de produtos para estoque
-          </DialogDescription>
-        </DialogHeader>
-
-        <Form {...form}>
+    <div className="space-y-6">
+      <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField
@@ -445,10 +427,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
               )}
             />
 
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancelar
-              </Button>
+            <div className="flex justify-end">
               <Button 
                 type="submit" 
                 disabled={createPurchaseMutation.isPending}
@@ -459,7 +438,6 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
             </div>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+    </div>
   );
 }
