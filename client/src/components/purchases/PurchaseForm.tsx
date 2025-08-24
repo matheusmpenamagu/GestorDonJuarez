@@ -47,6 +47,7 @@ interface Employee {
   firstName: string;
   lastName: string;
   email: string;
+  employmentTypes?: string[];
 }
 
 interface Supplier {
@@ -102,7 +103,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
     queryKey: ["/api/products/purchase-eligible"],
   });
 
-  const { data: currentUser } = useQuery({
+  const { data: currentUser } = useQuery<{ id?: number }>({
     queryKey: ["/api/auth/user"],
   });
 
@@ -177,9 +178,9 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
     const last = parseFloat(lastPrice);
     
     if (current < last) {
-      return <TrendingDown className="w-4 h-4 text-green-600" title="Preço menor que a última compra" />;
+      return <TrendingDown className="w-4 h-4 text-green-600" />;
     } else if (current > last) {
-      return <TrendingUp className="w-4 h-4 text-orange-600" title="Preço maior que a última compra" />;
+      return <TrendingUp className="w-4 h-4 text-orange-600" />;
     }
     return null;
   };
