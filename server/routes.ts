@@ -2940,10 +2940,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products/purchase-eligible", requireAuth, async (req, res) => {
     try {
       const products = await storage.getProducts();
+      // Filter by category IDs: 5 = Revenda, 6 = Matéria prima
       const eligibleProducts = products.filter(product => 
         product.stockCategory && 
-        (product.stockCategory.toLowerCase().includes('materia') || 
-         product.stockCategory.toLowerCase().includes('revenda'))
+        (product.stockCategory === 5 || product.stockCategory === 6)
       );
       res.json(eligibleProducts);
     } catch (error) {
