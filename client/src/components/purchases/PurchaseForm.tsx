@@ -155,7 +155,13 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
 
   const updateItem = (index: number, field: keyof PurchaseItem, value: string) => {
     const newItems = [...items];
-    newItems[index] = { ...newItems[index], [field]: value };
+    
+    // Converter productId para number
+    if (field === "productId") {
+      newItems[index] = { ...newItems[index], [field]: parseInt(value) || 0 };
+    } else {
+      newItems[index] = { ...newItems[index], [field]: value };
+    }
     
     // Recalcular total quando quantity ou unitPrice mudarem
     if (field === "quantity" || field === "unitPrice") {
@@ -366,12 +372,9 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
                           <div>
                             <label className="text-sm font-medium">Último Preço</label>
                             <div className="p-2 bg-gray-50 rounded text-sm text-muted-foreground">
-                              {(() => {
-                                console.log("DEBUG - selectedProduct:", selectedProduct?.name, selectedProduct?.lastPurchasePrice);
-                                return selectedProduct?.lastPurchasePrice 
-                                  ? formatCurrency(parseFloat(selectedProduct.lastPurchasePrice))
-                                  : "Sem histórico";
-                              })()}
+                              {selectedProduct?.lastPurchasePrice 
+                                ? formatCurrency(parseFloat(selectedProduct.lastPurchasePrice))
+                                : "Sem histórico"}
                             </div>
                           </div>
 
