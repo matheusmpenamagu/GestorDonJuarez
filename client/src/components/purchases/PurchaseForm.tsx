@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -113,11 +113,11 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
   });
 
   // Definir usuário responsável padrão quando carregado
-  useState(() => {
+  useEffect(() => {
     if (currentUser?.id && !form.getValues("responsibleId")) {
       form.setValue("responsibleId", currentUser.id);
     }
-  }, [currentUser]);
+  }, [currentUser, form]);
 
   const createPurchaseMutation = useMutation({
     mutationFn: async (data: PurchaseFormData & { items: PurchaseItem[] }) => {
@@ -200,7 +200,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
   };
 
   const funcionarios = employees?.filter(emp => 
-    emp.employmentTypes?.includes("Funcionário")
+    Array.isArray(emp.employmentTypes) && emp.employmentTypes.includes("Funcionário")
   ) || [];
 
   return (
