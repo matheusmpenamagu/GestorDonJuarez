@@ -287,13 +287,16 @@ function ProductsManagementContent() {
   const formatQuantity = (quantity: number | undefined) => {
     if (quantity === undefined || quantity === null) return '-';
     
+    // Converte para número para garantir a verificação correta
+    const num = Number(quantity);
+    
     // Se for número inteiro, mostrar sem casas decimais
-    if (quantity % 1 === 0) {
-      return quantity.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    if (Number.isInteger(num)) {
+      return num.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     }
     
     // Se for número fracionado, mostrar com 3 casas decimais
-    return quantity.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+    return num.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
   };
 
   const formatStockDate = (dateString: string | undefined) => {
